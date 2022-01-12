@@ -2,7 +2,7 @@
 #' Load data from ARCHS4 database
 #' 
 #' @import rhdf5
-#' @importFrom stringr str_
+#' @importFrom stringr str_ends
 #' @import magrittr 
 #' @importFrom tibble as.tibble
 loadArchs4 <- function(samples, archs4db){
