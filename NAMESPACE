@@ -3,4 +3,4 @@
 import(magrittr)
 import(rhdf5)
 importFrom(stringr,str_ends)
-importFrom(tibble,as.tibble)
+importFrom(tibble,as_tibble)

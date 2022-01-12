@@ -4,7 +4,7 @@
 #' @import rhdf5
 #' @importFrom stringr str_ends
 #' @import magrittr 
-#' @importFrom tibble as.tibble
+#' @importFrom tibble as_tibble
 loadArchs4 <- function(samples, archs4db){
   # Check that archsdb exists
   if(!file.exists(archs4db) | stringr::str_ends(archs4db, ".h5", negate = TRUE)){
@@ -30,6 +30,6 @@ loadArchs4 <- function(samples, archs4db){
   rownames(txCount) <- tx
   colnames(txCount) <- myIds[sample_locations]
   
-  return(as.tibble(txCount))
+  return(as_tibble(txCount))
   
 }
