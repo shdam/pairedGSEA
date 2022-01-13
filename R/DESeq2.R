@@ -16,12 +16,12 @@ runDESeq2 <- function(txCount,
   # Register parallel
   if(parallel & is.numeric(cores)) {
     missing_package("BiocParallel", "Bioc")
-    register(MulticoreParam(4))
+    BiocParallel::register(MulticoreParam(4))
   } 
   
   
   ### Ensure rows in metadata matches columns in the count matrix
-  txCount <- txCount[, md$id]
+  txCount <- txCount[, metadata$id]
   
   ### Create DDS from count matrix
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,

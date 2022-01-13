@@ -22,7 +22,7 @@ group_col <- "group_nr"
 
 dds <- runDESeq2(txCount = txCount,
                  metadata = metadata,
-                 group_col = group_nr,
+                 group_col = group_col,
                  baseline = baseline,
                  design = design,
                  parallel = TRUE,
