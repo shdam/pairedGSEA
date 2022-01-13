@@ -29,7 +29,7 @@ runDESeq2 <- function(txCount,
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,
                                         colData = metadata,
                                         design = design) # + condition
-  # Pre-filtering
+  ### Pre-filtering
   if(preFilter){
     message("Pre-filtering with row sum of >=10")
     keep <- rowSums(counts(dds)) >= 10
@@ -37,7 +37,7 @@ runDESeq2 <- function(txCount,
   }
   
   
-  # Define baseline
+  ### Define baseline
   dds[[groupCol]] <- relevel(dds[[groupCol]], ref = baseline)
   
   ### Run DESeq2

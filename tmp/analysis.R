@@ -19,10 +19,26 @@ if(!file.exists(archs4db) | !file.exists(archs4db_tpm)) stop("Database file is m
 
 ### Load count matrix
 txCount <- loadArchs4(samples, archs4db)
+# Remove low counts
+keep <- rowSums(txCount) >= 10
+txCount <- txCount[keep,]
+
+# SVA ----
+
+mod1 <- model.matrix(~metadata$group_nr)
+mod0 <- cbind(mod1[, 1])
+svseq <- svaseq(txCount, mod1, mod0)
+
+mod1sv <- cbind(mod1, svseq$sv)
+mod0sv <- cbind(mod0, svseq$sv)
+# pValuesSv <- f.pvalue(txCount, mod1sv, mod0sv)
+# qValuesSv <- p.adjust(pValuesSv, method = "BH")
+
+
 # DESeq2 ----
 
 ### Define experiment detals
-design <- ~ group_nr
+design <- mod1sv
 baseline <- 2
 groupCol <- "group_nr"
 
@@ -32,14 +48,13 @@ dds <- runDESeq2(txCount = txCount,
                  groupCol = groupCol,
                  baseline = baseline,
                  design = design,
-                 preFilter = 10,
-                 parallel = FALSE,
+                 preFilter = FALSE,
+                 parallel = TRUE,
                  cores = 4)
 # DESeq2::resultsNames(dds) # lists the coefficients
 res <- DESeq2::results(dds, name = resultsNames(dds)[2])
 
 ### Add TPM values
-
 txTPM <- loadArchs4(samples, archs4db_tpm)
 
 res$tpm <- txTPM[rownames(res), ] %>% 
@@ -47,8 +62,6 @@ res$tpm <- txTPM[rownames(res), ] %>%
 
 
 # summary(res)
-
-
 
 
 # or to shrink log fold changes association with condition:
