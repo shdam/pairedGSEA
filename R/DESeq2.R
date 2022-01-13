@@ -10,7 +10,7 @@ runDESeq2 <- function(txCount,
                       parallel = FALSE,
                       cores = 4){
   # Check for group column
-  check_colname(colnames(metadata), col_name = "group_col", location = "metadata")
+  check_colname(colnames(metadata), col_name = group_col, location = "metadata")
   metadata[[group_col]] <- as.factor(metadata[[group_col]])
   
   # Register parallel
