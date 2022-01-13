@@ -30,6 +30,6 @@ loadArchs4 <- function(samples, archs4db){
   rownames(txCount) <- tx
   colnames(txCount) <- myIds[sample_locations]
   
-  return(as_tibble(txCount))
+  return(txCount)
   
 }

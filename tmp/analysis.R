@@ -33,7 +33,7 @@ dds <- runDESeq2(txCount = txCount,
                  cores = 4)
 # DESeq2::resultsNames(dds) # lists the coefficients
 res <- DESeq2::results(dds, name = resultsNames(dds)[2])
-  
+
 summary(res)
 
 

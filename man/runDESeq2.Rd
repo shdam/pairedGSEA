@@ -7,9 +7,10 @@
 runDESeq2(
   txCount,
   metadata,
-  group_col,
+  groupCol,
   baseline,
   design,
+  preFilter = 10,
   parallel = FALSE,
   cores = 4
 )
