@@ -20,12 +20,12 @@ txCount <- loadArchs4(samples, archs4db)
 ### Define experiment detals
 design <- ~ group_nr
 baseline <- 2
-group_col <- "group_nr"
+groupCol <- "group_nr"
 
 ### Run DESeq2
 dds <- runDESeq2(txCount = txCount,
                  metadata = metadata,
-                 group_col = group_col,
+                 groupCol = groupCol,
                  baseline = baseline,
                  design = design,
                  preFilter = 10,
