@@ -11,10 +11,14 @@ metadata <- readxl::read_excel(md_file)
 samples <- metadata$id
 ### Define file to read from
 archs4db <- "/home/databases/archs4/v11/human_transcript_v11_counts.h5"
+# TPM file
+archs4db_tpm <- archs4db %>% 
+  stringr::str_replace("counts", "tpm")
+if(!file.exists(archs4db) | !file.exists(archs4db_tpm)) stop("Database file is missing!\\nLooking for: ", archs4db, "and", archs4db_tpm)
+
 
 ### Load count matrix
 txCount <- loadArchs4(samples, archs4db)
-
 # DESeq2 ----
 
 ### Define experiment detals
@@ -34,7 +38,15 @@ dds <- runDESeq2(txCount = txCount,
 # DESeq2::resultsNames(dds) # lists the coefficients
 res <- DESeq2::results(dds, name = resultsNames(dds)[2])
 
-summary(res)
+### Add TPM values
+
+txTPM <- loadArchs4(samples, archs4db_tpm)
+
+res$tpm <- txTPM[rownames(res), ] %>% 
+  rowSums()
+
+
+# summary(res)
 
 
 
