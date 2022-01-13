@@ -17,7 +17,7 @@ loadArchs4 <- function(samples, archs4db){
   tx    <- h5read(archs4db, "/meta/transcripts/ensembl_transcript_id")
   
   # Identify columns to be extracted
-  message("Extracting:", all( samples %in% myIds ))
+  if(!all( samples %in% myIds )) stop("Some of the chosen samples", samples, "are not in the database.")
   sample_locations = which(myIds %in% samples)
   
   # Extract gene expression from compressed data

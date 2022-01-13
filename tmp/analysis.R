@@ -15,25 +15,35 @@ archs4db <- "/home/databases/archs4/v11/human_transcript_v11_counts.h5"
 ### Load count matrix
 txCount <- loadArchs4(samples, archs4db)
 
+# DESeq2 ----
 
+### Define experiment detals
 design <- ~ group_nr
 baseline <- 2
 group_col <- "group_nr"
 
+### Run DESeq2
 dds <- runDESeq2(txCount = txCount,
                  metadata = metadata,
                  group_col = group_col,
                  baseline = baseline,
                  design = design,
-                 parallel = TRUE,
+                 preFilter = 10,
+                 parallel = FALSE,
                  cores = 4)
 # DESeq2::resultsNames(dds) # lists the coefficients
 res <- DESeq2::results(dds, name = resultsNames(dds)[2])
   
-
+summary(res)
 
 
 
 
 # or to shrink log fold changes association with condition:
 #res <- lfcShrink(dds, coef="condition_trt_vs_untrt", type="apeglm")
+
+
+# DEXSeq ----
+
+# pythonScriptsDir = system.file( "python_scripts", package="DEXSeq" )
+# list.files(pythonScriptsDir)

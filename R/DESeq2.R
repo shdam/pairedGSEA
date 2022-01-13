@@ -4,19 +4,21 @@
 #' @export
 runDESeq2 <- function(txCount,
                       metadata,
-                      group_col,
+                      groupCol,
                       baseline,
                       design,
+                      preFilter = 10,
                       parallel = FALSE,
                       cores = 4){
+  message("Running DESeq2")
   # Check for group column
-  check_colname(colnames(metadata), col_name = group_col, location = "metadata")
-  metadata[[group_col]] <- as.factor(metadata[[group_col]])
+  check_colname(colnames(metadata), col_name = groupCol, location = "metadata")
+  metadata[[groupCol]] <- as.factor(metadata[[groupCol]])
   
   # Register parallel
   if(parallel & is.numeric(cores)) {
     missing_package("BiocParallel", "Bioc")
-    BiocParallel::register(MulticoreParam(4))
+    BiocParallel::register(BiocParallel::MulticoreParam(4))
   } 
   
   
@@ -27,8 +29,16 @@ runDESeq2 <- function(txCount,
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,
                                         colData = metadata,
                                         design = design) # + condition
+  # Pre-filtering
+  if(preFilter){
+    message("Pre-filtering with row sum of >=10")
+    keep <- rowSums(counts(dds)) >= 10
+    dds <- dds[keep,]
+  }
+  
+  
   # Define baseline
-  dds[[group_col]] <- relevel(dds[[group_col]], ref = baseline)
+  dds[[groupCol]] <- relevel(dds[[groupCol]], ref = baseline)
   
   ### Run DESeq2
   dds <- DESeq2::DESeq(dds)
