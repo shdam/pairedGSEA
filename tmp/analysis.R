@@ -25,12 +25,14 @@ txCount <- txCount[keep,]
 
 # SVA ----
 
-mod1 <- model.matrix(~metadata$group_nr)
+mod1 <- model.matrix(~metadata[[groupCol]])
 mod0 <- cbind(mod1[, 1])
 svseq <- svaseq(txCount, mod1, mod0)
 
 mod1sv <- cbind(mod1, svseq$sv)
 mod0sv <- cbind(mod0, svseq$sv)
+colnames(mod1sv) <- c("Intercept", groupCol, 1:svseq$n.sv)
+mod1sv
 # pValuesSv <- f.pvalue(txCount, mod1sv, mod0sv)
 # qValuesSv <- p.adjust(pValuesSv, method = "BH")
 
@@ -41,7 +43,7 @@ mod0sv <- cbind(mod0, svseq$sv)
 design <- mod1sv
 comparison <- "2v1"
 groupCol <- "group_nr"
-
+metadata[[groupCol]] <- factor(metadata[[groupCol]], levels = stringr::str_split(comparison, "v", simplify = T))
 ### Run DESeq2
 dds <- runDESeq2(txCount = txCount,
                  metadata = metadata,
@@ -52,7 +54,12 @@ dds <- runDESeq2(txCount = txCount,
                  parallel = TRUE,
                  cores = 4)
 # DESeq2::resultsNames(dds) # lists the coefficients
-res <- DESeq2::results(dds, contrast = c(groupCol, stringr::str_split("comparison", "v", simplify = T)))
+# contrast <- c(groupCol,
+#               rev(stringr::str_split(comparison, "v", simplify = T)))
+contrast <- list("add" = resultsNames(dds)[2], "subtract" = resultsNames(dds)[3:(2+svseq$n.sv)])
+print("contrast:", contrast)
+res <- DESeq2::results(dds, contrast = contrast)
+
 
 ### Add TPM values
 txTPM <- loadArchs4(samples, archs4db_tpm)
@@ -61,7 +68,7 @@ res$tpm <- txTPM[rownames(res), ] %>%
   rowSums()
 
 
-# summary(res)
+summary(res)
 
 
 # or to shrink log fold changes association with condition:
