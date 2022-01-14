@@ -33,7 +33,7 @@ txCount <- txCount[keep,]
 ### Create DDS from count matrix
 dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,
                                       colData = metadata,
-                                      design = 1)
+                                      design = ~1)
 # SVA ----
 # Normalize counts with DESeq2
 normCounts <- DESeq2::normTransform(dds) %>% 
@@ -46,7 +46,7 @@ mod0 <- cbind(mod1[, 1])
 svseq <- sva(normCounts, mod1, mod0)
 cat("\\n")
 # Store surrogate variables and rename for ease of reference
-svs <- as_tibble::tibble(svseq$sv)
+svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
 colnames(svs) <- paste0("sv", 1:svseq$n.sv)
 # Add svs to metadata
 metadata <- dplyr::bind_cols(metadata, svs)
