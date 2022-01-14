@@ -1,6 +1,7 @@
 #' Run DESeq2
 #' 
 #' @import DESeq2
+#' @import sva
 #' @export
 runDESeq2 <- function(txCount,
                       metadata,
