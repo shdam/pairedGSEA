@@ -5,7 +5,7 @@
 runDESeq2 <- function(txCount,
                       metadata,
                       groupCol,
-                      baseline,
+                      comparison,
                       design,
                       preFilter = 10,
                       parallel = FALSE,
@@ -13,7 +13,7 @@ runDESeq2 <- function(txCount,
   message("Running DESeq2")
   # Check for group column
   check_colname(colnames(metadata), col_name = groupCol, location = "metadata")
-  metadata[[groupCol]] <- as.factor(metadata[[groupCol]])
+  metadata[[groupCol]] <- factor(metadata[[groupCol]], levels = stringr::str_split(comparison, "v", simplify = T))
   
   # Register parallel
   if(parallel & is.numeric(cores)) {

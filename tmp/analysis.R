@@ -39,20 +39,20 @@ mod0sv <- cbind(mod0, svseq$sv)
 
 ### Define experiment detals
 design <- mod1sv
-baseline <- 2
+comparison <- "2v1"
 groupCol <- "group_nr"
 
 ### Run DESeq2
 dds <- runDESeq2(txCount = txCount,
                  metadata = metadata,
                  groupCol = groupCol,
-                 baseline = baseline,
+                 comparison = comparison,
                  design = design,
                  preFilter = FALSE,
                  parallel = TRUE,
                  cores = 4)
 # DESeq2::resultsNames(dds) # lists the coefficients
-res <- DESeq2::results(dds, name = resultsNames(dds)[2])
+res <- DESeq2::results(dds, contrast = c(groupCol, stringr::str_split("comparison", "v", simplify = T)))
 
 ### Add TPM values
 txTPM <- loadArchs4(samples, archs4db_tpm)
