@@ -6,7 +6,10 @@ pkgload::load_all()
 md_file <- "tmp/1_GSE154968.xlsx"
 metadata <- readxl::read_excel(md_file)
 
-
+### Define experiment detals
+comparison <- "2v1"
+groupCol <- "group_nr"
+metadata[[groupCol]] <- factor(metadata[[groupCol]], levels = stringr::str_split(comparison, "v", simplify = T))
 ### Define samples of interest
 samples <- metadata$id
 ### Define file to read from
@@ -31,19 +34,16 @@ svseq <- svaseq(txCount, mod1, mod0)
 
 mod1sv <- cbind(mod1, svseq$sv)
 mod0sv <- cbind(mod0, svseq$sv)
-colnames(mod1sv) <- c("Intercept", groupCol, 1:svseq$n.sv)
-mod1sv
 # pValuesSv <- f.pvalue(txCount, mod1sv, mod0sv)
 # qValuesSv <- p.adjust(pValuesSv, method = "BH")
 
 
 # DESeq2 ----
 
-### Define experiment detals
+colnames(mod1sv) <- c("Intercept", groupCol, 1:svseq$n.sv)
+mod1sv
 design <- mod1sv
-comparison <- "2v1"
-groupCol <- "group_nr"
-metadata[[groupCol]] <- factor(metadata[[groupCol]], levels = stringr::str_split(comparison, "v", simplify = T))
+
 ### Run DESeq2
 dds <- runDESeq2(txCount = txCount,
                  metadata = metadata,
