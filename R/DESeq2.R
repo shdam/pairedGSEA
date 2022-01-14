@@ -22,13 +22,9 @@ runDESeq2 <- function(txCount,
   } 
   
   
-  ### Ensure rows in metadata matches columns in the count matrix
-  txCount <- txCount[, metadata$id]
   
-  ### Create DDS from count matrix
-  dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,
-                                        colData = metadata,
-                                        design = design) # + condition
+  
+
   ### Pre-filtering
   if(preFilter){
     message("Pre-filtering with row sum of >=10")
@@ -41,6 +37,6 @@ runDESeq2 <- function(txCount,
   # dds[[groupCol]] <- relevel(dds[[groupCol]], ref = baseline)
   
   ### Run DESeq2
-  dds <- DESeq2::DESeq(dds)
+  dds <- DESeq2::DESeq(dds, parallel = parallel, BPPARAM = cores)
   return(dds)
 }

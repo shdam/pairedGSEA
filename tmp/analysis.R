@@ -6,10 +6,11 @@ pkgload::load_all()
 md_file <- "tmp/1_GSE154968.xlsx"
 metadata <- readxl::read_excel(md_file)
 
-### Define experiment detals
+### Define experiment details
 comparison <- "2v1"
+comparison <- stringr::str_split(comparison, "v", simplify = T)
 groupCol <- "group_nr"
-metadata[[groupCol]] <- factor(metadata[[groupCol]], levels = stringr::str_split(comparison, "v", simplify = T))
+metadata[[groupCol]] <- factor(metadata[[groupCol]], levels = comparison)
 ### Define samples of interest
 samples <- metadata$id
 ### Define file to read from
@@ -22,43 +23,46 @@ if(!file.exists(archs4db) | !file.exists(archs4db_tpm)) stop("Database file is m
 
 ### Load count matrix
 txCount <- loadArchs4(samples, archs4db)
+### Ensure rows in metadata matches columns in the count matrix
+txCount <- txCount[, metadata$id]
 # Remove low counts
 keep <- rowSums(txCount) >= 10
 txCount <- txCount[keep,]
 
-# SVA ----
 
+### Create DDS from count matrix
+dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,
+                                      colData = metadata,
+                                      design = 1)
+# SVA ----
+# Normalize counts with DESeq2
+normCounts <- DESeq2::normTransform(dds) %>% 
+  SummarizedExperiment::assay()
+
+# Define model matrix 
 mod1 <- model.matrix(~metadata[[groupCol]])
 mod0 <- cbind(mod1[, 1])
-svseq <- svaseq(txCount, mod1, mod0)
-
-mod1sv <- cbind(mod1, svseq$sv)
-mod0sv <- cbind(mod0, svseq$sv)
-# pValuesSv <- f.pvalue(txCount, mod1sv, mod0sv)
-# qValuesSv <- p.adjust(pValuesSv, method = "BH")
+# Run SVA
+svseq <- sva(normCounts, mod1, mod0)
+cat("\\n")
+# Store surrogate variables and rename for ease of reference
+svs <- as_tibble::tibble(svseq$sv)
+colnames(svs) <- paste0("sv", 1:svseq$n.sv)
+# Add svs to metadata
+metadata <- dplyr::bind_cols(metadata, svs)
+# Redefine dds colData to metadata
+SummarizedExperiment::colData(dds) <- S4Vectors::DataFrame(metadata)
+# Redefine design formula to include svs
+DESeq2::design(dds) <- as.formula(paste0("~", groupCol, "+", stringr::str_c("sv",1:svseq$n.sv, collapse = "+")))
 
 
 # DESeq2 ----
 
-colnames(mod1sv) <- c("Intercept", groupCol, 1:svseq$n.sv)
-mod1sv
-design <- mod1sv
-
 ### Run DESeq2
-dds <- runDESeq2(txCount = txCount,
-                 metadata = metadata,
-                 groupCol = groupCol,
-                 comparison = comparison,
-                 design = design,
-                 preFilter = FALSE,
-                 parallel = TRUE,
-                 cores = 4)
-# DESeq2::resultsNames(dds) # lists the coefficients
-# contrast <- c(groupCol,
-#               rev(stringr::str_split(comparison, "v", simplify = T)))
-contrast <- list("add" = resultsNames(dds)[2], "subtract" = resultsNames(dds)[3:(2+svseq$n.sv)])
-print("contrast:", contrast)
-res <- DESeq2::results(dds, contrast = contrast)
+dds <- DESeq2::DESeq(dds)
+
+# Extract results
+res <- DESeq2::results(dds, contrast = c(groupCol, comparison))
 
 
 ### Add TPM values
@@ -67,7 +71,7 @@ txTPM <- loadArchs4(samples, archs4db_tpm)
 res$tpm <- txTPM[rownames(res), ] %>% 
   rowSums()
 
-
+# Summary of results
 summary(res)
 
 
