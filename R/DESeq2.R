@@ -1,27 +1,20 @@
-#' Run DESeq2
+#' Pepare DE analysis
 #' 
 #' @import DESeq2
 #' @import sva
 #' @export
-runDESeq2 <- function(md,
-                      archs4db,
-                      groupCol,
-                      comparison,
-                      tpm = FALSE,
-                      samples = "id",
-                      prefilter = 10,
-                      dds_out = FALSE,
-                      parallel = FALSE,
-                      cores = 4){
+prepDE <- function(md,
+                   archs4db,
+                   groupCol,
+                   comparison,
+                   tpm = FALSE,
+                   samples = "id",
+                   prefilter = 10,
+                   parallel = FALSE,
+                   cores = 4){
   
   # Look for database file
   if(!file.exists(archs4db)) stop("Database file is missing!\nLooking for: ", archs4db)
-  # TPM file
-  if(tpm & typeof(tpm) != "character"){
-    archs4db_tpm <- archs4db %>% 
-      stringr::str_replace("counts", "tpm")
-  }
-  if(tpm & !file.exists(archs4db_tpm)) stop("Database file is missing!\\nLooking for: ", archs4db_tpm)
   
   # Register parallel
   if(parallel & is.numeric(cores)) {
@@ -45,9 +38,28 @@ runDESeq2 <- function(md,
   
   ### SVA
   dds <- runSVA(txCount, metadata, groupCol)
-  
+ 
+  return(dds) 
+}
+#' Run DESeq2
+#' 
+#' @import DESeq2
+#' @import sva
+#' @export
+runDESeq2 <- function(dds,
+                      groupCol,
+                      comparison,
+                      tpm = FALSE,
+                      samples = NA,
+                      dds_out = FALSE,
+                      parallel = FALSE,
+                      cores = 4){
+  # Register parallel
+  if(parallel & is.numeric(cores)) {
+    missing_package("BiocParallel", "Bioc")
+    BiocParallel::register(BiocParallel::MulticoreParam(4))
+  }
   message("Running DESeq2")
-  
   dds <- DESeq2::DESeq(dds)
   
   if(dds_out) {
@@ -57,10 +69,14 @@ runDESeq2 <- function(md,
   # Ensure correct format for comparison
   if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
   # Extract results
+  message("Extracting results")
   res <- DESeq2::results(dds, contrast = c(groupCol, comparison))
   
   # Add TPM
-  if(tpm) res <- addTPM(res, samples, archs4db_tpm)
+  if(tpm & typeof(tpm) == "character"){
+    if(!file.exists(tpm)) stop("Database file is missing!\\nLooking for: ", tpm)
+    res <- addTPM(res, samples, tpm)
+    }
   
   return(res)
 }

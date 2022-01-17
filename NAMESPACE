@@ -2,6 +2,7 @@
 
 export(addTPM)
 export(preFilter)
+export(prepDE)
 export(prepMeta)
 export(runDESeq2)
 export(runSVA)
