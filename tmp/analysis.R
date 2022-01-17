@@ -26,7 +26,7 @@ res_DESeq2 <- runDESeq2(dds,
                         groupCol = groupCol,
                         comparison = comparison,
                         samples = dds$id,
-                        tpm = tpm, dds_out = "deseq2_1_GSE154968.RDS")
+                        tpm = tpm)#, dds_out = "deseq2_1_GSE154968.RDS")
 saveRDS(res_DESeq2, "results/deseq2res_1_GES154968.RDS")
 # Summary of results
 summary(res_DESeq2)

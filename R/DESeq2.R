@@ -23,7 +23,7 @@ prepDE <- function(md,
   }
   
   # Loading metadata
-  metadata <- prepMeta(md_file, groupCol, comparison)
+  metadata <- prepMeta(md, groupCol, comparison)
   
   # Define samples
   if(samples %in% colnames(metadata)) samples <- metadata[[samples]]

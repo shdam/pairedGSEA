@@ -14,13 +14,23 @@ sampleTable = data.frame(
                "single-end", "single-end", "paired-end", "paired-end" ) )
 
 runDEXseq <- function(dds){
-  feat_group <- rownames(txCount) %>% 
+  feat_group <- rownames(dds) %>% 
     stringr::str_split(":", simplify = TRUE)
+  svs <- as.character(design(dds))[2] %>% 
+    stringr::str_split("\\+ ", n = 2, simplify = TRUE) %>% 
+    .[2]
+  des <- as.formula(
+    paste0("~ sample + exon +", groupCol, ":exon + ", svs)
+  )
+  sampleData <- SummarizedExperiment::colData(dds) %>% 
+    tibble::as_tibble() %>% 
+    
+  
   # Convert to DEXSeq object
   dxd <- DEXSeq::DEXSeqDataSet(
     countData = assay(dds),
-    sampleData = SummarizedExperiment::colData(dds),
-    design = design(dds),
+    sampleData = SummarizedExperiment::colData(dds) %>% as.data.frame(),
+    design = des,
     featureID = feat_group[, 1],
     groupID = feat_group[, 2])
 }
