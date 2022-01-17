@@ -4,7 +4,18 @@
 \alias{runDESeq2}
 \title{Run DESeq2}
 \usage{
-runDESeq2(dds, groupCol, comparison, parallel = FALSE, cores = 4)
+runDESeq2(
+  md,
+  archs4db,
+  groupCol,
+  comparison,
+  tpm = FALSE,
+  samples = "id",
+  prefilter = 10,
+  dds_out = FALSE,
+  parallel = FALSE,
+  cores = 4
+)
 }
 \description{
 Run DESeq2

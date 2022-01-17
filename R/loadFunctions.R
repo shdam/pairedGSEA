@@ -40,15 +40,15 @@ loadArchs4 <- function(samples, archs4db){
 #' @importFrom readr read_csv
 #' @export
 prepMeta <- function(md, groupCol, comparison){
-  
-  if(type(md[1]) == "character" & length(md) == 1){
+  message("Loading metadata")
+  if(typeof(md[1]) == "character" & length(md) == 1){
     if(stringr::str_ends(md, ".xlsx")) md <- readxl::read_excel(md)
     else if(stringr::str_ends(md, "csv")) md <- readr::read_csv(md)
   }
   
   if(groupCol %!in% colnames(md)) stop("Could not find column", groupCol, "in metadata.")
   ## Ensure comparison is on the right format
-  if(type(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
+  if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
   ## Add comparison levels to metadata
   md[[groupCol]] <- factor(md[[groupCol]], levels = comparison)
   

@@ -6,10 +6,12 @@
 #' @import dplyr
 #' @export
 runSVA <- function(txCount, metadata, groupCol){
+  message("Converting to DESeq object")
   ### Create DDS from count matrix
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,
                                         colData = metadata,
                                         design = ~1)
+  message("Normalizing data")
   # Normalize counts with DESeq2
   normCounts <- DESeq2::normTransform(dds) %>% 
     SummarizedExperiment::assay()
@@ -18,11 +20,13 @@ runSVA <- function(txCount, metadata, groupCol){
   mod1 <- model.matrix(~metadata[[groupCol]])
   mod0 <- cbind(mod1[, 1])
   # Run SVA
+  message("Running SVA")
   svseq <- sva::sva(normCounts, mod1, mod0)
-  cat("\\n")
+  cat("\n")
   # Store surrogate variables and rename for ease of reference
   svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
   colnames(svs) <- paste0("sv", 1:svseq$n.sv)
+  message("Redefining DESeq design")
   # Add svs to metadata
   metadata <- dplyr::bind_cols(metadata, svs)
   # Redefine dds colData to metadata

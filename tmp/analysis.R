@@ -14,33 +14,15 @@ comparison <- "2v1"
 groupCol <- "group_nr"
 # metadata[[groupCol]] <- factor(metadata[[groupCol]], levels = comparison)
 
-metadata <- prepMeta(md_file, groupCol, comparison)
+res <- runDESeq2(md = md_file,
+                 archs4db =  archs4db,
+                 groupCol = groupCol,
+                 comparison = comparison,
+                 prefilter = 10,
+                 samples = "id",
+                 tpm = TRUE,
+                 parallel = TRUE)
 
-### Define samples of interest
-samples <- metadata$id
-
-# TPM file
-archs4db_tpm <- archs4db %>% 
-  stringr::str_replace("counts", "tpm")
-if(!file.exists(archs4db) | !file.exists(archs4db_tpm)) stop("Database file is missing!\\nLooking for: ", archs4db, "and", archs4db_tpm)
-
-
-### Load count matrix
-txCount <- loadArchs4(samples, archs4db)
-### Ensure rows in metadata matches columns in the count matrix
-txCount <- txCount[, metadata$id] %>% 
-  preFilter()
-
-
-# SVA ----
-
-dds <- runSVA(txCount, metadata, groupCol)
-
-# DESeq2 ----
-res <- runDESeq2(dds, groupCol, comparison, parallel = TRUE)
-
-### Add TPM to results
-res <- addTPM(res, samples, archs4db_tpm)
 
 # Summary of results
 summary(res)
