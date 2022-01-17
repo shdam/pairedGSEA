@@ -2,11 +2,7 @@
 
 library(DEXSeq)
 
-inDir = system.file("extdata", package="pasilla")
-countFiles = list.files(inDir, pattern="fb.txt$", full.names=TRUE)
-basename(countFiles)
-flattenedFile = list.files(inDir, pattern="gff$", full.names=TRUE)
-basename(flattenedFile)
+
 
 # Creating sample table
 sampleTable = data.frame(
@@ -17,18 +13,27 @@ sampleTable = data.frame(
   libType = c( "single-end", "paired-end", "paired-end", 
                "single-end", "single-end", "paired-end", "paired-end" ) )
 
+runDEXseq <- function(dds){
+  feat_group <- rownames(txCount) %>% 
+    stringr::str_split(":", simplify = TRUE)
+  # Convert to DEXSeq object
+  dxd <- DEXSeq::DEXSeqDataSet(
+    countData = assay(dds),
+    sampleData = SummarizedExperiment::colData(dds),
+    design = design(dds),
+    featureID = feat_group[, 1],
+    groupID = feat_group[, 2])
+}
 
-dxd <- DEXSeqDataSetFromHTSeq(
-  countFiles,
-  sampleData = sampleTable,
-  design = ~ sample + exon + condition:exon,
-  flattenedfile = flattenedFile )
+res_dexseq <- DEXSeq::DEXSeq(dds)
 
 # Normalization
-dxd <- estimateSizeFactors( dxd )
+dxd <- DEXSeq::estimateSizeFactors( dxd )
 
 # Estimate dispersion
-dxd <- estimateDispersions( dxd )
+dxd <- DEXSeq::estimateDispersions( dxd )
+
+res_dexseq <- DEXSeq::DEXSeqResults( dxd )
 
 # Shrinkage diagostic
 plotDispEsts( dxd )

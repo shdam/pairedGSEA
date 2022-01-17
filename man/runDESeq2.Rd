@@ -9,7 +9,7 @@ runDESeq2(
   groupCol,
   comparison,
   tpm = FALSE,
-  samples = NA,
+  samples = NULL,
   dds_out = FALSE,
   parallel = FALSE,
   cores = 4

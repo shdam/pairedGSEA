@@ -50,7 +50,7 @@ runDESeq2 <- function(dds,
                       groupCol,
                       comparison,
                       tpm = FALSE,
-                      samples = NA,
+                      samples = NULL,
                       dds_out = FALSE,
                       parallel = FALSE,
                       cores = 4){
@@ -62,7 +62,7 @@ runDESeq2 <- function(dds,
   message("Running DESeq2")
   dds <- DESeq2::DESeq(dds)
   
-  if(dds_out) {
+  if(typeof(dds_out) == "character") {
     check_make_dir("results/")
     saveRDS(dds, paste0("results/", dds_out))
   }
@@ -73,7 +73,7 @@ runDESeq2 <- function(dds,
   res <- DESeq2::results(dds, contrast = c(groupCol, comparison))
   
   # Add TPM
-  if(tpm & typeof(tpm) == "character"){
+  if(typeof(tpm) == "character"){
     if(!file.exists(tpm)) stop("Database file is missing!\\nLooking for: ", tpm)
     res <- addTPM(res, samples, tpm)
     }

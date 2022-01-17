@@ -13,21 +13,22 @@ loadArchs4 <- function(samples, archs4db){
    
   ### Extract count data of interest
   # Retrieve information from compressed data
-  myIds <- h5read(archs4db, "meta/samples/geo_accession")
-  tx    <- h5read(archs4db, "/meta/transcripts/ensembl_transcript_id")
-  
+  myIds <- rhdf5::h5read(archs4db, "/meta/samples/geo_accession")
+  gene <- rhdf5::h5read(archs4db, "/meta/transcripts/ensembl_gene_id")
+  tx    <- rhdf5::h5read(archs4db, "/meta/transcripts/ensembl_transcript_id")
+  gene_tx <- stringr::str_c(gene, tx, sep = ":")
   # Identify columns to be extracted
   if(!all( samples %in% myIds )) stop("Some of the chosen samples", samples, "are not in the database.")
   sample_locations = which(myIds %in% samples)
   
   # Extract gene expression from compressed data
   txCount <- archs4db %>% 
-    h5read("data/expression",
+    rhdf5::h5read("data/expression",
            index = list(sample_locations, 1:length(tx))) %>% 
     t()
   # Close file
-  H5close()
-  rownames(txCount) <- tx
+  rhdf5::H5close()
+  rownames(txCount) <- gene_tx
   colnames(txCount) <- myIds[sample_locations]
   
   return(txCount)
