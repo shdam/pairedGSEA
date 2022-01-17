@@ -41,7 +41,7 @@ loadArchs4 <- function(samples, archs4db){
 #' @importFrom readr read_csv
 #' @export
 prepMeta <- function(md, groupCol, comparison){
-  message("Loading metadata")
+  message("Preparing metadata")
   if(typeof(md[1]) == "character" & length(md) == 1){
     if(stringr::str_ends(md, ".xlsx")) md <- readxl::read_excel(md)
     else if(stringr::str_ends(md, "csv")) md <- readr::read_csv(md)
