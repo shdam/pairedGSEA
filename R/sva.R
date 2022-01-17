@@ -1,0 +1,34 @@
+#' Run SVA
+#' 
+#' @import sva
+#' @import SummarizedExperiment
+#' @importFrom S4Vectors DataFrame
+#' @import dplyr
+#' @export
+runSVA <- function(txCount, metadata, groupCol){
+  ### Create DDS from count matrix
+  dds <- DESeq2::DESeqDataSetFromMatrix(countData = txCount,
+                                        colData = metadata,
+                                        design = ~1)
+  # Normalize counts with DESeq2
+  normCounts <- DESeq2::normTransform(dds) %>% 
+    SummarizedExperiment::assay()
+  
+  # Define model matrix 
+  mod1 <- model.matrix(~metadata[[groupCol]])
+  mod0 <- cbind(mod1[, 1])
+  # Run SVA
+  svseq <- sva::sva(normCounts, mod1, mod0)
+  cat("\\n")
+  # Store surrogate variables and rename for ease of reference
+  svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
+  colnames(svs) <- paste0("sv", 1:svseq$n.sv)
+  # Add svs to metadata
+  metadata <- dplyr::bind_cols(metadata, svs)
+  # Redefine dds colData to metadata
+  SummarizedExperiment::colData(dds) <- S4Vectors::DataFrame(metadata)
+  # Redefine design formula to include svs
+  DESeq2::design(dds) <- as.formula(paste0("~", groupCol, "+", stringr::str_c("sv",1:svseq$n.sv, collapse = "+")))
+  
+  return(dds)
+}

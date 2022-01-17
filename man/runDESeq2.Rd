@@ -4,16 +4,7 @@
 \alias{runDESeq2}
 \title{Run DESeq2}
 \usage{
-runDESeq2(
-  txCount,
-  metadata,
-  groupCol,
-  comparison,
-  design,
-  preFilter = 10,
-  parallel = FALSE,
-  cores = 4
-)
+runDESeq2(dds, groupCol, comparison, parallel = FALSE, cores = 4)
 }
 \description{
 Run DESeq2
