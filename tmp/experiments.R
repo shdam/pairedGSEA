@@ -56,6 +56,7 @@ runExperiment <- function(row){
                           samples = dds$id,
                           tpm = tpm,
                           parallel = TRUE,
+                          fitType = "local",
                           BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")
   
   saveRDS(res_deseq2, paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
