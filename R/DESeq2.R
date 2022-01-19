@@ -49,18 +49,17 @@ prepDE <- function(md,
 runDESeq2 <- function(dds,
                       groupCol,
                       comparison,
+                      fitType = "local",
                       tpm = FALSE,
                       samples = NULL,
                       dds_out = FALSE,
                       parallel = FALSE,
-                      cores = 4){
+                      BPPARAM = bpparam()){
   # Register parallel
-  if(parallel & is.numeric(cores)) {
-    missing_package("BiocParallel", "Bioc")
-    BiocParallel::register(BiocParallel::MulticoreParam(4))
-  }
+
   message("Running DESeq2")
-  dds <- DESeq2::DESeq(dds)
+  dds <- DESeq2::DESeq(dds, parallel = parallel, BPPARAM = BPPARAM,
+                       fitType = fitType)
   
   if(typeof(dds_out) == "character") {
     check_make_dir("results/")
@@ -70,7 +69,7 @@ runDESeq2 <- function(dds,
   if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
   # Extract results
   message("Extracting results")
-  res <- DESeq2::results(dds, contrast = c(groupCol, comparison))
+  res <- DESeq2::results(dds, contrast = c(groupCol, comparison), parallel = parallel, BPPARAM = BPPARAM)
   
   # Add TPM
   if(typeof(tpm) == "character"){

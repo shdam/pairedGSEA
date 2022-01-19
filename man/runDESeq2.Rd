@@ -8,11 +8,12 @@ runDESeq2(
   dds,
   groupCol,
   comparison,
+  fitType = "local",
   tpm = FALSE,
   samples = NULL,
   dds_out = FALSE,
   parallel = FALSE,
-  cores = 4
+  BPPARAM = bpparam()
 )
 }
 \description{

@@ -13,7 +13,7 @@ comparison <- "2v1"
 groupCol <- "group_nr"
 
 ### Run in parallel
-BiocParallel::register(BiocParallel::MulticoreParam(4))
+# BiocParallel::register(BiocParallel::MulticoreParam(4))
 
 ### Prepare for DE
 dds <- prepDE(md = md_file,
@@ -21,12 +21,20 @@ dds <- prepDE(md = md_file,
               groupCol = groupCol,
               comparison = comparison,
               prefilter = 10)
+
+### Prepare DEXSeq
+dxd <- prepDEXSeq(dds, "group_nr")
+
 ### Run DESeq2
 res_DESeq2 <- runDESeq2(dds,
                         groupCol = groupCol,
                         comparison = comparison,
                         samples = dds$id,
                         tpm = tpm)#, dds_out = "deseq2_1_GSE154968.RDS")
+
+### Run DEXSeq
+res_dexseq <- DEXSeq::DEXSeq(dxd, BPPARAM=bpparam())
+
 saveRDS(res_DESeq2, "results/deseq2res_1_GES154968.RDS")
 # Summary of results
 summary(res_DESeq2)
