@@ -51,8 +51,7 @@ prepMeta <- function(md, groupCol, comparison){
   ### Ensure comparison is on the right format
   if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
   ### Remove irrelevant groups
-  md <- md %>% 
-    dplyr::filter(.[groupCol] %!in% comparison)
+  md <- md[md[[groupCol]] %in% comparison, ]
   ### Add comparison levels to metadata
   md[[groupCol]] <- factor(md[[groupCol]], levels = comparison)
   

@@ -53,7 +53,7 @@ runDESeq2 <- function(dds,
 
   message("Running DESeq2")
   dds <- DESeq2::DESeq(dds, parallel = parallel, BPPARAM = BPPARAM,
-                       fitType = fitType)
+                       fitType = fitType, quiet = FALSE)
   
   if(typeof(dds_out) == "character") {
     check_make_dir("results/")

@@ -1,24 +1,32 @@
-
+### Load package
+pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
 
 ### List metadata files
 md_files <- list.files("metadata", full.names = TRUE)
 
 ### Combine each and extract the comparisons to be run
 experiments <- lapply(md_files, FUN = function(x) {df <- readxl::read_xlsx(x); df$filename <- x; df})  %>% 
-  bind_rows() %>% 
-  filter(!is.na(`comparison_title (empty_if_not_okay)`))
+  dplyr::bind_rows() %>% 
+  dplyr::filter(!is.na(`comparison_title (empty_if_not_okay)`))
 
 
 
 
-### Load package
-pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
+BiocParallel::register(MulticoreParam(workers = 10))
 
 ### Run experiments
 runExperiment <- function(row){
   
+  row <- tibble::as_tibble(row, rownames = "names") %>% 
+    tidyr::pivot_wider(values_from = value, names_from = names)
+  
+  message("Running on ", row$study)
+  
   ### Load metadata
   md_file <- row$filename
+  dataname <- basename(md_file) %>% 
+    stringr::str_remove(".xlsx") %>% 
+    stringr::str_remove("csv") 
   ### Define file to read from
   archs4db <- "/home/databases/archs4/v11/human_transcript_v11_counts.h5"
   ### Define tpm file
@@ -27,6 +35,7 @@ runExperiment <- function(row){
   comparison <- row$`comparison (baseline_v_condition)`
   experimentTitle <- row$`comparison_title (empty_if_not_okay)`
   groupCol <- "group_nr"
+  
   
   ### Run in parallel
   # BiocParallel::register(BiocParallel::MulticoreParam(4))
@@ -38,8 +47,7 @@ runExperiment <- function(row){
                 comparison = comparison,
                 prefilter = 10)
   
-  ### Prepare DEXSeq
-  dxd <- prepDEXSeq(dds, groupCol)
+
   
   ### Run DESeq2
   res_deseq2 <- runDESeq2(dds,
@@ -50,19 +58,24 @@ runExperiment <- function(row){
                           parallel = TRUE,
                           BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")
   
+  saveRDS(res_deseq2, paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
+  rm(res_deseq2)
+  
+  ### Prepare DEXSeq
+  message("Initiating DEXSeq")
+  dxd <- prepDEXSeq(dds, groupCol)
+  
   ### Run DEXSeq
   res_dexseq <- DEXSeq::DEXSeq(dxd,
                                BPPARAM = BiocParallel::bpparam(),
                                quiet = FALSE)
   
-  dataname <- basename(md_file) %>% 
-    stringr::str_remove(".xlsx") %>% 
-    stringr::str_remove("csv") 
+
   
-  saveRDS(res_deseq2, paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
+  
   saveRDS(res_dexseq, paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))
   
-  
+  message(row$study, " is done.")
   
   
   # or to shrink log fold changes association with condition:
@@ -71,4 +84,5 @@ runExperiment <- function(row){
   
 }
 
-BiocParallel::bplapply(experiments[1:2], runExperiment)
+apply(experiments, 1, runExperiment)
+
