@@ -26,13 +26,13 @@ runSVA <- function(txCount, metadata, groupCol){
   # Store surrogate variables and rename for ease of reference
   svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
   colnames(svs) <- paste0("sv", 1:svseq$n.sv)
-  message("Redefining DESeq design")
+  message("Redefining DESeq design formula")
   # Add svs to metadata
   metadata <- dplyr::bind_cols(metadata, svs)
   # Redefine dds colData to metadata
   SummarizedExperiment::colData(dds) <- S4Vectors::DataFrame(metadata)
   # Redefine design formula to include svs
-  DESeq2::design(dds) <- as.formula(paste0("~", groupCol, "+", stringr::str_c("sv",1:svseq$n.sv, collapse = "+")))
+  DESeq2::design(dds) <- as.formula(paste0("~", groupCol, "+", stringr::str_c(colnames(svs), collapse = "+")))
   
   return(dds)
 }

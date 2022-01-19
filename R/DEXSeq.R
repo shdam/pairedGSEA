@@ -3,13 +3,13 @@
 #' 
 #' @import DEXSeq
 #' @export
-prepDEXseq <- function(dds, groupCol){
+prepDEXSeq <- function(dds, groupCol){
   
   ### Extract feature and group from rownames of DESeq2 opbject
   feat_group <- rownames(dds) %>% 
     stringr::str_split(":", simplify = TRUE)
   ### Extract the found surrogate variables
-  svs <- as.character(design(dds))[2] %>% 
+  svs <- as.character(DESeq2::design(dds))[2] %>% 
     stringr::str_split("\\+ ", n = 2, simplify = TRUE) %>% 
     .[2]
   ### Add surrogate variables to DEXSeq design formula

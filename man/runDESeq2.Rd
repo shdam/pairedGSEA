@@ -13,7 +13,7 @@ runDESeq2(
   samples = NULL,
   dds_out = FALSE,
   parallel = FALSE,
-  BPPARAM = bpparam()
+  BPPARAM = BiocParallel::bpparam()
 )
 }
 \description{

@@ -11,9 +11,7 @@ prepDE(
   comparison,
   tpm = FALSE,
   samples = "id",
-  prefilter = 10,
-  parallel = FALSE,
-  cores = 4
+  prefilter = 10
 )
 }
 \description{

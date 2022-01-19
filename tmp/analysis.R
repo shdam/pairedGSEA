@@ -1,7 +1,7 @@
 # nice /home/ctools/opt/R-4.0.5/bin/R
 
 ### Load package
-pkgload::load_all()
+pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
 ### Load metadata
 md_file <- "tmp/1_GSE154968.xlsx"
 ### Define file to read from
@@ -23,24 +23,30 @@ dds <- prepDE(md = md_file,
               prefilter = 10)
 
 ### Prepare DEXSeq
-dxd <- prepDEXSeq(dds, "group_nr")
+dxd <- prepDEXSeq(dds, groupCol)
 
 ### Run DESeq2
-res_DESeq2 <- runDESeq2(dds,
+res_deseq2 <- runDESeq2(dds,
                         groupCol = groupCol,
                         comparison = comparison,
                         samples = dds$id,
-                        tpm = tpm)#, dds_out = "deseq2_1_GSE154968.RDS")
+                        tpm = tpm,
+                        parallel = TRUE,
+                        BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")
 
 ### Run DEXSeq
-res_dexseq <- DEXSeq::DEXSeq(dxd, BPPARAM=bpparam())
+res_dexseq <- DEXSeq::DEXSeq(dxd,
+                             BPPARAM = BiocParallel::bpparam(),
+                             quiet = FALSE)
 
-saveRDS(res_DESeq2, "results/deseq2res_1_GES154968.RDS")
-# Summary of results
-summary(res_DESeq2)
+dataname <- basename(md_file) %>% 
+  stringr::str_remove(".xlsx") %>% 
+  stringr::str_remove("csv") 
 
-### Run DEXSeq
-res_DEXSeq <- runDEXseq()
+saveRDS(res_deseq2, paste0("results/", dataname, "deseq2res.RDS"))
+saveRDS(res_dexseq, paste0("results/", dataname, "dexseqres.RDS"))
+
+
 
 
 # or to shrink log fold changes association with condition:

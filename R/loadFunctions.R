@@ -48,9 +48,12 @@ prepMeta <- function(md, groupCol, comparison){
   }
   
   if(groupCol %!in% colnames(md)) stop("Could not find column", groupCol, "in metadata.")
-  ## Ensure comparison is on the right format
+  ### Ensure comparison is on the right format
   if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
-  ## Add comparison levels to metadata
+  ### Remove irrelevant groups
+  md <- md %>% 
+    dplyr::filter(.[groupCol] %!in% comparison)
+  ### Add comparison levels to metadata
   md[[groupCol]] <- factor(md[[groupCol]], levels = comparison)
   
   return(md)

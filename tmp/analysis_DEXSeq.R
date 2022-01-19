@@ -7,7 +7,7 @@ dxd <- prepDEXSeq(dds, "group_nr")
 
 res_dexseq <- DEXSeq::DEXSeq(dxd, BPPARAM=bpparam())
 
-# Shrinkage diagostic
+# Shrinkage diagnostic
 # plotDispEsts( dxd )
 
 

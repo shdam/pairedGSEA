@@ -9,18 +9,11 @@ prepDE <- function(md,
                    comparison,
                    tpm = FALSE,
                    samples = "id",
-                   prefilter = 10,
-                   parallel = FALSE,
-                   cores = 4){
+                   prefilter = 10){
   
   # Look for database file
   if(!file.exists(archs4db)) stop("Database file is missing!\nLooking for: ", archs4db)
   
-  # Register parallel
-  if(parallel & is.numeric(cores)) {
-    missing_package("BiocParallel", "Bioc")
-    BiocParallel::register(BiocParallel::MulticoreParam(4))
-  }
   
   # Loading metadata
   metadata <- prepMeta(md, groupCol, comparison)
@@ -45,6 +38,7 @@ prepDE <- function(md,
 #' 
 #' @import DESeq2
 #' @import sva
+#' @import BiocParallel
 #' @export
 runDESeq2 <- function(dds,
                       groupCol,
@@ -54,7 +48,7 @@ runDESeq2 <- function(dds,
                       samples = NULL,
                       dds_out = FALSE,
                       parallel = FALSE,
-                      BPPARAM = bpparam()){
+                      BPPARAM = BiocParallel::bpparam()){
   # Register parallel
 
   message("Running DESeq2")
