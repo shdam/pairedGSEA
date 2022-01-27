@@ -14,8 +14,9 @@ prepDEXSeq <- function(dds, groupCol){
     .[2]
   ### Add surrogate variables to DEXSeq design formula
   des <- as.formula(
-    paste0("~ sample + exon + condition:exon + ", svs)
+    paste0("~ sample + exon + condition:exon + ", stringr::str_c(svs, ":exon"))
   )
+  
   ### Define sample data based on DESeq2 object
   sampleData <- SummarizedExperiment::colData(dds) %>% 
     as.data.frame(row.names = .$id) %>% #row.names = .$id) %>%

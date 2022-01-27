@@ -1,5 +1,6 @@
 ### Load package
 pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
+# pkgload::load_all()
 
 ### List metadata files
 md_files <- list.files("metadata", full.names = TRUE)
@@ -47,7 +48,7 @@ runExperiment <- function(row){
                 comparison = comparison,
                 prefilter = 10)
   
-
+  # return(dds)}
   
   ### Run DESeq2
   res_deseq2 <- runDESeq2(dds,
@@ -68,6 +69,7 @@ runExperiment <- function(row){
   
   ### Run DEXSeq
   res_dexseq <- DEXSeq::DEXSeq(dxd,
+                               reducedModel = DESeq2::design(dxd) %>% as.string() %>%  stringr::str_remove(" + condition:exon") %>% as.formula(),
                                BPPARAM = BiocParallel::bpparam(),
                                quiet = FALSE)
   
@@ -85,5 +87,5 @@ runExperiment <- function(row){
   
 }
 
-apply(experiments, 1, runExperiment)
+apply(experiments[82,], 1, runExperiment)
 
