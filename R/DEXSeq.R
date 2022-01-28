@@ -3,8 +3,8 @@
 #' 
 #' @import DEXSeq
 #' @export
-prepDEXSeq <- function(dds, groupCol){
-  
+runDEXSeq <- function(dds, groupCol, comparison){
+  message("Initiating DEXSeq")
   ### Extract feature and group from rownames of DESeq2 opbject
   feat_group <- rownames(dds) %>% 
     stringr::str_split(":", simplify = TRUE)
@@ -21,10 +21,14 @@ prepDEXSeq <- function(dds, groupCol){
   sampleData <- SummarizedExperiment::colData(dds) %>% 
     as.data.frame(row.names = .$id) %>% #row.names = .$id) %>%
     dplyr::select(dplyr::all_of(groupCol), starts_with("sv")) %>% 
-    dplyr::rename(condition = dplyr::all_of(groupCol))
+    dplyr::rename(condition = dplyr::all_of(groupCol)) %>% 
+    dplyr::mutate(condition = dplyr::case_when(condition == comparison[2] ~ "condition",
+                                               condition == comparison[1] ~ "baseline") %>% 
+                    factor(levels = c("baseline", "condition")))
   
   
   ### Convert to DEXSeq object
+  message("Creating DEXSeqDataSet")
   dxd <- DEXSeq::DEXSeqDataSet(
     countData = counts(dds),
     sampleData = sampleData,
@@ -33,5 +37,19 @@ prepDEXSeq <- function(dds, groupCol){
     featureID = feat_group[, 2]
   )
   
- return(dxd) 
+  ### Run DEXSeq
+  message("Running DEXSeq")
+  dxr <- DEXSeq::DEXSeq(dxd,
+                        reducedModel = formula(
+                          paste0("~ sample + exon + ", stringr::str_c(svs, ":exon"))
+                          ),
+                        BPPARAM = BiocParallel::bpparam(),
+                        quiet = FALSE)
+  
+  ### Redine condition to original
+  sampleAnnotation(dxr)$condition <- dplyr::case_when(sampleAnnotation(dxr)$condition == "baseline" ~ comparison[1],
+                                                      TRUE ~ comparison[2]) %>% 
+    factor(levels = comparison)
+  
+ return(dxr)
 }

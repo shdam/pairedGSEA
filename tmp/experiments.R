@@ -15,6 +15,8 @@ experiments <- lapply(md_files, FUN = function(x) {df <- readxl::read_xlsx(x); d
 
 BiocParallel::register(MulticoreParam(workers = 10))
 
+# row <- experiments[82,]
+
 ### Run experiments
 runExperiment <- function(row){
   
@@ -64,19 +66,11 @@ runExperiment <- function(row){
   rm(res_deseq2)
   
   ### Prepare DEXSeq
-  message("Initiating DEXSeq")
-  dxd <- prepDEXSeq(dds, groupCol)
-  
-  ### Run DEXSeq
-  res_dexseq <- DEXSeq::DEXSeq(dxd,
-                               reducedModel = DESeq2::design(dxd) %>% as.string() %>%  stringr::str_remove(" + condition:exon") %>% as.formula(),
-                               BPPARAM = BiocParallel::bpparam(),
-                               quiet = FALSE)
-  
-
+  dxr <- runDEXSeq(dds, groupCol, comparison)
   
   
-  saveRDS(res_dexseq, paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))
+  
+  saveRDS(dxr, paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))
   
   message(row$study, " is done.")
   

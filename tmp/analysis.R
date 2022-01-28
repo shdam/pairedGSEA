@@ -15,7 +15,7 @@ groupCol <- "group_nr"
 ### Run in parallel
 # BiocParallel::register(BiocParallel::MulticoreParam(4))
 
-### Prepare for DE
+### Prepare for DE ----
 dds <- prepDE(md = md_file,
               archs4db = archs4db,
               groupCol = groupCol,
@@ -47,8 +47,16 @@ saveRDS(res_deseq2, paste0("results/", dataname, "deseq2res.RDS"))
 saveRDS(res_dexseq, paste0("results/", dataname, "dexseqres.RDS"))
 
 
-
-
+plot(metadata(dxr)$filterNumRej, 
+     type="b", ylab="number of rejections",
+     xlab="quantiles of filter")
+lines(metadata(dxr)$lo.fit, col="red")
+abline(v=metadata(dxr)$filterTheta)
+plot(metadata(res)$filterNumRej, 
+     type="b", ylab="number of rejections",
+     xlab="quantiles of filter")
+lines(metadata(res)$lo.fit, col="red")
+abline(v=metadata(res)$filterTheta)
 # or to shrink log fold changes association with condition:
 #res <- lfcShrink(dds, coef="condition_trt_vs_untrt", type="apeglm")
 
@@ -71,8 +79,9 @@ res2 %>%
   rename(Ensembl = gene) %>% 
   readr::write_csv("results/deseq2_genes_down.csv", col_names = TRUE)
   
-geneID <- dxr2$groupID[2]
+geneID <- dxrOrdered$groupID[1]
 dxr %>% as_tibble %>%  filter(groupID == geneID) %>% pull(featureID)
+dxrOrdered$symbol[1]
 
 plotDEXSeq2(dxr, geneID, names = TRUE, legend=T, cex.axis=1.2, cex=1.3, lwd=2)
 
@@ -123,7 +132,7 @@ res_df <- res_df %>%
   left_join(results_genes, by = c("transcript" = "input"))
 
 
-# Convert gene names DEXSeq
+# Convert gene names DEXSeq ----
 
 dxr_df <- dxr %>% as_tibble(rownames = "names") %>% 
   tidyr::separate(names, sep = ":", into = c("gene", "transcript"))
@@ -214,8 +223,8 @@ barplot(gp_mod_enrich, showCategory = 40, font.size = 16) +
 library("AnnotationDbi")
 library("org.Hs.eg.db")
 
-res$symbol <- mapIds(org.Hs.eg.db,
-                     keys=row.names(res) %>% stringr::str_split(":", simplify = T) %>% .[,1],
+res2$symbol <- mapIds(org.Hs.eg.db,
+                     keys=res2$gene,
                      column="SYMBOL",
                      keytype="ENSEMBL",
                      multiVals="first")
@@ -226,3 +235,59 @@ res$entrez <- mapIds(org.Hs.eg.db,
                      multiVals="first")
 resOrdered <- res[order(res$padj),]
 head(resOrdered)
+
+res %>% 
+  as_tibble() %>% 
+  filter(log2FoldChange > 0 & padj < 0.05) %>% 
+  select(symbol) %>% 
+  rename(`Gene symbol` = symbol) %>% 
+  readr::write_csv("results/deseq2_symbol_genes_up.csv", col_names = TRUE)
+
+res %>% 
+  as_tibble() %>% 
+  filter(log2FoldChange < 0 & padj < 0.05) %>% 
+  select(symbol) %>% 
+  rename(`Gene symbol` = symbol) %>% 
+  readr::write_csv("results/deseq2_symbol_genes_down.csv", col_names = TRUE)
+
+
+dxr2 <- as_tibble(dxr) %>% 
+  filter(padj < 0.05)
+dxr2$symbol <- mapIds(org.Hs.eg.db,
+                     keys=dxr2$groupID,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+dxrOrdered <- dxr2[order(dxr2$padj),]
+dxrOrdered %>% select(symbol, log2fold_1_2, everything())
+
+res2Ordered <- resOrdered %>%
+  as_tibble() %>% 
+  filter(padj < 0.05)
+
+resdxr <- res2 %>%
+  left_join(dxrOrdered, by = c("transcript" = "featureID"))
+
+library(ggplot2)
+resdxr %>% 
+  ggplot(aes(x = log2FoldChange, y = log2fold_1_2)) +
+  geom_point()
+  
+
+resdxr %>% 
+  filter(is.na(log2FoldChange) | is.na(log2fold_1_2)) %>% 
+  select(-gene, -transcript) %>% 
+  View
+
+
+
+dxr2 <- dxr %>% as_tibble(rownames = "transcript") %>% filter(padj < 0.1)
+
+oneGenes <- names(table(dxr$groupID)[which(table(dxr$groupID)==1)])
+all(is.na(dxr[which(dxr$groupID %in% oneGenes),"pvalue"]))
+res2 %>% 
+  filter(gene %in% names(table(dxr$groupID)[which(table(dxr$groupID)==1)]))
+
+
+plotDEXSeq2( dxr, "ENSG00000069535",
+             legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2 )
