@@ -5,6 +5,8 @@
 #' @export
 runDEXSeq <- function(dds, groupCol, comparison){
   message("Initiating DEXSeq")
+  # Ensure correct format for comparison
+  if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
   ### Extract feature and group from rownames of DESeq2 opbject
   feat_group <- rownames(dds) %>% 
     stringr::str_split(":", simplify = TRUE)
@@ -22,8 +24,8 @@ runDEXSeq <- function(dds, groupCol, comparison){
     as.data.frame(row.names = .$id) %>% #row.names = .$id) %>%
     dplyr::select(dplyr::all_of(groupCol), starts_with("sv")) %>% 
     dplyr::rename(condition = dplyr::all_of(groupCol)) %>% 
-    dplyr::mutate(condition = dplyr::case_when(condition == comparison[2] ~ "condition",
-                                               condition == comparison[1] ~ "baseline") %>% 
+    dplyr::mutate(condition = dplyr::case_when(condition == comparison[1] ~ "baseline",
+                                               condition == comparison[2] ~ "condition") %>% 
                     factor(levels = c("baseline", "condition")))
   
   
@@ -47,7 +49,7 @@ runDEXSeq <- function(dds, groupCol, comparison){
                         quiet = FALSE)
   
   ### Redine condition to original
-  sampleAnnotation(dxr)$condition <- dplyr::case_when(sampleAnnotation(dxr)$condition == "baseline" ~ comparison[1],
+  DEXSeq::sampleAnnotation(dxr)$condition <- dplyr::case_when(DEXSeq::sampleAnnotation(dxr)$condition == "baseline" ~ comparison[1],
                                                       TRUE ~ comparison[2]) %>% 
     factor(levels = comparison)
   

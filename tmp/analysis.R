@@ -12,6 +12,10 @@ tpm <- stringr::str_replace(archs4db, "counts", "tpm")
 comparison <- "2v1"
 groupCol <- "group_nr"
 
+# Load GTF ----
+# rtracklayer::import("/home/databases/archs4/v11/Homo_sapiens.GRCh38.90.chr_patch_hapl_scaff.gtf.gz")
+gtf <- readRDS("gtfextract.rds")
+
 ### Run in parallel
 # BiocParallel::register(BiocParallel::MulticoreParam(4))
 
@@ -79,13 +83,8 @@ res2 %>%
   rename(Ensembl = gene) %>% 
   readr::write_csv("results/deseq2_genes_down.csv", col_names = TRUE)
   
-geneID <- dxrOrdered$groupID[1]
-dxr %>% as_tibble %>%  filter(groupID == geneID) %>% pull(featureID)
-dxrOrdered$symbol[1]
 
-plotDEXSeq2(dxr, geneID, names = TRUE, legend=T, cex.axis=1.2, cex=1.3, lwd=2)
-
-resLFC <- lfcShrink(res=res)
+# resLFC <- lfcShrink(res=res)
 
 # keep only the significant genes
 results_sig = subset(res, padj < 0.05)
@@ -259,16 +258,26 @@ dxr2$symbol <- mapIds(org.Hs.eg.db,
                      keytype="ENSEMBL",
                      multiVals="first")
 dxrOrdered <- dxr2[order(dxr2$padj),]
-dxrOrdered %>% select(symbol, log2fold_1_2, everything())
+dxrOrdered %>% dplyr::select(symbol, log2fold_1_2, everything())
+
+geneID <- dxrOrdered$groupID[1]
+dxr %>% as_tibble %>%  filter(groupID == geneID) %>% pull(featureID)
+dxrOrdered$symbol[1]
+
+plotDEXSeq2(dxr, geneID, names = TRUE, legend=T, cex.axis=1.2, cex=1.3, lwd=2)
+
+
 
 res2Ordered <- resOrdered %>%
   as_tibble() %>% 
   filter(padj < 0.05)
 
 resdxr <- res2 %>%
-  left_join(dxrOrdered, by = c("transcript" = "featureID"))
+  left_join(dxrOrdered, by = c("transcript" = "featureID")) %>% 
+  filter(transcript != "missing" & groupID != "missing")
 
 library(ggplot2)
+library(tidyverse)
 resdxr %>% 
   ggplot(aes(x = log2FoldChange, y = log2fold_1_2)) +
   geom_point()
@@ -276,10 +285,11 @@ resdxr %>%
 
 resdxr %>% 
   filter(is.na(log2FoldChange) | is.na(log2fold_1_2)) %>% 
-  select(-gene, -transcript) %>% 
+  dplyr::select(-gene, -transcript) %>% 
   View
 
-
+table(table(dxr$groupID))
+table(table(res$gene))
 
 dxr2 <- dxr %>% as_tibble(rownames = "transcript") %>% filter(padj < 0.1)
 
@@ -289,5 +299,5 @@ res2 %>%
   filter(gene %in% names(table(dxr$groupID)[which(table(dxr$groupID)==1)]))
 
 
-plotDEXSeq2( dxr, "ENSG00000069535",
+plotDEXSeq2( dxr, "missing",
              legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2 )

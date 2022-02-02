@@ -39,6 +39,8 @@ runExperiment <- function(row){
   experimentTitle <- row$`comparison_title (empty_if_not_okay)`
   groupCol <- "group_nr"
   
+  # Ensure correct format for comparison
+  if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
   
   ### Run in parallel
   # BiocParallel::register(BiocParallel::MulticoreParam(4))

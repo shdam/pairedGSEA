@@ -5,6 +5,7 @@
 #' @export
 prepDE <- function(md,
                    archs4db,
+                   gtf = NULL,
                    groupCol,
                    comparison,
                    tpm = FALSE,
@@ -23,7 +24,7 @@ prepDE <- function(md,
   else if(!(typeof(samples) == "character" & length(samples) > 1)) stop("Please specificy 'samples' as a column in metadata or as a vector of samples in database.")
   
   ### Load count matrix
-  txCount <- loadArchs4(samples, archs4db)
+  txCount <- loadArchs4(samples, archs4db, gtf)
   ### Ensure rows in metadata matches columns in the count matrix
   txCount <- txCount[, metadata$id]
   ### Pre-filter
