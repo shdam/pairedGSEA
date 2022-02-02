@@ -4,7 +4,7 @@
 \alias{loadArchs4}
 \title{Load data from ARCHS4 database}
 \usage{
-loadArchs4(samples, archs4db)
+loadArchs4(samples, archs4db, gtf = NULL)
 }
 \description{
 Load data from ARCHS4 database

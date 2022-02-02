@@ -4,7 +4,7 @@
 \alias{addTPM}
 \title{Add TPM}
 \usage{
-addTPM(res, samples, archs4db_tpm)
+addTPM(res, samples, archs4db_tpm, gtf = NULL)
 }
 \description{
 Add TPM

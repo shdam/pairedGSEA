@@ -48,6 +48,7 @@ runDESeq2 <- function(dds,
                       fitType = "local",
                       tpm = FALSE,
                       samples = NULL,
+                      gtf = NULL,
                       dds_out = FALSE,
                       parallel = FALSE,
                       BPPARAM = BiocParallel::bpparam()){
@@ -70,7 +71,7 @@ runDESeq2 <- function(dds,
   # Add TPM
   if(typeof(tpm) == "character"){
     if(!file.exists(tpm)) stop("Database file is missing!\\nLooking for: ", tpm)
-    res <- addTPM(res, samples, tpm)
+    res <- addTPM(res, samples, tpm, gtf)
     }
   
   # Convert result to tibble

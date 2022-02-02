@@ -7,6 +7,7 @@
 prepDE(
   md,
   archs4db,
+  gtf = NULL,
   groupCol,
   comparison,
   tpm = FALSE,

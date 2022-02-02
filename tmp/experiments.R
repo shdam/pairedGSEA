@@ -62,6 +62,7 @@ runExperiment <- function(row){
                    comparison = comparison,
                    samples = dds$id,
                    tpm = tpm,
+                   gtf = gtf,
                    parallel = TRUE,
                    fitType = "local",
                    BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")

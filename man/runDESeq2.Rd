@@ -11,6 +11,7 @@ runDESeq2(
   fitType = "local",
   tpm = FALSE,
   samples = NULL,
+  gtf = NULL,
   dds_out = FALSE,
   parallel = FALSE,
   BPPARAM = BiocParallel::bpparam()
