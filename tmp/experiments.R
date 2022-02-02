@@ -66,13 +66,12 @@ runExperiment <- function(row){
                    fitType = "local",
                    BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")
   
+  
   saveRDS(res, paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
   rm(res)
   
-  ### Prepare DEXSeq
+  ### Run DEXSeq
   dxr <- runDEXSeq(dds, groupCol, comparison)
-  
-  
   
   saveRDS(dxr, paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))
   

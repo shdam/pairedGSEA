@@ -73,5 +73,11 @@ runDESeq2 <- function(dds,
     res <- addTPM(res, samples, tpm)
     }
   
+  # Convert result to tibble
+  res <- res %>% 
+    tibble::as_tibble(rownames = "gene_tx") %>% 
+    tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
+    dplyr::rename(log2FC = log2FoldChange)
+  
   return(res)
 }

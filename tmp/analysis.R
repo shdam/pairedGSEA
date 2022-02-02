@@ -69,9 +69,9 @@ abline(v=metadata(res)$filterTheta)
 
 
 res <- readRDS("results/32_GSE117523_deseq2res_CDK12 overexpression.RDS")
-dxr <- readRDS("results/32_GSE117523_dexseqres_CDK12 overexpression.RDS")
+dxr12 <- readRDS("results/32_GSE117523_dexseqres12_CDK12 overexpression.RDS")
 
-dxr2 <- dxr %>% as_tibble(rownames = "transcript") %>% filter(padj < 0.05)
+dxr2 <- dxr12 %>% as_tibble(rownames = "transcript") %>% filter(padj < 0.05)
 res2 <- res %>% as_tibble(rownames = "transcript") %>% filter(padj < 0.05 & !is.na(padj)) %>% 
   tidyr::separate(transcript, sep = ":", into = c("gene", "transcript"))
 
@@ -230,12 +230,12 @@ res2$symbol <- mapIds(org.Hs.eg.db,
                      column="SYMBOL",
                      keytype="ENSEMBL",
                      multiVals="first")
-res$entrez <- mapIds(org.Hs.eg.db,
+res2$entrez <- mapIds(org.Hs.eg.db,
                      keys=row.names(res) %>% stringr::str_split(":", simplify = T) %>% .[,1],
                      column="ENTREZID",
                      keytype="ENSEMBL",
                      multiVals="first")
-resOrdered <- res[order(res$padj),]
+resOrdered <- res2[order(res2$padj),]
 head(resOrdered)
 
 res %>% 
@@ -261,7 +261,7 @@ dxr2$symbol <- mapIds(org.Hs.eg.db,
                      keytype="ENSEMBL",
                      multiVals="first")
 dxrOrdered <- dxr2[order(dxr2$padj),]
-dxrOrdered %>% dplyr::select(symbol, log2fold_1_2, everything())
+dxrOrdered %>% dplyr::select(symbol, log2fold_condition_baseline, everything())
 
 geneID <- dxrOrdered$groupID[1]
 dxr %>% as_tibble %>%  filter(groupID == geneID) %>% pull(featureID)
@@ -282,7 +282,7 @@ resdxr <- res2 %>%
 library(ggplot2)
 library(tidyverse)
 resdxr %>% 
-  ggplot(aes(x = log2FoldChange, y = log2fold_1_2)) +
+  ggplot(aes(x = log2FoldChange, y = log2fold_2_condition_1_baseline)) +
   geom_point()
   
 

@@ -24,9 +24,9 @@ runDEXSeq <- function(dds, groupCol, comparison){
     as.data.frame(row.names = .$id) %>% #row.names = .$id) %>%
     dplyr::select(dplyr::all_of(groupCol), starts_with("sv")) %>% 
     dplyr::rename(condition = dplyr::all_of(groupCol)) %>% 
-    dplyr::mutate(condition = dplyr::case_when(condition == comparison[1] ~ "baseline",
-                                               condition == comparison[2] ~ "condition") %>% 
-                    factor(levels = c("baseline", "condition")))
+    dplyr::mutate(condition = dplyr::case_when(condition == comparison[1] ~ 1,
+                                               condition == comparison[2] ~ 2) %>% 
+                    factor(levels = c(1, 2)))
   
   
   ### Convert to DEXSeq object
@@ -42,12 +42,14 @@ runDEXSeq <- function(dds, groupCol, comparison){
   ### Run DEXSeq
   message("Running DEXSeq")
   dxr <- DEXSeq::DEXSeq(dxd,
-                        reducedModel = formula(
+                        reducedModel = as.formula(
                           paste0("~ sample + exon + ", stringr::str_c(svs, ":exon"))
                           ),
                         BPPARAM = BiocParallel::bpparam(),
                         quiet = FALSE)
-  
+  dxr <- dxr %>% 
+    tibble::as_tibble() %>% 
+    dplyr::rename(log2FC_baseline_vs_condition = log2fold_2_1)
   ### Redefine condition to original
   # DEXSeq::sampleAnnotation(dxr)$condition <- dplyr::case_when(DEXSeq::sampleAnnotation(dxr)$condition == "baseline" ~ comparison[1],
   #                                                     TRUE ~ comparison[2]) %>% 
