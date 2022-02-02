@@ -11,7 +11,8 @@ experiments <- lapply(md_files, FUN = function(x) {df <- readxl::read_xlsx(x); d
   dplyr::filter(!is.na(`comparison_title (empty_if_not_okay)`))
 
 
-
+gtf <- readRDS("gtfextract.rds")
+gtf <- tibble::tibble(gene = gtf$gene, transcript = gtf$transcript)
 
 BiocParallel::register(MulticoreParam(workers = 10))
 
@@ -47,6 +48,7 @@ runExperiment <- function(row){
   
   ### Prepare for DE
   dds <- prepDE(md = md_file,
+                gtf = gtf,
                 archs4db = archs4db,
                 groupCol = groupCol,
                 comparison = comparison,
@@ -55,17 +57,17 @@ runExperiment <- function(row){
   # return(dds)}
   
   ### Run DESeq2
-  res_deseq2 <- runDESeq2(dds,
-                          groupCol = groupCol,
-                          comparison = comparison,
-                          samples = dds$id,
-                          tpm = tpm,
-                          parallel = TRUE,
-                          fitType = "local",
-                          BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")
+  res <- runDESeq2(dds,
+                   groupCol = groupCol,
+                   comparison = comparison,
+                   samples = dds$id,
+                   tpm = tpm,
+                   parallel = TRUE,
+                   fitType = "local",
+                   BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")
   
-  saveRDS(res_deseq2, paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
-  rm(res_deseq2)
+  saveRDS(res, paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
+  rm(res)
   
   ### Prepare DEXSeq
   dxr <- runDEXSeq(dds, groupCol, comparison)

@@ -13,7 +13,9 @@ comparison <- "2v1"
 groupCol <- "group_nr"
 
 # Load GTF ----
-# rtracklayer::import("/home/databases/archs4/v11/Homo_sapiens.GRCh38.90.chr_patch_hapl_scaff.gtf.gz")
+track <- rtracklayer::import("/home/databases/archs4/v11/Homo_sapiens.GRCh38.90.chr_patch_hapl_scaff.gtf.gz")
+gtf <- tibble::tibble(gene = track$gene_id, transcript = track$transcript_id)
+saveRDS(gtf, "gtf.rds")
 gtf <- readRDS("gtfextract.rds")
 
 ### Run in parallel
@@ -21,6 +23,7 @@ gtf <- readRDS("gtfextract.rds")
 
 ### Prepare for DE ----
 dds <- prepDE(md = md_file,
+              gtf = gtf,
               archs4db = archs4db,
               groupCol = groupCol,
               comparison = comparison,

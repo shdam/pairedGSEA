@@ -15,12 +15,9 @@ loadArchs4 <- function(samples, archs4db, gtf = NULL){
   # Retrieve information from compressed data
   
   myIds <- rhdf5::h5read(archs4db, "/meta/samples/geo_accession")
-  if(is.null(gtf)){
-    gene <- rhdf5::h5read(archs4db, "/meta/transcripts/ensembl_gene_id")
-  } else {gene <- gtf$gene}
-  
   tx    <- rhdf5::h5read(archs4db, "/meta/transcripts/ensembl_transcript_id")
-  gene_tx <- stringr::str_c(gene, tx, sep = ":")
+  if(is.null(gtf)) gene <- rhdf5::h5read(archs4db, "/meta/transcripts/ensembl_gene_id")
+  
   # Identify columns to be extracted
   if(!all( samples %in% myIds )) stop("Some of the chosen samples", samples, "are not in the database.")
   sample_locations = which(myIds %in% samples)
@@ -32,6 +29,19 @@ loadArchs4 <- function(samples, archs4db, gtf = NULL){
     t()
   # Close file
   rhdf5::H5close()
+  
+  if(is.null(gtf)){
+    gene_tx <- stringr::str_c(gene, tx, sep = ":")
+  } else{
+    gene_tx <- gtf %>% 
+      dplyr::distinct(transcript, .keep_all = TRUE) %>% 
+      dplyr::right_join(tibble::tibble(transcript = tx), by = "transcript") %>% 
+      .[match(tx, .$transcript), ] %>% 
+      tidyr::unite(gene, transcript, col = "gene_tx", sep = ":") %>% 
+      dplyr::pull("gene_tx")
+  }
+  
+  
   rownames(txCount) <- gene_tx
   colnames(txCount) <- myIds[sample_locations]
   
@@ -78,12 +88,12 @@ preFilter <- function(txCount, thres = 10){
 #' Add TPM
 #' 
 #' @export
-addTPM <- function(res, samples, archs4db_tpm){
+addTPM <- function(res, samples, archs4db_tpm, gtf = NULL){
   ### Add TPM values
-  txTPM <- loadArchs4(samples, archs4db_tpm)
+  txTPM <- loadArchs4(samples, archs4db_tpm, gtf = gtf)
   
   res$tpm <- txTPM[rownames(res), ] %>% 
-    rowSums()
+    rowMeans()
   return(res)
 }
 

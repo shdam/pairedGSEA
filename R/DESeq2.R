@@ -19,9 +19,10 @@ prepDE <- function(md,
   # Loading metadata
   metadata <- prepMeta(md, groupCol, comparison)
   
+  
   # Define samples
-  if(samples %in% colnames(metadata)) samples <- metadata[[samples]]
-  else if(!(typeof(samples) == "character" & length(samples) > 1)) stop("Please specificy 'samples' as a column in metadata or as a vector of samples in database.")
+  if(samples %in% colnames(metadata)) {samples <- metadata[[samples]]
+  } else if(!(typeof(samples) == "character" & length(samples) > 1)) stop("Please specificy 'samples' as a column in metadata or as a vector of samples in database.")
   
   ### Load count matrix
   txCount <- loadArchs4(samples, archs4db, gtf)
