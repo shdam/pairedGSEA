@@ -48,10 +48,10 @@ runDEXSeq <- function(dds, groupCol, comparison){
                         BPPARAM = BiocParallel::bpparam(),
                         quiet = FALSE)
   
-  ### Redine condition to original
-  DEXSeq::sampleAnnotation(dxr)$condition <- dplyr::case_when(DEXSeq::sampleAnnotation(dxr)$condition == "baseline" ~ comparison[1],
-                                                      TRUE ~ comparison[2]) %>% 
-    factor(levels = comparison)
+  ### Redefine condition to original
+  # DEXSeq::sampleAnnotation(dxr)$condition <- dplyr::case_when(DEXSeq::sampleAnnotation(dxr)$condition == "baseline" ~ comparison[1],
+  #                                                     TRUE ~ comparison[2]) %>% 
+  #   factor(levels = comparison)
   
  return(dxr)
 }
