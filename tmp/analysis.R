@@ -69,25 +69,26 @@ abline(v=metadata(res)$filterTheta)
 
 
 res <- readRDS("results/32_GSE117523_deseq2res_CDK12 overexpression.RDS")
-dxr12 <- readRDS("results/32_GSE117523_dexseqres12_CDK12 overexpression.RDS")
+dxr <- readRDS("results/32_GSE117523_dexseqres_CDK12 overexpression.RDS")
 
-dxr2 <- dxr12 %>% as_tibble(rownames = "transcript") %>% filter(padj < 0.05)
-res2 <- res %>% as_tibble(rownames = "transcript") %>% filter(padj < 0.05 & !is.na(padj)) %>% 
-  tidyr::separate(transcript, sep = ":", into = c("gene", "transcript"))
+dxr2 <- dxr %>% filter(padj < 0.05)
+res2 <- res %>% filter(padj < 0.05)
 
 res2 %>% 
-  filter(log2FoldChange > 0) %>% 
+  filter(log2FC > 0) %>% 
   select(gene) %>% 
   rename(Ensembl = gene) %>% 
   readr::write_csv("results/deseq2_genes_up.csv", col_names = TRUE)
 res2 %>% 
-  filter(log2FoldChange < 0) %>% 
+  filter(log2FC < 0) %>% 
   select(gene) %>% 
   rename(Ensembl = gene) %>% 
   readr::write_csv("results/deseq2_genes_down.csv", col_names = TRUE)
   
 
 # resLFC <- lfcShrink(res=res)
+
+# g:profiler ----
 
 # keep only the significant genes
 results_sig = subset(res, padj < 0.05)
@@ -117,7 +118,7 @@ p2 = gostplot(multi_gp, interactive = TRUE)
 
 
 
-# Convert gene names DESeq2
+# Convert gene names DESeq2 ----
 
 res_df <- res %>% as_tibble(rownames = "names") %>% 
   tidyr::separate(names, sep = ":", into = c("gene", "transcript"))
@@ -179,7 +180,7 @@ p2 = gostplot(dxr_multi_gp, interactive = TRUE)
 
 
 
-# Integrating with external tools for visualisations
+# Integrating with external tools for visualisations 
 
 library(clusterProfiler)
 library(enrichplot)
@@ -235,33 +236,35 @@ res2$entrez <- mapIds(org.Hs.eg.db,
                      column="ENTREZID",
                      keytype="ENSEMBL",
                      multiVals="first")
-resOrdered <- res2[order(res2$padj),]
-head(resOrdered)
+# resOrdered <- res2[order(res2$padj),]
+# head(resOrdered)
 
 res %>% 
   as_tibble() %>% 
-  filter(log2FoldChange > 0 & padj < 0.05) %>% 
+  filter(log2FC > 0 & padj < 0.05) %>% 
   select(symbol) %>% 
   rename(`Gene symbol` = symbol) %>% 
   readr::write_csv("results/deseq2_symbol_genes_up.csv", col_names = TRUE)
 
 res %>% 
   as_tibble() %>% 
-  filter(log2FoldChange < 0 & padj < 0.05) %>% 
+  filter(log2FC < 0 & padj < 0.05) %>% 
   select(symbol) %>% 
   rename(`Gene symbol` = symbol) %>% 
   readr::write_csv("results/deseq2_symbol_genes_down.csv", col_names = TRUE)
 
 
-dxr2 <- as_tibble(dxr) %>% 
-  filter(padj < 0.05)
+
 dxr2$symbol <- mapIds(org.Hs.eg.db,
                      keys=dxr2$groupID,
                      column="SYMBOL",
                      keytype="ENSEMBL",
                      multiVals="first")
+
 dxrOrdered <- dxr2[order(dxr2$padj),]
-dxrOrdered %>% dplyr::select(symbol, log2fold_condition_baseline, everything())
+resOrdered <- res2[order(res2$padj), ]
+# dxrOrdered %>% dplyr::select(symbol, log2FC_baseline_vs_condition, everything())
+# resOrdered %>% dplyr::select(symbol, log2FC, everything())
 
 geneID <- dxrOrdered$groupID[1]
 dxr %>% as_tibble %>%  filter(groupID == geneID) %>% pull(featureID)
@@ -271,18 +274,15 @@ plotDEXSeq2(dxr, geneID, names = TRUE, legend=T, cex.axis=1.2, cex=1.3, lwd=2)
 
 
 
-res2Ordered <- resOrdered %>%
-  as_tibble() %>% 
-  filter(padj < 0.05)
-
 resdxr <- res2 %>%
-  left_join(dxrOrdered, by = c("transcript" = "featureID")) %>% 
-  filter(transcript != "missing" & groupID != "missing")
+  full_join(dxrOrdered, by = c("transcript" = "featureID", "symbol"))# %>% 
+  # filter(transcript != "missing" & groupID != "missing")
 
 library(ggplot2)
 library(tidyverse)
 resdxr %>% 
-  ggplot(aes(x = log2FoldChange, y = log2fold_2_condition_1_baseline)) +
+  filter(!is.na(log2FC) & !is.na(log2FC_baseline_vs_condition)) %>% 
+  ggplot(aes(x = log2FC, y = log2FC_baseline_vs_condition)) +
   geom_point()
   
 
@@ -304,3 +304,11 @@ res2 %>%
 
 plotDEXSeq2( dxr, "missing",
              legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2 )
+
+
+# Correlation check ----
+
+dxr %>% 
+  left_join(res, by= c("featureID" = "transcript")) %>% 
+  filter(padj.x < 0.05 & padj.y < 0.05) %>% 
+  select(featureID, log2FC, log2FC_baseline_vs_condition)

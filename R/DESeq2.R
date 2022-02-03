@@ -63,7 +63,7 @@ runDESeq2 <- function(dds,
     saveRDS(dds, paste0("results/", dds_out))
   }
   # Ensure correct format for comparison
-  if(typeof(comparison) != "list") comparison <- stringr::str_split(comparison, "v", simplify = T)
+  if(length(comparison) == 1) comparison <- stringr::str_split(comparison, "v", simplify = T)
   # Extract results
   message("Extracting results")
   res <- DESeq2::results(dds, contrast = c(groupCol, comparison), parallel = parallel, BPPARAM = BPPARAM)
