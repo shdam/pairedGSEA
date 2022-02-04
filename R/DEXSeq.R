@@ -57,3 +57,66 @@ runDEXSeq <- function(dds, groupCol, comparison){
   
  return(dxr)
 }
+
+
+
+
+
+perGeneQValue2 <- function (object,
+                            gene = "geneID",
+                            p = "pvalue",
+                            method = DEXSeq:::perGeneQValueExact) 
+{
+  # Code adapted from DEXSeq::perGeneQValue
+  
+  stopifnot(is(object, "DEXSeqResults"))
+  wTest <- which(!is.na(object$padj))
+  pvals <- object[[p]][wTest]
+  geneID <- factor(object[[gene]][wTest])
+  geneSplit <- split(seq(along = geneID), geneID)
+  pGene <- sapply(geneSplit, function(i) min(pvals[i]))
+  stopifnot(all(is.finite(pGene)))
+  theta <- unique(sort(pGene))
+  q <- method(pGene, theta, geneSplit)
+  res <- rep(NA_real_, length(pGene))
+  res <- q[match(pGene, theta)]
+  res <- pmin(1, res)
+  names(res) <- names(geneSplit)
+  stopifnot(!any(is.na(res)))
+  return(res)
+}
+
+
+#' Per gene p value aggregation
+#' 
+#' @importFrom aggregation lancaster
+#' @importFrom purrr when
+#' @export
+perGenePValue <- function (df,
+                           gene = "gene",
+                           p = "pvalue",
+                           weights = "baseMean",
+                           lfc = NULL){
+  stopifnot(typeof(df) == "list")
+  stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
+  
+  res <- df %>% 
+    dplyr::filter(!is.na(padj)) %>% 
+    dplyr::rename(pvalue = .data[[p]],
+                  ensembl_gene = .data[[gene]]) %>% 
+    # Prevent warning from Lancaster
+    dplyr::mutate(pvalue = dplyr::case_when(pvalue < 10e-320 ~ 10e-320,
+                                            TRUE ~ pvalue)) %>% 
+    dplyr::group_by(ensembl_gene) %>% 
+    # p value aggregation
+    purrr::when(is.null(lfc) ~ 
+                  dplyr::summarise(., pvalue = aggregation::lancaster(pvalue,
+                                                                      .data[[weights]])),
+                !is.null(lfc) ~ 
+                  dplyr::summarise(., pvalue = aggregation::lancaster(pvalue,
+                                                                   .data[[weights]]),
+                                   lfc = weighted.mean(.data[[lfc]], .data[[weights]]))) %>% 
+    dplyr::mutate(pvalue = dplyr::case_when(pvalue < 10e-320 ~ 10e-320,
+                                            TRUE ~ pvalue)) 
+  return(res)
+}

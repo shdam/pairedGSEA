@@ -67,9 +67,17 @@ abline(v=metadata(res)$filterTheta)
 # or to shrink log fold changes association with condition:
 #res <- lfcShrink(dds, coef="condition_trt_vs_untrt", type="apeglm")
 
-
+# 82
 res <- readRDS("results/32_GSE117523_deseq2res_CDK12 overexpression.RDS")
 dxr <- readRDS("results/32_GSE117523_dexseqres_CDK12 overexpression.RDS")
+# 1
+res <- readRDS("results/1_GSE154968_deseq2res_HaCaT cells transfected with miR-21-3p.RDS")
+dxr <- readRDS("results/1_GSE154968_dexseqres_HaCaT cells transfected with miR-21-3p.RDS")
+# 2
+res <- readRDS("results/10_GSE81460_deseq2res_ACIN1 knockdown.RDS")
+dxr <- readRDS("results/10_GSE81460_dexseqres_ACIN1 knockdown.RDS")
+
+
 
 dxr2 <- dxr %>% filter(padj < 0.05)
 res2 <- res %>% filter(padj < 0.05)
@@ -275,7 +283,7 @@ plotDEXSeq2(dxr, geneID, names = TRUE, legend=T, cex.axis=1.2, cex=1.3, lwd=2)
 
 
 resdxr <- res2 %>%
-  full_join(dxrOrdered, by = c("transcript" = "featureID", "symbol"))# %>% 
+  full_join(dxrOrdered, by = c("transcript" = "featureID"))# %>% 
   # filter(transcript != "missing" & groupID != "missing")
 
 library(ggplot2)
@@ -312,3 +320,30 @@ dxr %>%
   left_join(res, by= c("featureID" = "transcript")) %>% 
   filter(padj.x < 0.05 & padj.y < 0.05) %>% 
   select(featureID, log2FC, log2FC_baseline_vs_condition)
+
+
+
+# p value aggregation ----
+
+dxr_agg <- perGenePValue(dxr, gene = "groupID", weights = "exonBaseMean") %>% 
+  dplyr::filter(pvalue < 0.05)
+res_agg <- perGenePValue(res, gene = "gene", weights = "baseMean", lfc = "log2FC") %>% 
+  dplyr::filter(pvalue < 0.05)
+
+
+(comb <- dplyr::full_join(res_agg, dxr_agg, by = gene, suffix = c("_deseq2", "_dexseq")))
+
+
+# Add gene names with gtf ----
+
+load('/home/databases/archs4/v11/Homo_sapiens.GRCh38.90.chr_patch_hapl_scaff.tx.annoation.Rdata')
+ensAnnot[which(ensAnnot$gene_id == 'ENSG00000283384'),c('gene_id','gene_name')]
+genes <- ensAnnot %>% dplyr::select(gene_id, gene_name) %>% dplyr::distinct()
+rm(ensAnnot)
+
+
+comb$symbol <- comb %>% 
+  left_join(genes,
+            by = c("gene" = "gene_id"))
+
+
