@@ -16,7 +16,7 @@ gtf <- tibble::tibble(gene = gtf$gene, transcript = gtf$transcript)
 
 BiocParallel::register(MulticoreParam(workers = 10))
 
-# row <- experiments[2,]
+# row <- experiments[82,]
 
 ### Run experiments ----
 runExperiment <- function(row){
@@ -90,12 +90,20 @@ apply(experiments[6:nrow(experiments),], 1, runExperiment)
 
 ### Analyse experiment results ----
 
-# Load gene names
-load('/home/databases/archs4/v11/Homo_sapiens.GRCh38.90.chr_patch_hapl_scaff.tx.annoation.Rdata')
-genes <- ensAnnot %>% dplyr::select(gene_id, gene_name) %>% dplyr::distinct()
-rm(ensAnnot)
+# Load gene names (not relevant)
+# load('/home/databases/archs4/v11/Homo_sapiens.GRCh38.90.chr_patch_hapl_scaff.tx.annoation.Rdata')
+# genes <- ensAnnot %>% dplyr::select(gene_id, gene_name) %>% dplyr::distinct()
+# rm(ensAnnot)
 
+# Load MSigDB
 gene_sets <- msigdbr::msigdbr(category = "C5")
+gene_sets <- gene_sets %>% 
+  dplyr::select(gs_name, ensembl_gene) %>% 
+  base::split(.$gs_name) %>% 
+  purrr::map(.f = ~ .x$ensembl_gene)
+  # dplyr::group_by(gs_name) %>% 
+  # dplyr::select(gs_name, ensembl_gene) %>% 
+  # dplyr::group_split() %>% head
 
 analyseExperiment <- function(row){
   
@@ -136,13 +144,13 @@ analyseExperiment <- function(row){
   
   (comb <- dplyr::full_join(res_agg, dxr_agg, by = "ensembl_gene", suffix = c("_deseq2", "_dexseq")))
   
-  # Add gene names
+  # Add gene names (not relevant)
   
-  message("Adding gene names")
+  # message("Adding gene names")
   
-  comb$symbol <- comb %>% 
-    dplyr::left_join(genes,
-                     by = c("ensembl_gene" = "gene_id"))
+  # comb <- comb %>% 
+  #   dplyr::left_join(genes,
+  #                    by = c("ensembl_gene" = "gene_id"))
   
   message("Storing aggregation result")
   saveRDS(comb, paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
@@ -151,27 +159,84 @@ analyseExperiment <- function(row){
   message("Gene set enrichment analysis")
   
   resStats <- comb %>% 
-    dplyr::filter(!is.na(pvalue_deseq2)) %>% 
-    dplyr::mutate(pvalue = -log10(pvalue_deseq2)) %>% 
-    dplyr::pull(pvalue, name = ensembl_gene) 
+    dplyr::filter(!is.na(pvalue_deseq2) & !is.na(ensembl_gene)) %>% 
+    dplyr::mutate(pvalue = -log10(pvalue_deseq2) * sign(lfc)) %>% 
+    dplyr::pull(pvalue, name = ensembl_gene)
   
   dxrStats <- comb %>% 
-    dplyr::filter(!is.na(pvalue_dexseq)) %>% 
+    dplyr::filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>% 
     dplyr::mutate(pvalue = -log10(pvalue_dexseq)) %>% 
     dplyr::pull(pvalue, name = ensembl_gene) 
   
   fgseaRes <- fgsea::fgseaMultilevel(pathways = gene_sets,
                                      stats = resStats,
-                                     BPPARAM = BiocParallel::bpparam()
+                                     scoreType = "std",
+                                     eps = 10e-320
+                                     # BPPARAM = BiocParallel::bpparam()
                                      )
+  saveRDS(fgseaRes, paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))
+  # fgseaRes_sig <- fgseaRes %>% filter(padj<0.05)
   
   fgseaDxr <- fgsea::fgseaMultilevel(pathways = gene_sets,
                                      stats = dxrStats,
-                                     BPPARAM = BiocParallel::bpparam()
+                                     scoreType = "pos",
+                                     eps = 10e-320
+                                     # BPPARAM = BiocParallel::bpparam()
   )
+  saveRDS(fgseaDxr, paste0("results/", dataname, "_fgseaDxr_", experimentTitle, ".RDS"))
+  # fgseaDxr_sig <- fgseaDxr %>% filter(padj<0.05)
+  
   
   
 }
 
 apply(experiments, 1, analyseExperiment)
 
+
+named_group_split <- function(.tbl, ...) {
+  grouped <- group_by(.tbl, ...)
+  names <- rlang::inject(paste(!!!group_keys(grouped), sep = " / "))
+  
+  grouped %>% 
+    group_split() %>% 
+    rlang::set_names(names)
+}
+
+
+
+apply(experiments, 1, missingExperiment)
+
+missingExperiment <- function(row){
+  
+    row <- tibble::as_tibble(row, rownames = "names") %>% 
+      tidyr::pivot_wider(values_from = value, names_from = names)
+    
+    ### Load metadata
+    md_file <- row$filename
+    dataname <- basename(md_file) %>% 
+      stringr::str_remove(".xlsx") %>% 
+      stringr::str_remove("csv") 
+    
+    ### Define experiment details
+    comparison <- row$`comparison (baseline_v_condition)`
+    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
+    groupCol <- "group_nr"
+    
+    return(paste0(dataname, experimentTitle))
+    
+    return(paste0(dataname, "_aggpval_", experimentTitle, ".RDS") %in% list.files("results")[list.files("results") %>% 
+                                         stringr::str_detect("aggpval")])
+    
+    
+  # cat(experimentTitle)
+    
+  if(!file.exists(paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))) stop("DESeq2")
+  if(!file.exists(paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))) stop("DEXSeq")
+  if(!file.exists(paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))) stop("Aggregate")
+  if(!file.exists(paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))) stop("DESeq2-fgsea")
+  if(!file.exists(paste0("results/", dataname, "_fgseaDxr_", experimentTitle, ".RDS"))) stop("DEXSeq-fgsea")
+  }
+  
+
+list.files("results")[list.files("results") %>% 
+  stringr::str_detect("aggpval")]
