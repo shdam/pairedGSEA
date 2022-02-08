@@ -1,4 +1,20 @@
 
+#' Combine experiments
+#' 
+#' @importFrom readxl read_xlsx
+#' @export
+combineExperiments <- function(md_dir = "metadata"){
+  ### List metadata files
+  md_files <- list.files(md_dir, full.names = TRUE)
+  ### Combine experiments
+  experiments <- lapply(md_files, FUN = function(x) {df <- readxl::read_xlsx(x); df$filename <- x; df})  %>% 
+    dplyr::bind_rows() %>% 
+    dplyr::filter(!is.na(`comparison_title (empty_if_not_okay)`))
+  return(experiments)
+}
+
+
+
 #' Load data from ARCHS4 database
 #' 
 #' @import rhdf5
@@ -34,7 +50,7 @@ loadArchs4 <- function(samples, archs4db, gtf = NULL){
     gene_tx <- stringr::str_c(gene, tx, sep = ":")
   } else{
     gene_tx <- gtf %>% 
-      dplyr::distinct(transcript, .keep_all = TRUE) %>% 
+      dplyr::distinct() %>% 
       dplyr::right_join(tibble::tibble(transcript = tx), by = "transcript") %>% 
       .[match(tx, .$transcript), ] %>% 
       tidyr::unite(gene, transcript, col = "gene_tx", sep = ":") %>% 
@@ -123,4 +139,24 @@ loadGTF <- function(samples, gtf){
   
   return(txCount)
   
+}
+
+
+
+#' Load MSigDB and convert to names list of gene sets
+#' 
+#' @import msigdbr
+#' @importFrom purrr map
+#' @export
+prepMsigdb <- function(category = "C5"){
+  gene_sets <- msigdbr::msigdbr(category = "C5")
+  
+  gene_sets <- gene_sets %>% 
+    dplyr::select(gs_name, ensembl_gene) %>% 
+    # Split dataframe based on gene set names
+    base::split(.$gs_name) %>% 
+    # In each list, extract only the ensemble IDs
+    purrr::map(.f = ~ .x$ensembl_gene)
+  
+  return(gene_sets)
 }

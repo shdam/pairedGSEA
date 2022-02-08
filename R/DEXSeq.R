@@ -47,13 +47,10 @@ runDEXSeq <- function(dds, groupCol, comparison){
                           ),
                         BPPARAM = BiocParallel::bpparam(),
                         quiet = FALSE)
+  # Rename LFC column for consistency and human-readability
   dxr <- dxr %>% 
     tibble::as_tibble() %>% 
     dplyr::rename(log2FC_baseline_vs_condition = log2fold_B_C)
-  ### Redefine condition to original
-  # DEXSeq::sampleAnnotation(dxr)$condition <- dplyr::case_when(DEXSeq::sampleAnnotation(dxr)$condition == "baseline" ~ comparison[1],
-  #                                                     TRUE ~ comparison[2]) %>% 
-  #   factor(levels = comparison)
   
  return(dxr)
 }
@@ -62,61 +59,4 @@ runDEXSeq <- function(dds, groupCol, comparison){
 
 
 
-perGeneQValue2 <- function (object,
-                            gene = "geneID",
-                            p = "pvalue",
-                            method = DEXSeq:::perGeneQValueExact) 
-{
-  # Code adapted from DEXSeq::perGeneQValue
-  
-  stopifnot(is(object, "DEXSeqResults"))
-  wTest <- which(!is.na(object$padj))
-  pvals <- object[[p]][wTest]
-  geneID <- factor(object[[gene]][wTest])
-  geneSplit <- split(seq(along = geneID), geneID)
-  pGene <- sapply(geneSplit, function(i) min(pvals[i]))
-  stopifnot(all(is.finite(pGene)))
-  theta <- unique(sort(pGene))
-  q <- method(pGene, theta, geneSplit)
-  res <- rep(NA_real_, length(pGene))
-  res <- q[match(pGene, theta)]
-  res <- pmin(1, res)
-  names(res) <- names(geneSplit)
-  stopifnot(!any(is.na(res)))
-  return(res)
-}
 
-
-#' Per gene p value aggregation
-#' 
-#' @importFrom aggregation lancaster
-#' @importFrom purrr when
-#' @export
-perGenePValue <- function (df,
-                           gene = "gene",
-                           p = "pvalue",
-                           weights = "baseMean",
-                           lfc = NULL){
-  stopifnot(typeof(df) == "list")
-  stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
-  
-  res <- df %>% 
-    dplyr::filter(!is.na(padj)) %>% 
-    dplyr::rename(pvalue = .data[[p]],
-                  ensembl_gene = .data[[gene]]) %>% 
-    # Prevent warning from Lancaster
-    dplyr::mutate(pvalue = dplyr::case_when(pvalue < 10e-320 ~ 10e-320,
-                                            TRUE ~ pvalue)) %>% 
-    dplyr::group_by(ensembl_gene) %>% 
-    # p value aggregation
-    purrr::when(is.null(lfc) ~ 
-                  dplyr::summarise(., pvalue = aggregation::lancaster(pvalue,
-                                                                      .data[[weights]])),
-                !is.null(lfc) ~ 
-                  dplyr::summarise(., pvalue = aggregation::lancaster(pvalue,
-                                                                   .data[[weights]]),
-                                   lfc = weighted.mean(.data[[lfc]], .data[[weights]]))) %>% 
-    dplyr::mutate(pvalue = dplyr::case_when(pvalue < 10e-320 ~ 10e-320,
-                                            TRUE ~ pvalue)) 
-  return(res)
-}
