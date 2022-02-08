@@ -93,6 +93,7 @@ prepMeta <- function(md, groupCol, comparison){
 #' 
 #' @export
 preFilter <- function(txCount, thres = 10){
+  if(thres < 1) return(txCount)
   # Remove low counts
   keep <- rowSums(txCount) >= thres
   txCount <- txCount[keep,]

@@ -6,11 +6,11 @@
 \usage{
 prepDE(
   md,
-  archs4db,
-  gtf = NULL,
   groupCol,
   comparison,
-  tpm = FALSE,
+  archs4db = NULL,
+  txCount = NULL,
+  gtf = NULL,
   samples = "id",
   prefilter = 10
 )

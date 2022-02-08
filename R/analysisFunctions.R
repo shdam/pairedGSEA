@@ -3,7 +3,7 @@
 #' 
 #' @importFrom tidyr pivot_wider
 #' @export
-runExperiment <- function(row, archs4db, groupCol = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
+runExperiment <- function(row, archs4db = NULL, txCount = NULL, groupCol = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -34,11 +34,12 @@ runExperiment <- function(row, archs4db, groupCol = "group_nr", tpm = TRUE, pref
   dds <- prepDE(md = md_file,
                 gtf = gtf,
                 archs4db = archs4db,
+                txCount = txCount,
                 groupCol = groupCol,
                 comparison = comparison,
                 prefilter = prefilter)
   
-  # return(dds)}
+
   
   ### Run DESeq2
   res <- runDESeq2(dds,

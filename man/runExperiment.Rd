@@ -6,7 +6,8 @@
 \usage{
 runExperiment(
   row,
-  archs4db,
+  archs4db = NULL,
+  txCount = NULL,
   groupCol = "group_nr",
   tpm = TRUE,
   prefilter = 10,

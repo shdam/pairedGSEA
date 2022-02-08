@@ -4,30 +4,30 @@
 #' @import sva
 #' @export
 prepDE <- function(md,
-                   archs4db,
-                   gtf = NULL,
                    groupCol,
                    comparison,
-                   tpm = FALSE,
+                   archs4db = NULL,
+                   txCount = NULL,
+                   gtf = NULL,
                    samples = "id",
                    prefilter = 10){
-  
+  ### Error tests
+  # Esnure data is provided
+  if(is.null(archs4db) & is.null(txCount)) stop("Please provide a transcript count matrix or a Archs4 database.")
   # Look for database file
-  if(!file.exists(archs4db)) stop("Database file is missing!\nLooking for: ", archs4db)
-  
+  if(!is.null(archs4db)) if(!file.exists(archs4db)) stop("Database file is missing!\nLooking for: ", archs4db)
   
   # Loading metadata
   metadata <- prepMeta(md, groupCol, comparison)
-  
   
   # Define samples
   if(samples %in% colnames(metadata)) {samples <- metadata[[samples]]
   } else if(!(typeof(samples) == "character" & length(samples) > 1)) stop("Please specificy 'samples' as a column in metadata or as a vector of samples in database.")
   
   ### Load count matrix
-  txCount <- loadArchs4(samples, archs4db, gtf)
+  if(!is.null(archs4db)) txCount <- loadArchs4(samples, archs4db, gtf)
   ### Ensure rows in metadata matches columns in the count matrix
-  txCount <- txCount[, metadata$id]
+  txCount <- txCount[, samples]
   ### Pre-filter
   if(prefilter) txCount <- preFilter(txCount, prefilter)
   
