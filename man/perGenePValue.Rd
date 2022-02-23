@@ -9,7 +9,8 @@ perGenePValue(
   gene = "gene",
   p = "pvalue",
   weights = "baseMean",
-  lfc = NULL
+  lfc = "log2FC",
+  type = "deseq2"
 )
 }
 \description{

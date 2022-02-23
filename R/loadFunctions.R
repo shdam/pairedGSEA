@@ -151,13 +151,8 @@ loadGTF <- function(samples, gtf){
 #' @export
 prepMsigdb <- function(category = "C5"){
   gene_sets <- msigdbr::msigdbr(category = "C5")
-  
+  # Split dataframe based on gene set names
   gene_sets <- gene_sets %>% 
-    dplyr::select(gs_name, ensembl_gene) %>% 
-    # Split dataframe based on gene set names
-    base::split(.$gs_name) %>% 
-    # In each list, extract only the ensemble IDs
-    purrr::map(.f = ~ .x$ensembl_gene)
-  
+    split(x = .$ensembl_gene, f = .$gs_name)
   return(gene_sets)
 }
