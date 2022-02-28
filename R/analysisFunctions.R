@@ -110,10 +110,8 @@ analyseExperiment <- function(row){
   
   message("Aggregating p values")
   
-  dxr_agg <- perGenePValue(dxr, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_baseline_vs_condition", type = "dexseq")# %>% 
-    # filter(pvalue < 0.1)
-  res_agg <- perGenePValue(res, gene = "gene", weights = "baseMean", lfc = "log2FC", type = "deseq2")# %>% 
-    # filter(pvalue < 0.1)
+  dxr_agg <- perGenePValue(dxr, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_baseline_vs_condition", type = "dexseq")
+  res_agg <- perGenePValue(res, gene = "gene", weights = "baseMean", lfc = "log2FC", type = "deseq2")
   
   (comb <- dplyr::full_join(res_agg, dxr_agg, by = "ensembl_gene", suffix = c("_deseq2", "_dexseq")))
   
@@ -195,12 +193,14 @@ analyseExperiment <- function(row){
       mutate(padj = p.adjust(pvalue_dexseq, "fdr")) %>% 
       filter(padj < 0.05) %>% 
       arrange(padj)
+    resdxrGenes <- resGenes %>% 
+      full_join(dxrGenes, by = "ensembl_gene")
     
     forares <- fgsea::fora(gene_sets, genes = resGenes$ensembl_gene, 
                            universe = unique(comb$ensembl_gene), minSize = 25)
     foradxr <- fgsea::fora(gene_sets, genes = dxrGenes$ensembl_gene,
                            universe = unique(comb$ensembl_gene), minSize = 25)
-    foraresdxr <- fgsea::fora(gene_sets, genes = intersect(dxrGenes$ensembl_gene, resGenes$ensembl_gene,),
+    foraresdxr <- fgsea::fora(gene_sets, genes = resdxrGenes$ensembl_gene,
                               universe = unique(comb$ensembl_gene), minSize = 25)
     message("Storing fora results")
     saveRDS(forares, paste0("results/", dataname, "_forares_", experimentTitle, ".RDS"))
@@ -238,7 +238,7 @@ perGenePValue <- function (df,
     # p value aggregation
     purrr::when(type == "dexseq" ~ 
                   dplyr::summarise(.,
-                                   lfc = lfc[which(pvalue == min(pvalue))],
+                                   lfc = lfc[which(pvalue == min(pvalue))][[1]],
                                    # stat = stat[which(pvalue == min(pvalue))],
                                    pvalue = aggregation::lancaster(pvalue, weights)),
                 type == "deseq2" ~ 
