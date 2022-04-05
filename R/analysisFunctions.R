@@ -1,7 +1,6 @@
 
 #' Run DESeq2 and DEXSeq analyses
 #' 
-#' @importFrom tidyr pivot_wider
 #' @export
 runExperiment <- function(row, archs4db = NULL, txCount = NULL, groupCol = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
   
@@ -17,7 +16,7 @@ runExperiment <- function(row, archs4db = NULL, txCount = NULL, groupCol = "grou
   md_file <- row$filename
   dataname <- basename(md_file) %>% 
     stringr::str_remove(".xlsx") %>% 
-    stringr::str_remove("csv") 
+    stringr::str_remove(".csv") 
   
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
@@ -68,7 +67,6 @@ runExperiment <- function(row, archs4db = NULL, txCount = NULL, groupCol = "grou
 
 #' Analyse experiments
 #' 
-#' @importFrom fgsea fgseaMultilevel
 #' @export
 analyseExperiment <- function(row){
   
@@ -99,7 +97,7 @@ analyseExperiment <- function(row){
   
   
   message("Analysing ", row$study, " ", experimentTitle)
-  # if(FALSE){
+  if(FALSE){
   # Load results
   message("Loading results")
   
@@ -118,8 +116,8 @@ analyseExperiment <- function(row){
   
   message("Storing aggregation result")
   saveRDS(comb, paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
-  # }
-  # comb <- readRDS(paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
+  }
+  comb <- readRDS(paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
   if(FALSE){
   message("Gene set enrichment analysis")
   
@@ -139,14 +137,14 @@ analyseExperiment <- function(row){
     dplyr::mutate(pvalue = -log10(pvalue_dexseq) * sign(lfc_dexseq)) %>% 
     dplyr::pull(pvalue, name = ensembl_gene) 
   
-  
-  resStatss <- as.vector( scale( rev(seq_along( resStats)), c=T,s=T))
-  names(resStatss) <- names(resStats)
-  
-  dxrStatss <- as.vector( scale( rank( dxrStats), c=T,s=T))
-  names(dxrStatss) <- names(dxrStats)
-  dxrStatss2 <- as.vector( scale( rank( dxrStats2), c=T,s=T))
-  names(dxrStatss2) <- names(dxrStats2)
+  # 
+  # resStatss <- as.vector( scale( rev(seq_along( resStats)), c=T,s=T))
+  # names(resStatss) <- names(resStats)
+  # 
+  # dxrStatss <- as.vector( scale( rank( dxrStats), c=T,s=T))
+  # names(dxrStatss) <- names(dxrStats)
+  # dxrStatss2 <- as.vector( scale( rank( dxrStats2), c=T,s=T))
+  # names(dxrStatss2) <- names(dxrStats2)
   
   ### Run fgsea
   message("Running fgsea on DESeq2 results")
@@ -156,30 +154,32 @@ analyseExperiment <- function(row){
                                      eps = 10e-320
   )
 
-  # saveRDS(fgseaRes, paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))
+  saveRDS(fgseaRes_oristd, paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))
   # fgseaRes_sig <- fgseaRes %>% filter(padj<0.05)
   message("Running fgsea on DEXSeq results")
   fgseaDxr_pos <- fgsea::fgseaMultilevel(pathways = gene_sets,
-                                     stats = dxrStatss,
+                                     stats = dxrStats,
                                      scoreType = "pos",
                                      eps = 10e-320
   )
   fgseaDxr_std <- fgsea::fgseaMultilevel(pathways = gene_sets,
-                                     stats = dxrStatss2,
+                                     stats = dxrStats2,
                                      scoreType = "std",
                                      eps = 10e-320
   )
-  # saveRDS(fgseaDxr, paste0("results/", dataname, "_fgseaDxr_", experimentTitle, ".RDS"))
+  saveRDS(fgseaDxr_pos, paste0("results/", dataname, "_fgseaDxr_", experimentTitle, ".RDS"))
+  saveRDS(fgseaDxr_std, paste0("results/", dataname, "_fgseaDxr2_", experimentTitle, ".RDS"))
   # fgseaDxr_sig <- fgseaDxr %>% filter(padj<0.05)
-  fgseaDxr22 <- fgsea::fgseaMultilevel(pathways = gene_sets,
-                                      stats = dxrStatss,
-                                      scoreType = "pos",
-                                      eps = 10e-320
-  )
+  # fgseaDxr22 <- fgsea::fgseaMultilevel(pathways = gene_sets,
+  #                                     stats = dxrStatss,
+  #                                     scoreType = "pos",
+  #                                     eps = 10e-320
+  # )
   # fgseaDxr_sig2 <- fgseaDxr2 %>% filter(padj<0.05)
-  saveRDS(fgseaDxr2, paste0("results/", dataname, "_fgseaDxr2_", experimentTitle, ".RDS"))
-  message("fgsea results are stored in the results folder. Look for '*_fgseaRes_*' and '*_fgseaDxr_*'")} # fgsea
-  
+  # saveRDS(fgseaDxr2, paste0("results/", dataname, "_fgseaDxr2_", experimentTitle, ".RDS"))
+  message("fgsea results are stored in the results folder. Look for '*_fgseaRes_*' and '*_fgseaDxr*'")
+  } # fgsea
+
   if(TRUE){ # fora
     message("Running fora")
     ### Significant genes
@@ -213,8 +213,6 @@ analyseExperiment <- function(row){
 
 #' Per gene p value aggregation
 #' 
-#' @importFrom aggregation lancaster
-#' @importFrom purrr when
 #' @export
 perGenePValue <- function (df,
                            gene = "gene",
@@ -252,3 +250,49 @@ perGenePValue <- function (df,
                                             TRUE ~ pvalue)) 
   return(res)
   }
+
+
+
+#' Run SVA and export dds
+#' 
+#' @export
+getDDS <- function(row, archs4db = NULL, txCount = NULL, groupCol = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
+  
+  if(typeof(row) == "character"){ # Convert apply-made row to tibble
+    row <- tibble::as_tibble(row, rownames = "names") %>% 
+      tidyr::pivot_wider(values_from = value, names_from = names)
+  }
+  
+  
+  message("Running on ", row$study)
+  
+  ### Load metadata
+  md_file <- row$filename
+  dataname <- basename(md_file) %>% 
+    stringr::str_remove(".xlsx") %>% 
+    stringr::str_remove(".csv") 
+  
+  ### Define tpm file
+  if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
+  ### Define experiment details
+  comparison <- row$`comparison (baseline_v_condition)`
+  experimentTitle <- row$`comparison_title (empty_if_not_okay)`
+  
+  
+  # Ensure correct format for comparison
+  if(length(comparison) == 1) comparison <- stringr::str_split(comparison, "v", simplify = T)
+  
+  
+  ### Prepare for DE
+  dds <- prepDE(md = md_file,
+                gtf = gtf,
+                archs4db = archs4db,
+                txCount = txCount,
+                groupCol = groupCol,
+                comparison = comparison,
+                prefilter = prefilter)
+  
+  saveRDS(dds, paste0("results/", dataname, "_dds_", experimentTitle, ".RDS"))
+  
+  return(dds)
+}

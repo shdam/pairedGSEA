@@ -1,10 +1,5 @@
 #' Run SVA
-#' 
-#' @import sva
-#' @import SummarizedExperiment
-#' @importFrom S4Vectors DataFrame
-#' @import dplyr
-#' @export
+#' @inheritParams prepDE
 runSVA <- function(txCount, metadata, groupCol){
   message("Converting to DESeq object")
   ### Create DDS from count matrix
@@ -17,7 +12,7 @@ runSVA <- function(txCount, metadata, groupCol){
     SummarizedExperiment::assay()
   
   # Define model matrix 
-  mod1 <- model.matrix(~metadata[[groupCol]])
+  mod1 <- stats::model.matrix(~metadata[[groupCol]])
   mod0 <- cbind(mod1[, 1])
   # Run SVA
   message("Running SVA")

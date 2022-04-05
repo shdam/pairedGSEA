@@ -6,6 +6,13 @@
 \usage{
 prepMeta(md, groupCol, comparison)
 }
+\arguments{
+\item{md}{A metadata file or data frame object}
+
+\item{groupCol}{The metadata column specifying the what group each sample is associated with}
+
+\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
+}
 \description{
 Prepare metadata
 }

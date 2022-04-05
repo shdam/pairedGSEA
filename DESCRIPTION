@@ -15,7 +15,14 @@ Imports:
     sva,
     S4Vectors,
     SummarizedExperiment,
-    BiocParallel
+    BiocParallel,
+    purrr,
+    msigdbr,
+    readr,
+    readxl,
+    fgsea,
+    aggregation,
+    tidyr
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2

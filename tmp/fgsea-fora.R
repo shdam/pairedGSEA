@@ -146,7 +146,6 @@ fgseaRes <- readRDS("results/109_GSE171358_fgseaRes_Cabozantinib treatment.RDS")
 fgseaDxr <- readRDS("results/109_GSE171358_fgseaDxr_Cabozantinib treatment.RDS")
 
 qplot(fgseaRes$pval)
-# qplot(fgseaRes3$pval)
 qplot(fgseaDxr$pval)
 qplot(fgseaDxr2$pval)
 qplot(fgseaDxr3$pval)

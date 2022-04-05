@@ -1,7 +1,12 @@
-#' Pepare DE analysis
-#' 
-#' @import DESeq2
-#' @import sva
+#' Prepare DE analysis
+#' @param md A metadata file or data frame object
+#' @param groupCol The metadata column specifying the what group each sample is associated with
+#' @param comparison The comparison to use for this particular experiment. Format example: "1v2"
+#' @param archs4db The path to an ARCHS4 database file
+#' @param txCount The count matrix of an RNA-seq analysis
+#' @param gtf Optional: Adds GTF gene and transcript labels to the ARCHS4 data extract
+#' @param samples The column in the metadata that specifies the samples
+#' @param prefilter The prefilter value, where rowSums lower than the prefilter value will be removed from the count matrix
 #' @export
 prepDE <- function(md,
                    groupCol,
@@ -18,29 +23,26 @@ prepDE <- function(md,
   if(!is.null(archs4db)) if(!file.exists(archs4db)) stop("Database file is missing!\nLooking for: ", archs4db)
   
   # Loading metadata
-  metadata <- prepMeta(md, groupCol, comparison)
+  metadata <- pairedGSEA:::prepMeta(md, groupCol, comparison)
   
   # Define samples
   if(samples %in% colnames(metadata)) {samples <- metadata[[samples]]
   } else if(!(typeof(samples) == "character" & length(samples) > 1)) stop("Please specificy 'samples' as a column in metadata or as a vector of samples in database.")
   
   ### Load count matrix
-  if(!is.null(archs4db)) txCount <- loadArchs4(samples, archs4db, gtf)
+  if(!is.null(archs4db)) txCount <- pairedGSEA:::loadArchs4(samples, archs4db, gtf)
   ### Ensure rows in metadata matches columns in the count matrix
   txCount <- txCount[, samples]
   ### Pre-filter
-  if(prefilter) txCount <- preFilter(txCount, prefilter)
+  if(prefilter) txCount <- pairedGSEA:::preFilter(txCount, prefilter)
   
   ### SVA
-  dds <- runSVA(txCount, metadata, groupCol)
+  dds <- pairedGSEA:::runSVA(txCount, metadata, groupCol)
  
   return(dds) 
 }
 #' Run DESeq2
-#' 
-#' @import DESeq2
-#' @import sva
-#' @import BiocParallel
+#' @inheritParams prepDE
 #' @export
 runDESeq2 <- function(dds,
                       groupCol,
@@ -71,7 +73,7 @@ runDESeq2 <- function(dds,
   # Add TPM
   if(typeof(tpm) == "character"){
     if(!file.exists(tpm)) stop("Database file is missing!\\nLooking for: ", tpm)
-    res <- addTPM(res, samples, tpm, gtf)
+    res <- pairedGSEA::addTPM(res, samples, tpm, gtf)
     }
   
   # Convert result to tibble

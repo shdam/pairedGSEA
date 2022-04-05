@@ -32,6 +32,7 @@ gene_sets <- prepMsigdb()
 apply(row, 1, analyseExperiment)
 apply(experiments, 1, analyseExperiment)
 
+apply(experiments, 1, getDDS, archs4db)
 
 
 
@@ -102,51 +103,6 @@ library(ggplot2)
 overlap %>% 
   ggplot(aes(x = pathway, y = 1, fill = overlap)) +
   geom_tile()
-
-
-concatResults <- function(experiments){
-  
-  concatFgsea <- tribble(~pathway, ~experiment, ~deseq2, ~dexseq, ~dexseq2, ~overlap)
-  
-  for(row in 1:nrow(experiments)){
-    row <- experiments[row, ]
-    ### Load metadata
-    md_file <- row$filename
-    dataname <- basename(md_file) %>% 
-      stringr::str_remove(".xlsx") %>% 
-      stringr::str_remove("csv") 
-    ### Define experiment details
-    comparison <- row$`comparison (baseline_v_condition)`
-    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
-    ### Check that results exists
-    deseq2file <- paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS")
-    if(!file.exists(deseq2file)) stop(paste0("File:", deseq2file, " does not exists.\\n","Please run experiment before analysing. See ?runExperiment"))
-    
-    message("Adding ", row$study, " ", experimentTitle)
-    
-    ### Load results
-    fgseaRes <- readRDS(paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))
-    fgseaDxr <- readRDS(paste0("results/", dataname, "_fgseaDxr_", experimentTitle, ".RDS"))
-    fgseaDxr2 <- readRDS(paste0("results/", dataname, "_fgseaDxr2_", experimentTitle, ".RDS"))
-    
-    ### Significant gene sets
-    pathRes <- fgseaRes %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathDxr <- fgseaDxr %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathDxr2 <- fgseaDxr2 %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    
-    overlap <- union(pathRes, pathDxr) %>% union(pathDxr2) %>% 
-      mutate(deseq2 = pathway %in% pathRes$pathway,
-             dexseq = pathway %in% pathDxr$pathway,
-             dexseq2 = pathway %in% pathDxr2$pathway,
-             overlap = deseq2 + dexseq + dexseq2,
-             experiment = paste(row$study, experimentTitle)
-      )
-    concatFgsea <- concatFgsea %>% 
-      dplyr::bind_rows(overlap)
-  }
-  saveRDS(concatFgsea, "results/concatFgsea.RDS")
-  return(concatFgsea)
-}
 
 
 concatFgsea <- readRDS("results/concatFgsea.RDS")
@@ -247,64 +203,9 @@ concatFgsea %>%
 
 ### Fora analysis ----
 
-concatForaResults <- function(experiments){
-  
-  concatFora <- tribble(~pathway, ~experiment, ~deseq2, ~dexseq, ~decombined)
-  foratot <- tribble(~pathway, ~experiment, ~padj_deseq2, ~padj_dexseq, ~padj_decombined)
-  
-  for(num in 1:nrow(experiments)){
-    row <- experiments[num, ]
-    ### Load metadata
-    md_file <- row$filename
-    dataname <- basename(md_file) %>% 
-      stringr::str_remove(".xlsx") %>% 
-      stringr::str_remove("csv") 
-    ### Define experiment details
-    comparison <- row$`comparison (baseline_v_condition)`
-    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
-    ### Check that results exists
-    deseq2file <- paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS")
-    if(!file.exists(deseq2file)) stop(paste0("File:", deseq2file, " does not exists.\\n","Please run experiment before analysing. See ?runExperiment"))
-    
-    message("Adding ", row$study, " ", experimentTitle)
-    
-    ### Load results
-    forares <- readRDS(paste0("results/", dataname, "_forares_", experimentTitle, ".RDS"))
-    foradxr <- readRDS(paste0("results/", dataname, "_foradxr_", experimentTitle, ".RDS"))
-    foraresdxr <- readRDS(paste0("results/", dataname, "_foraresdxr_", experimentTitle, ".RDS"))
-    
-    comb <- forares %>% 
-      rename(padj_deseq2 = padj) %>% 
-      full_join(foradxr, by = "pathway") %>% 
-      rename(padj_dexseq = padj) %>% 
-      full_join(foraresdxr, by = "pathway") %>% 
-      rename(padj_decombined = padj) %>% 
-      select(pathway, starts_with("padj")) %>% 
-      mutate(experiment = paste(row$study, experimentTitle))
-    foratot <- foratot %>% 
-      dplyr::bind_rows(comb)
 
-    
-    ### Significant gene sets
-    pathres <- forares %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathdxr <- foradxr %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathresdxr <- foraresdxr %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    
-    overlap <- union(pathres, pathdxr) %>% union(pathresdxr) %>% 
-      mutate(deseq2 = pathway %in% pathres$pathway,
-             dexseq = pathway %in% pathdxr$pathway,
-             decombined = pathway %in% pathresdxr$pathway,
-             overlap = deseq2 + dexseq + decombined,
-             experiment = paste(row$study, experimentTitle)
-      )
-    concatFora <- concatFora %>% 
-      dplyr::bind_rows(overlap)
-  }
-  saveRDS(foratot, "results/foratot.RDS")
-  saveRDS(concatFora, "results/concatFora.RDS")
-  return(concatFora)
-}
 
+concatFora <- concatForaResults(experiments)
 concatFora <- readRDS("results/concatFora.RDS")
 foratot <- readRDS("results/foratot.RDS")
 
@@ -384,6 +285,51 @@ foratot %>%
   summarise(n = sum(padj_decombined < padj_dexseq & padj_decombined < padj_deseq2))
 
 
+## Rank shifts ----
+
+foratot %>% 
+  tidyr::pivot_longer(cols = c("padj_deseq2", "padj_decombined"), names_to = "analysis", values_to = "padj") %>% 
+  ggplot(aes(x = padj, fill = analysis))+
+  geom_density()
+
+
+# > foratot %>% filter(padj_decombined < 0.05) %>% nrow()
+# [1] 377792
+# > foratot %>% filter(padj_deseq2 < 0.05) %>% nrow()
+# [1] 370800
+# > foratot %>% filter(padj_decombined < 0.1) %>% nrow()
+# [1] 462871
+# > foratot %>% filter(padj_deseq2 < 0.1) %>% nrow()
+# [1] 451905
+# > foratot %>% filter(padj_deseq2 == 1) %>% nrow()
+# [1] 120395
+# > foratot %>% filter(padj_decombined == 1) %>% nrow()
+# [1] 71002
+
+
+ranks <- foratot %>% 
+  dplyr::filter(padj_deseq2 < 0.05 | padj_decombined < 0.05) %>% 
+  dplyr::mutate(rank_deseq2 = rank(padj_deseq2),
+                # rank_dexseq = rank(padj_dexseq),
+                rank_combined = rank(padj_decombined),
+                rank_shift = rank_deseq2 - rank_combined) %>% 
+  dplyr::arrange(desc(rank_shift))
+qplot(ranks$rank_shift)
+
+ranks %>% 
+  tidyr::pivot_longer(cols = c("padj_deseq2", "padj_decombined"), names_to = "analysis", values_to = "padj") %>% 
+  ggplot(aes(x = padj, color = analysis)) +
+  geom_density()
+
+ranks %>% 
+  dplyr::filter(
+    rank_deseq2 > 50 & rank_combined < 50
+  )
+ranks %>% 
+  dplyr::filter(
+    rank_deseq2 < 50 & rank_combined > 50
+  )
+
 ### Plotting ----
 
 #' Hvad betyder det, at man kan finde flere go-termer med DTU og er de relevante?
@@ -412,75 +358,8 @@ foratot %>%
 #'  
 #' En reviewer kan måske spørge om man får noget ud af DTU alene - hav med i tabel  
 
-# Combine alle deseq2 and dexseq results
-concatRes <- function(experiments){
-  
-  concatResults <- tibble::tribble(~gene, ~transcript, ~experiment, ~baseMean, ~log2FC, ~lfcSE, ~stat_deseq2,
-                           ~pvalue_deseq2, ~padj_deseq2, ~tpm, ~exonBaseMean, ~dispersion, ~stat_dexseq, ~pvalue_dexseq,
-                           ~padj_dexseq, ~log2FC_baseline_vs_condition)
-  
-  for(num in 1:nrow(experiments)){
-    row <- experiments[num, ]
-    ### Load metadata
-    md_file <- row$filename
-    dataname <- basename(md_file) %>% 
-      stringr::str_remove(".xlsx") %>% 
-      stringr::str_remove("csv") 
-    ### Define experiment details
-    comparison <- row$`comparison (baseline_v_condition)`
-    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
-    ### Check that results exists
-    message("Adding ", row$study, " ", experimentTitle)
-    res <- readRDS(paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
-    dxr <- readRDS(paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))
-    
-    comb <- res %>% 
-      dplyr::left_join(dxr, by = c("transcript" = "featureID"), suffix = c("_deseq2", "_dexseq")) %>% 
-      dplyr::mutate(experiment = paste(row$study, experimentTitle)) %>% 
-      dplyr::select(colnames(concatResults))
-    
-    
-    concatResults <- concatResults %>% 
-      dplyr::bind_rows(comb)
-  }
-  saveRDS(concatResults, "results/concatResults.RDS")
-  return(concatResults)
-}
-concatResults <- concatRes(experiments)
 
-# combine all deseq2 results
-concatRes <- function(experiments){
-  
-  concatResults <- tibble::tribble(~gene, ~transcript, ~experiment, ~baseMean, ~log2FC, ~lfcSE, ~stat,
-                                   ~pvalue, ~padj, ~tpm)
-  
-  for(num in 1:nrow(experiments)){
-    row <- experiments[num, ]
-    ### Load metadata
-    md_file <- row$filename
-    dataname <- basename(md_file) %>% 
-      stringr::str_remove(".xlsx") %>% 
-      stringr::str_remove("csv") 
-    ### Define experiment details
-    comparison <- row$`comparison (baseline_v_condition)`
-    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
-    ### Check that results exists
-    message("Adding ", row$study, " ", experimentTitle)
-    res <- readRDS(paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
-    dxr <- readRDS(paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))
-    
-    comb <- res %>% 
-      dplyr::left_join(dxr, by = c("transcript" = "featureID"), suffix = c("_deseq2", "_dexseq")) %>% 
-      dplyr::mutate(experiment = paste(row$study, experimentTitle)) %>% 
-      dplyr::select(colnames(concatResults))
-    
-    
-    concatResults <- concatResults %>% 
-      dplyr::bind_rows(comb)
-  }
-  saveRDS(concatResults, "results/concatResults.RDS")
-  return(concatResults)
-}
+concatResults <- concatRes(experiments)
 
 concatResults <- readRDS("results/concatResults.RDS")
 
@@ -522,38 +401,39 @@ concatResults %>%
 
 
 # Concat gene level ----
-concatGene <- function(experiments){
-  
-  concatgene <- tibble::tibble()
-  
-  for(num in 1:nrow(experiments)){
-    row <- experiments[num, ]
-    ### Load metadata
-    md_file <- row$filename
-    dataname <- basename(md_file) %>% 
-      stringr::str_remove(".xlsx") %>% 
-      stringr::str_remove("csv") 
-    ### Define experiment details
-    comparison <- row$`comparison (baseline_v_condition)`
-    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
-    ### Check that results exists
-    message("Adding ", row$study, " ", experimentTitle)
-    comb <- readRDS(paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
-    comb$experiment <- paste(row$study, experimentTitle)
-    
-    
-    concatgene <- concatgene %>% 
-      dplyr::bind_rows(comb)
-  }
-  saveRDS(concatgene, "results/concatGenes.RDS")
-  return(concatgene)
-}
 
-concatGenes <- concatGene(experiments)
+# concatGenes <- concatGene(experiments)
+
+concatGenes <- readRDS("results/concatGenes.RDS")
 
 umap_data <- concatGenes %>% 
   dplyr::select(experiment, ensembl_gene, lfc_deseq2) %>% 
   dplyr::rename(gene = ensembl_gene,
                 lfc = lfc_deseq2) %>% 
   dplyr::filter(!is.na(lfc)) %>% 
+  dplyr::distinct(gene, experiment, .keep_all = TRUE) %>% 
   tidyr::pivot_wider(names_from = "experiment", values_from = "lfc")
+
+um <- umap_data %>% 
+  dplyr::select(-gene) %>% 
+  dplyr::filter(across(everything(), ~ !is.na(.x))) %>% 
+  as.matrix() %>% 
+  t() %>% 
+  uwot::umap(n_neighbors = 3)
+
+p3 <- um %>% 
+  as_tibble(rownames = "Experiment") %>% 
+  ggplot(aes(x = V1, y = V2))+
+  geom_point() + 
+  labs(caption = "n_neighbors = 3")
+
+
+
+# SVA metrics -------------------------------------------------------------
+
+# concatsva <- concatSVA(experiments)
+
+(total_svas <- concatsva %>% 
+  dplyr::mutate(design = as.character(design),
+                svs = stringr::str_count(design, "sv")) %>% 
+  dplyr::count(svs))

@@ -6,6 +6,11 @@
 \usage{
 runSVA(txCount, metadata, groupCol)
 }
+\arguments{
+\item{txCount}{The count matrix of an RNA-seq analysis}
+
+\item{groupCol}{The metadata column specifying the what group each sample is associated with}
+}
 \description{
 Run SVA
 }

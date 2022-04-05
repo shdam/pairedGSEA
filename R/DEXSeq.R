@@ -1,7 +1,6 @@
 
 #' Prepare DEXSeq dataset from DESeq2 dataset
 #' 
-#' @import DEXSeq
 #' @export
 runDEXSeq <- function(dds, groupCol, comparison){
   message("Initiating DEXSeq")

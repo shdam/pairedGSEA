@@ -11,5 +11,7 @@
 # # Run the application
 # run_app()
 rstudioapi::documentSaveAll()
-roxygen2::roxygenise()
-pkgload::load_all()
+devtools::document()
+devtools::load_all()
+
+

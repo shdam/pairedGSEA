@@ -6,6 +6,9 @@
 \usage{
 preFilter(txCount, thres = 10)
 }
+\arguments{
+\item{txCount}{The count matrix of an RNA-seq analysis}
+}
 \description{
 Pre-filter
 }

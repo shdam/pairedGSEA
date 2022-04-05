@@ -17,6 +17,15 @@ runDESeq2(
   BPPARAM = BiocParallel::bpparam()
 )
 }
+\arguments{
+\item{groupCol}{The metadata column specifying the what group each sample is associated with}
+
+\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
+
+\item{samples}{The column in the metadata that specifies the samples}
+
+\item{gtf}{Optional: Adds GTF gene and transcript labels to the ARCHS4 data extract}
+}
 \description{
 Run DESeq2
 }

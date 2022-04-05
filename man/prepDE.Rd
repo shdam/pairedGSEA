@@ -2,7 +2,7 @@
 % Please edit documentation in R/DESeq2.R
 \name{prepDE}
 \alias{prepDE}
-\title{Pepare DE analysis}
+\title{Prepare DE analysis}
 \usage{
 prepDE(
   md,
@@ -15,6 +15,23 @@ prepDE(
   prefilter = 10
 )
 }
+\arguments{
+\item{md}{A metadata file or data frame object}
+
+\item{groupCol}{The metadata column specifying the what group each sample is associated with}
+
+\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
+
+\item{archs4db}{The path to an ARCHS4 database file}
+
+\item{txCount}{The count matrix of an RNA-seq analysis}
+
+\item{gtf}{Optional: Adds GTF gene and transcript labels to the ARCHS4 data extract}
+
+\item{samples}{The column in the metadata that specifies the samples}
+
+\item{prefilter}{The prefilter value, where rowSums lower than the prefilter value will be removed from the count matrix}
+}
 \description{
-Pepare DE analysis
+Prepare DE analysis
 }
