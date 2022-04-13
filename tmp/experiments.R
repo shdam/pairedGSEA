@@ -11,7 +11,7 @@ experiments <- combineExperiments()
 gtf <- readRDS("gtfextract.rds")
 gtf <- tibble::tibble(gene = gtf$gene, transcript = gtf$transcript)
 
-BiocParallel::register(MulticoreParam(workers = 10))
+BiocParallel::register(BiocParallel::MulticoreParam(workers = 10))
 
 # row <- experiments[19,]
 
@@ -23,15 +23,15 @@ groupCol <- "group_nr"
 
 apply(experiments[82,], 1, runExperiment, archs4db)
 row <- experiments[19,]
-
+row <- experiments[4,]
 ### Analyse experiment results ----
 
 # Load MSigDB
 gene_sets <- prepMsigdb()
 
-apply(row, 1, analyseExperiment)
+apply(experiments[row,], 1, runExperiment, archs4db)
 apply(experiments, 1, analyseExperiment)
-
+apply(row, 1, analyseExperiment)
 apply(experiments, 1, getDDS, archs4db)
 
 
@@ -208,7 +208,8 @@ concatFgsea %>%
 concatFora <- concatForaResults(experiments)
 concatFora <- readRDS("results/concatFora.RDS")
 foratot <- readRDS("results/foratot.RDS")
-
+foratot <- foratot %>% 
+  dplyr::select(-dplyr::starts_with("overlapG"))
 concatFora %>% 
   # filter(experiment == experiment[[1]]) %>% 
   pivot_longer(cols = starts_with("de"),names_to = "analysis", values_to = "present") %>% 
@@ -287,10 +288,20 @@ foratot %>%
 
 ## Rank shifts ----
 
+# Plot distribution of adjusted p-values
 foratot %>% 
+  dplyr::filter(padj_deseq2 < 0.05 & padj_decombined < 0.05) %>% 
   tidyr::pivot_longer(cols = c("padj_deseq2", "padj_decombined"), names_to = "analysis", values_to = "padj") %>% 
   ggplot(aes(x = padj, fill = analysis))+
-  geom_density()
+  geom_density(alpha = 0.5)
+
+# Plot distribution of coverage (overlap / size)
+foratot %>% 
+  dplyr::filter(padj_deseq2 < 0.05 | padj_decombined < 0.05) %>% 
+  tidyr::pivot_longer(cols = c("overlap_deseq2", "overlap_decombined"), names_to = "analysis", values_to = "overlap") %>% 
+  dplyr::mutate(coverage = overlap / size) %>% 
+  ggplot(aes(x = coverage, fill = analysis))+
+  geom_density(alpha = 0.5)
 
 
 # > foratot %>% filter(padj_decombined < 0.05) %>% nrow()
@@ -306,29 +317,39 @@ foratot %>%
 # > foratot %>% filter(padj_decombined == 1) %>% nrow()
 # [1] 71002
 
-
+# Rank each geneset within the experiments
 ranks <- foratot %>% 
   dplyr::filter(padj_deseq2 < 0.05 | padj_decombined < 0.05) %>% 
-  dplyr::mutate(rank_deseq2 = rank(padj_deseq2),
-                # rank_dexseq = rank(padj_dexseq),
-                rank_combined = rank(padj_decombined),
-                rank_shift = rank_deseq2 - rank_combined) %>% 
+  dplyr::group_by(experiment) %>% 
+  dplyr::mutate(rank_deseq2 = rank(pval_deseq2),
+                rank_dexseq = rank(pval_dexseq),
+                rank_combined = rank(pval_decombined),
+                rank_shift = rank_deseq2 - rank_combined,
+                rank_shift2 = rank_deseq2 - rank_dexseq) %>% 
   dplyr::arrange(desc(rank_shift))
 qplot(ranks$rank_shift)
 
-ranks %>% 
-  tidyr::pivot_longer(cols = c("padj_deseq2", "padj_decombined"), names_to = "analysis", values_to = "padj") %>% 
-  ggplot(aes(x = padj, color = analysis)) +
-  geom_density()
-
+# Store a list of all the top 20 ranked pathways of the paired analysis that were not in the top 20 for the deseq2 analysis
 ranks %>% 
   dplyr::filter(
     rank_deseq2 > 50 & rank_combined < 50
-  )
+  ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank")) %>% dplyr::arrange(experiment) %>% 
+  # pull(rank_shift) %>% qplot()
+  write.csv("results/fora_combined_top50.csv")
+
+# List of all the top 20 ranked pathways of the deseq2 analysis that were not in the top 20 for the paired analysis
 ranks %>% 
   dplyr::filter(
-    rank_deseq2 < 50 & rank_combined > 50
-  )
+    rank_deseq2 < 20 & rank_combined > 20
+  ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank")) %>% dplyr::arrange(experiment)
+
+ranks %>% 
+  dplyr::filter(
+    rank_deseq2 > 50 & rank_dexseq < 50
+  ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank")) %>% 
+  dplyr::arrange(dplyr::desc(rank_shift2)) %>% 
+  # pull(rank_shift) %>% qplot()
+  write.csv("results/fora_compared_top50.csv")
 
 ### Plotting ----
 
@@ -437,3 +458,183 @@ p3 <- um %>%
   dplyr::mutate(design = as.character(design),
                 svs = stringr::str_count(design, "sv")) %>% 
   dplyr::count(svs))
+
+
+
+# Fig 1b ------------------------------------------------------------------
+
+library("dplyr")
+library("tidyr")
+library("ggplot2")
+concatGenes <- readRDS("results/concatGenes.RDS")
+concatGenes <- readRDS("results/concatGenes_small.RDS")
+
+# concatGenes <- concatGenes %>% 
+#     filter(pvalue_deseq2 < 0.05 | pvalue_dexseq < 0.05)
+# saveRDS(concatGenes, "results/concatGenes_small.RDS")
+
+# Number of genes
+
+found_genes <- concatGenes %>% 
+  group_by(experiment) %>% 
+  summarise(DESeq2 = sum(pvalue_deseq2 < 0.05, na.rm = TRUE),
+            DEXSeq = sum(pvalue_dexseq < 0.05, na.rm = TRUE),
+            Overlap = sum(pvalue_dexseq < 0.05 & pvalue_deseq2 < 0.05, na.rm = TRUE),
+            `DEXSeq Only` = sum((pvalue_dexseq < 0.05) & !(pvalue_deseq2 < 0.05), na.rm = TRUE))
+
+## as density
+found_genes %>% 
+  pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "genes") %>% 
+  ggplot(aes(x = genes, fill = Analysis)) +
+  geom_density(alpha = 0.5)
+
+## as violin
+fig1b <- found_genes %>% 
+  pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "Genes") %>% 
+  mutate(Analysis = factor(Analysis, levels = c("DESeq2", "DEXSeq", "Overlap", "DEXSeq Only"))) %>% 
+  ggplot(aes(y = Genes, x = Analysis)) +
+  scale_y_log10() +
+  ggforce::geom_sina() +
+  # stat_summary(fun = median, geom = "point", size = 3, color = "red", shape = 18) +
+  # geom_violin() +
+  geom_boxplot(width = 0.05) +
+  labs(x = "",
+       y = "Significant genes per experiment") +
+  theme_classic()
+
+ggsave(plot = fig1b, filename = "figs/fig1b.png")
+
+
+# Fig 1c ------------------------------------------------------------------
+
+gene_similarity <- concatGenes %>%
+  mutate(DESeq2 = pvalue_deseq2 < 0.05,
+         DEXSeq = pvalue_dexseq < 0.05) %>% 
+  group_by(experiment) %>% 
+  group_map(.f = function(df, ...){
+    simpson <- df %>% 
+      select(starts_with("DE")) %>% 
+      proxy::simil(by_rows = FALSE, method = "Simpson")
+    jaccard <- df %>% 
+      select(starts_with("DE")) %>% 
+      proxy::simil(by_rows = FALSE, method = "Jaccard")
+    tibble(Simpson = simpson[1], Jaccard = jaccard[1])
+  }) %>% 
+  bind_rows() %>% 
+  mutate(experiment = concatGenes %>% distinct(experiment) %>% pull())
+
+fig1c <- gene_similarity %>% 
+  pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
+  ggplot(aes(x = Similarity, fill = Method)) +
+  geom_density(alpha = 0.5) +
+  labs(x = "Similarity scores",
+       y = "Density") +
+  theme_classic()
+
+ggsave(plot = fig1c, filename = "figs/fig1c.png")
+
+
+# Fig 1d ------------------------------------------------------------------
+
+
+foratot <- readRDS("results/foratot.RDS")
+
+# foratot <- foratot %>% 
+#   select(-starts_with("overlapG")) %>% 
+#   filter(padj_deseq2 < 0.05 | padj_dexseq < 0.05 | padj_decombined < 0.05)
+# saveRDS(foratot, "results/foratot_small.RDS")
+# Number of significant pathways
+
+found_pathways <- foratot %>% 
+  group_by(experiment) %>% 
+  summarise(DESeq2 = sum(padj_deseq2 < 0.05, na.rm = TRUE),
+            # DEXSeq = sum(padj_dexseq < 0.05, na.rm = TRUE),
+            Paired = sum(padj_decombined < 0.05, na.rm = TRUE),
+            Overlap = sum((padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
+            `Only paired` = sum((padj_decombined < 0.05) & !(padj_deseq2 < 0.05), na.rm = TRUE),
+            `Only DESeq2` = sum(!(padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE)
+            )
+
+## as violin
+fig1d <- found_pathways %>% 
+  pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "Pathways") %>% 
+  # filter(Pathways != 0) %>%
+  mutate(Analysis = factor(Analysis, levels = c("DESeq2", "Paired", "Overlap", "Only paired", "Only DESeq2"))) %>% 
+  ggplot(aes(y = Pathways, x = Analysis)) +
+  scale_y_log10() +
+  # stat_summary(fun = median, geom = "point", size = 3, color = "red", shape = 18) +
+  # geom_violin() +
+  ggforce::geom_sina() +
+  geom_boxplot(width = 0.05) +
+  labs(x = "",
+       y = "Significant pathways per experiment") +
+  theme_classic()
+
+ggsave(plot = fig1d, filename = "figs/fig1d.png")
+
+# Fig 1e ------------------------------------------------------------------
+
+
+pathway_similarity <- foratot %>%
+  mutate(DESeq2 = padj_deseq2 < 0.05,
+         DEXSeq = padj_dexseq < 0.05,
+         paired = padj_decombined < 0.05,
+         added = padj_deseq2 < 0.05 | padj_dexseq < 0.05) %>% 
+  group_by(experiment) %>% 
+  group_map(.f = function(df, ...){
+    dge_dtu <- df %>% 
+      select(DESeq2, DEXSeq) %>% 
+      proxy::simil(by_rows = FALSE, method = "Simpson")
+    dge_paired <- df %>% 
+      select(DESeq2, paired) %>% 
+      proxy::simil(by_rows = FALSE, method = "Simpson")
+    paired_added <- df %>% 
+      select(added, paired) %>% 
+      proxy::simil(by_rows = FALSE, method = "Simpson")
+    tibble(DGE_DTU = dge_dtu[1], DGE_Paired = dge_paired[1], Paired_Added = paired_added[1])
+  }) %>% 
+  bind_rows() %>% 
+  mutate(experiment = foratot %>% distinct(experiment) %>% pull())
+
+
+# Median line
+eta <- pathway_similarity %>% 
+  pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
+  filter(!is.na(Similarity)) %>% 
+  group_by(Method) %>% 
+  summarise(group_median = median(Similarity))
+
+# as density
+pathway_similarity %>% 
+  pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
+  ggplot(aes(x = Similarity, color = Method)) +
+  geom_density(alpha = 0) +
+  geom_vline(data = eta, aes(xintercept = group_median, color = Method),
+             linetype = "dashed") +
+  scale_color_brewer(palette = "BuPu") +
+  theme_classic()
+
+# as sina
+pathway_similarity %>% 
+  pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
+  filter(!is.na("Similarity")) %>% 
+  ggplot(aes(y = Similarity, x = Method)) +
+  ggforce::geom_sina() +
+  theme_classic()
+
+## Correlation mellem fundne gener
+
+correlated_genes <- concatGenes %>% 
+  filter(pvalue_deseq2 < 0.05 | pvalue_dexseq < 0.05,
+         !is.na(pvalue_deseq2),
+         !is.na(pvalue_dexseq)) %>% 
+  group_by(experiment) %>% 
+  # mutate(sig_deseq2 = pvalue_deseq2 < 0.05,
+  #        sig_dexseq = pvalue_dexseq < 0.05) %>% 
+  summarise(correlation = cor(pvalue_deseq2, pvalue_dexseq))
+
+qplot(correlated_genes$correlation)
+
+# PhD budget
+# Already planned + plane to Boston + Hotel in Whistler + Plane home + Hotel in Boston + Teaching Lab + Visualize your science + edx online course
+25000+3000+14000+8000+7000+5500+5000+3000

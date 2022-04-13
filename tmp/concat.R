@@ -72,30 +72,30 @@ concatForaResults <- function(experiments){
     foraresdxr <- readRDS(paste0("results/", dataname, "_foraresdxr_", experimentTitle, ".RDS"))
     
     comb <- forares %>% 
-      rename(padj_deseq2 = padj,
+      dplyr::rename(padj_deseq2 = padj,
              pval_deseq2 = pval,
              overlap_deseq2 = overlap) %>% 
-      full_join(foradxr, by = "pathway") %>% 
-      rename(padj_dexseq = padj,
+      dplyr::full_join(foradxr, by = "pathway") %>% 
+      dplyr::rename(padj_dexseq = padj,
              pval_dexseq = pval,
              overlap_dexseq = overlap) %>% 
-      full_join(foraresdxr, by = "pathway") %>% 
-      rename(padj_decombined = padj,
+      dplyr::full_join(foraresdxr, by = "pathway") %>% 
+      dplyr::rename(padj_decombined = padj,
              pval_decombined = pval,
              overlap_decombined = overlap) %>% 
-      select(pathway, starts_with("padj"), starts_with("pval"), starts_with("overlap"), size) %>% 
-      mutate(experiment = paste(row$study, experimentTitle))
+      dplyr::select(pathway, starts_with("padj_"), starts_with("pval_"), starts_with("overlap_"), size) %>% 
+      dplyr::mutate(experiment = paste(row$study, experimentTitle))
     foratot <- foratot %>% 
       dplyr::bind_rows(comb)
     
     
     ### Significant gene sets
-    pathres <- forares %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathdxr <- foradxr %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathresdxr <- foraresdxr %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
+    pathres <- forares %>% dplyr::filter(padj < 0.05) %>% dplyr::select(pathway) %>% tibble::as_tibble()
+    pathdxr <- foradxr %>% dplyr::filter(padj < 0.05) %>% dplyr::select(pathway) %>% tibble::as_tibble()
+    pathresdxr <- foraresdxr %>% dplyr::filter(padj < 0.05) %>% dplyr::select(pathway) %>% tibble::as_tibble()
     
-    overlap <- union(pathres, pathdxr) %>% union(pathresdxr) %>% 
-      mutate(deseq2 = pathway %in% pathres$pathway,
+    overlap <- dplyr::union(pathres, pathdxr) %>% dplyr::union(pathresdxr) %>% 
+      dplyr::mutate(deseq2 = pathway %in% pathres$pathway,
              dexseq = pathway %in% pathdxr$pathway,
              decombined = pathway %in% pathresdxr$pathway,
              overlap = deseq2 + dexseq + decombined,

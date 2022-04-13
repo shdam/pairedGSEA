@@ -1,8 +1,7 @@
 
 #' Run DESeq2 and DEXSeq analyses
 #' 
-#' @export
-runExperiment <- function(row, archs4db = NULL, txCount = NULL, groupCol = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
+runExperiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -14,60 +13,48 @@ runExperiment <- function(row, archs4db = NULL, txCount = NULL, groupCol = "grou
   
   ### Load metadata
   md_file <- row$filename
-  dataname <- basename(md_file) %>% 
+  data_name <- basename(md_file) %>% 
     stringr::str_remove(".xlsx") %>% 
     stringr::str_remove(".csv") 
   
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
   ### Define experiment details
-  comparison <- row$`comparison (baseline_v_condition)`
-  experimentTitle <- row$`comparison_title (empty_if_not_okay)`
-  
-  
-  # Ensure correct format for comparison
-  if(length(comparison) == 1) comparison <- stringr::str_split(comparison, "v", simplify = T)
+  comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+  experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
   
   
   ### Prepare for DE
-  dds <- prepDE(md = md_file,
-                gtf = gtf,
-                archs4db = archs4db,
-                txCount = txCount,
-                groupCol = groupCol,
-                comparison = comparison,
-                prefilter = prefilter)
+  tx_count <- prepare_tx_count(
+    md = md_file,
+    gtf = gtf,
+    archs4db = archs4db,
+    tx_count = tx_count,
+    group_col = group_col,
+    )
   
+  paired_gsea(
+    tx_count = tx_count,
+    metadata = md_file,
+    group_col = group_col,
+    sample_col = "id",
+    comparison = comparison,
+    experiment_title = experiment_title,
+    run_sva = TRUE,
+    prefilter = prefilter,
+    fit_type = "local",
+    dds_out = paste0(experiment_title, "_dds.RDS"),
+    dxd_out = paste0(experiment_title, "_dxr.RDS"),
+    quiet = FALSE,
+    parallel = parallel,
+    BPPARAM = BiocParallel::bpparam()
+    )
   
-  
-  ### Run DESeq2
-  res <- runDESeq2(dds,
-                   groupCol = groupCol,
-                   comparison = comparison,
-                   samples = dds$id,
-                   tpm = tpm,
-                   gtf = gtf,
-                   parallel = parallel,
-                   fitType = "local",
-                   BPPARAM = BiocParallel::bpparam())#, dds_out = "deseq2_1_GSE154968.RDS")
-  
-  # Store results
-  check_make_dir("results")
-  saveRDS(res, paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS"))
-  rm(res)
-  
-  ### Run DEXSeq
-  dxr <- runDEXSeq(dds, groupCol, comparison)
-  # Store results
-  saveRDS(dxr, paste0("results/", dataname, "_dexseqres_", experimentTitle, ".RDS"))
-  
-  message(row$study, " is done.")
   
 }
 
 #' Analyse experiments
 #' 
-#' @export
 analyseExperiment <- function(row){
   
   
@@ -84,16 +71,12 @@ analyseExperiment <- function(row){
     stringr::str_remove("csv") 
   
   ### Define experiment details
-  comparison <- row$`comparison (baseline_v_condition)`
+  comparison <- row$`comparison (baseline_v_condition)` #%>% pairedGSEA:::check_comparison()
   experimentTitle <- row$`comparison_title (empty_if_not_okay)`
   
   ### Check that results exists
-  deseq2file <- paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS")
-  if(!file.exists(deseq2file)) stop(paste0("File:", deseq2file, " does not exists.\\n","Please run experiment before analysing. See ?runExperiment"))
-  
-  
-  # Ensure correct format for comparison
-  if(length(comparison) == 1) comparison <- stringr::str_split(comparison, "v", simplify = T)
+  # deseq2file <- paste0("results/", experimentTitle, "_deseq2res.RDS")
+  # if(!file.exists(deseq2file)) stop(paste0("File:", experimentTitle, " does not exists.\\n","Please run experiment before analysing. See ?runExperiment"))
   
   
   message("Analysing ", row$study, " ", experimentTitle)
@@ -116,9 +99,11 @@ analyseExperiment <- function(row){
   
   message("Storing aggregation result")
   saveRDS(comb, paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
+  } else{
+    comb <- readRDS(paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
   }
-  comb <- readRDS(paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
-  if(FALSE){
+  
+  if(TRUE){
   message("Gene set enrichment analysis")
   
   ### Defining stats
@@ -146,12 +131,27 @@ analyseExperiment <- function(row){
   # dxrStatss2 <- as.vector( scale( rank( dxrStats2), c=T,s=T))
   # names(dxrStatss2) <- names(dxrStats2)
   
+  if(FALSE){
+    fgseaDxr3_std <- fgsea::fgseaMultilevel(pathways = gene_sets,
+                                            stats = dxrStats,
+                                            nproc = 10,
+                                            scoreType = "std",
+                                            eps = 10e-320,
+                                            minSize = 25
+    )
+    saveRDS(fgseaDxr3_std, paste0("results/", dataname, "_fgseaDxr3_", experimentTitle, ".RDS"))
+  } else{
+    
+  
+  
   ### Run fgsea
   message("Running fgsea on DESeq2 results")
   fgseaRes_oristd <- fgsea::fgseaMultilevel(pathways = gene_sets,
                                      stats = resStats,
+                                     nproc = 10,
                                      scoreType = "std",
-                                     eps = 10e-320
+                                     eps = 10e-320,
+                                     minSize = 25
   )
 
   saveRDS(fgseaRes_oristd, paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))
@@ -159,16 +159,29 @@ analyseExperiment <- function(row){
   message("Running fgsea on DEXSeq results")
   fgseaDxr_pos <- fgsea::fgseaMultilevel(pathways = gene_sets,
                                      stats = dxrStats,
+                                     nproc = 10,
                                      scoreType = "pos",
-                                     eps = 10e-320
+                                     eps = 10e-320,
+                                     minSize = 25
   )
   fgseaDxr_std <- fgsea::fgseaMultilevel(pathways = gene_sets,
                                      stats = dxrStats2,
+                                     nproc = 10,
                                      scoreType = "std",
-                                     eps = 10e-320
+                                     eps = 10e-320,
+                                     minSize = 25
+  )
+  fgseaDxr3_std <- fgsea::fgseaMultilevel(pathways = gene_sets,
+                                         stats = dxrStats,
+                                         nproc = 10,
+                                         scoreType = "std",
+                                         eps = 10e-320,
+                                         minSize = 25
   )
   saveRDS(fgseaDxr_pos, paste0("results/", dataname, "_fgseaDxr_", experimentTitle, ".RDS"))
   saveRDS(fgseaDxr_std, paste0("results/", dataname, "_fgseaDxr2_", experimentTitle, ".RDS"))
+  saveRDS(fgseaDxr3_std, paste0("results/", dataname, "_fgseaDxr3_", experimentTitle, ".RDS"))
+  }
   # fgseaDxr_sig <- fgseaDxr %>% filter(padj<0.05)
   # fgseaDxr22 <- fgsea::fgseaMultilevel(pathways = gene_sets,
   #                                     stats = dxrStatss,
@@ -180,7 +193,7 @@ analyseExperiment <- function(row){
   message("fgsea results are stored in the results folder. Look for '*_fgseaRes_*' and '*_fgseaDxr*'")
   } # fgsea
 
-  if(TRUE){ # fora
+  if(FALSE){ # fora
     message("Running fora")
     ### Significant genes
     resGenes <- comb %>% 
@@ -213,7 +226,6 @@ analyseExperiment <- function(row){
 
 #' Per gene p value aggregation
 #' 
-#' @export
 perGenePValue <- function (df,
                            gene = "gene",
                            p = "pvalue",
@@ -255,8 +267,7 @@ perGenePValue <- function (df,
 
 #' Run SVA and export dds
 #' 
-#' @export
-getDDS <- function(row, archs4db = NULL, txCount = NULL, groupCol = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
+getDDS <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -275,22 +286,34 @@ getDDS <- function(row, archs4db = NULL, txCount = NULL, groupCol = "group_nr", 
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
   ### Define experiment details
-  comparison <- row$`comparison (baseline_v_condition)`
-  experimentTitle <- row$`comparison_title (empty_if_not_okay)`
+  comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+  experiment_title <- row$`comparison_title (empty_if_not_okay)`
   
+  if(!is.null(archs4db)) tx_count <- prepare_tx_count(md_file,
+                                                      group_col,
+                                                      comparison,
+                                                      archs4db)
+  # Check parallel
+  if(parallel) pairedGSEA:::check_missing_package("BiocParallel", "Bioc")
   
-  # Ensure correct format for comparison
-  if(length(comparison) == 1) comparison <- stringr::str_split(comparison, "v", simplify = T)
+  # Load metadata
+  message("Preparing metadata")
+  metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, comparison)
+
+  # Subsample in case metadata 
+  metadata <- metadata[metadata[[sample_col]] %in% colnames(tx_count), ]
+  # Ensure rows in metadata matches columns in the count matrix
+  tx_count <- tx_count[, metadata[[sample_col]]]
   
+  ### Prefiltering
+  if(prefilter) tx_count <- pairedGSEA:::pre_filter(tx_count, prefilter)
   
-  ### Prepare for DE
-  dds <- prepDE(md = md_file,
-                gtf = gtf,
-                archs4db = archs4db,
-                txCount = txCount,
-                groupCol = groupCol,
-                comparison = comparison,
-                prefilter = prefilter)
+  if(!quiet) message("Converting count matrix to DESeqDataSet")
+  # Create DDS from count matrix
+  dds <- pairedGSEA:::convert_matrix_to_dds(tx_count, metadata, group_col)
+  
+  dds <- pairedGSEA:::run_sva(dds, group_col, quiet = quiet)
+
   
   saveRDS(dds, paste0("results/", dataname, "_dds_", experimentTitle, ".RDS"))
   
