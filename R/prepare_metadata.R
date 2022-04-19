@@ -3,7 +3,7 @@
 #' @inheritParams paired_gsea
 prepare_metadata <- function(metadata, group_col, comparison){
   
-  if(typeof(md[1]) == "character" & length(metadata) == 1){
+  if(typeof(metadata[1]) == "character" & length(metadata) == 1){
     if(stringr::str_ends(metadata, ".xlsx")) metadata <- readxl::read_excel(metadata)
     else if(stringr::str_ends(metadata, ".csv")) metadata <- readr::read_csv(metadata)
   } else if("data.frame" %!in% class(metadata)){stop("Please provide path to a metadata file or a data.frame object.")}

@@ -1,6 +1,6 @@
 #' Combine experiments
 #' 
-combineExperiments <- function(md_dir = "metadata"){
+combine_experiments <- function(md_dir = "metadata"){
   ### List metadata files
   md_files <- list.files(md_dir, full.names = TRUE)
   ### Combine experiments
@@ -74,7 +74,7 @@ add_tpm <- function(deseq_results, samples, archs4db_tpm, gtf = NULL){
 #' Load MSigDB and convert to names list of gene sets
 #' 
 #' @noRd
-prepMsigdb <- function(category = "C5"){
+prepare_msigdb <- function(category = "C5"){
   pairedGSEA:::check_missing_package("msigdbr")
   
   gene_sets <- msigdbr::msigdbr(category = "C5")

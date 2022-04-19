@@ -62,11 +62,11 @@ store_result <- function(object, file, analysis = "results"){
   pairedGSEA:::check_make_dir("results/")
   if(!startsWith(file, "results")) file <- paste0("results/", file)
   
-  if(endsWith(toupper(out), ".RDS")) saveRDS(object, file = file)
-  else if(endsWith(tolower(out), ".rdata")) save(object, file = file)
-  else if(endsWith(tolower(out), ".csv")) write.csv(object, file =  file)
-  else if(endsWith(tolower(out), ".tsv")) write.table(object, file = file)
-  else if(endsWith(tolower(out), ".xlsx")) {pairedGSEA:::check_missing_package("openxlsx"); openxlsx::write.xlsx(object, file = file)}
+  if(endsWith(toupper(file), ".RDS")) saveRDS(object, file = file)
+  else if(endsWith(tolower(file), ".rdata")) save(object, file = file)
+  else if(endsWith(tolower(file), ".csv")) write.csv(object, file =  file)
+  else if(endsWith(tolower(file), ".tsv")) write.table(object, file = file)
+  else if(endsWith(tolower(file), ".xlsx")) {pairedGSEA:::check_missing_package("openxlsx"); openxlsx::write.xlsx(object, file = file)}
   else{stop("Could not store result object ", file)}
   message("Stored ", analysis, " in ", file)
 }

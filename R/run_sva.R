@@ -3,7 +3,7 @@
 run_sva <- function(dds, group_col, quiet = FALSE){
   
   
-  if(!quiet) message("\nRunning SVA")
+  if(!quiet) message("Running SVA")
   # Normalize counts with DESeq2 for SVA
   normalized_counts <- DESeq2::normTransform(dds) %>% 
     SummarizedExperiment::assay()

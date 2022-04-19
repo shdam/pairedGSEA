@@ -23,13 +23,13 @@ groupCol <- "group_nr"
 
 apply(experiments[82,], 1, runExperiment, archs4db)
 row <- experiments[19,]
-row <- experiments[4,]
+row <- experiments[1,]
 ### Analyse experiment results ----
 
 # Load MSigDB
 gene_sets <- prepMsigdb()
 
-apply(experiments[row,], 1, runExperiment, archs4db)
+apply(row, 1, run_experiment, archs4db)
 apply(experiments, 1, analyseExperiment)
 apply(row, 1, analyseExperiment)
 apply(experiments, 1, getDDS, archs4db)
@@ -104,7 +104,7 @@ overlap %>%
   ggplot(aes(x = pathway, y = 1, fill = overlap)) +
   geom_tile()
 
-
+# concatFgsea <- concatFgseaResults(experiments)
 concatFgsea <- readRDS("results/concatFgsea.RDS")
 
 p <- concatFgsea %>% 
@@ -236,7 +236,7 @@ concatFora %>%
   filter(!decombined & !dexseq & deseq2) %>% 
   count(experiment)
 
-# Similarities
+# Fora Similarities ----
 concatFora %>% 
   group_by(experiment) %>% 
   summarise(jacdedex = proxy::simil(deseq2, dexseq, by_rows = FALSE, pairwise = TRUE, method = "Jaccard"),
@@ -474,13 +474,16 @@ concatGenes <- readRDS("results/concatGenes_small.RDS")
 # saveRDS(concatGenes, "results/concatGenes_small.RDS")
 
 # Number of genes
-
-found_genes <- concatGenes %>% 
+concatGenes <- concatGenes %>% 
   group_by(experiment) %>% 
-  summarise(DESeq2 = sum(pvalue_deseq2 < 0.05, na.rm = TRUE),
-            DEXSeq = sum(pvalue_dexseq < 0.05, na.rm = TRUE),
-            Overlap = sum(pvalue_dexseq < 0.05 & pvalue_deseq2 < 0.05, na.rm = TRUE),
-            `DEXSeq Only` = sum((pvalue_dexseq < 0.05) & !(pvalue_deseq2 < 0.05), na.rm = TRUE))
+  mutate(padj_deseq2 = p.adjust(pvalue_deseq2, "fdr"),
+         padj_dexseq = p.adjust(pvalue_dexseq, "fdr"))
+found_genes <- concatGenes %>% 
+  # group_by(experiment) %>% 
+  summarise(DESeq2 = sum(padj_deseq2 < 0.05, na.rm = TRUE),
+            DEXSeq = sum(padj_dexseq < 0.05, na.rm = TRUE),
+            Overlap = sum(padj_dexseq < 0.05 & padj_deseq2 < 0.05, na.rm = TRUE),
+            `DEXSeq Only` = sum((padj_dexseq < 0.05) & !(padj_deseq2 < 0.05), na.rm = TRUE))
 
 ## as density
 found_genes %>% 
@@ -508,8 +511,8 @@ ggsave(plot = fig1b, filename = "figs/fig1b.png")
 # Fig 1c ------------------------------------------------------------------
 
 gene_similarity <- concatGenes %>%
-  mutate(DESeq2 = pvalue_deseq2 < 0.05,
-         DEXSeq = pvalue_dexseq < 0.05) %>% 
+  mutate(DESeq2 = padj_deseq2 < 0.05,
+         DEXSeq = padj_dexseq < 0.05) %>% 
   group_by(experiment) %>% 
   group_map(.f = function(df, ...){
     simpson <- df %>% 
@@ -605,14 +608,17 @@ eta <- pathway_similarity %>%
   summarise(group_median = median(Similarity))
 
 # as density
-pathway_similarity %>% 
+fig1e <- pathway_similarity %>% 
   pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
   ggplot(aes(x = Similarity, color = Method)) +
   geom_density(alpha = 0) +
   geom_vline(data = eta, aes(xintercept = group_median, color = Method),
              linetype = "dashed") +
-  scale_color_brewer(palette = "BuPu") +
+  # scale_color_brewer(palette = "BuPu") +
+  labs(x = "Simpson Similarity") +
   theme_classic()
+
+ggsave(plot = fig1e, filename = "figs/fig1e.png")
 
 # as sina
 pathway_similarity %>% 
@@ -622,7 +628,22 @@ pathway_similarity %>%
   ggforce::geom_sina() +
   theme_classic()
 
-## Correlation mellem fundne gener
+# Pathway overlap ----
+
+foratot %>% 
+  mutate(DESeq2 = overlap_deseq2 / size,
+         DEXSeq = overlap_dexseq / size,
+         Combined = overlap_decombined / size) %>% 
+  select(pathway, DESeq2, DEXSeq, Combined) %>% 
+  pivot_longer(cols = -pathway, names_to = "Method", values_to = "Overlap") %>% 
+  filter(!is.na(Overlap)) %>% 
+  ggplot(aes(x = Overlap, color = Method)) +
+  geom_density(alpha = 0) +
+  labs(x = "Pathway overlap (%)", y = "Density") +
+  theme_classic()
+
+
+## Gene correlation ----
 
 correlated_genes <- concatGenes %>% 
   filter(pvalue_deseq2 < 0.05 | pvalue_dexseq < 0.05,

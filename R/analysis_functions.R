@@ -1,7 +1,7 @@
 
 #' Run DESeq2 and DEXSeq analyses
 #' 
-runExperiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
+run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -25,13 +25,16 @@ runExperiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "gr
   
   
   ### Prepare for DE
-  tx_count <- prepare_tx_count(
-    md = md_file,
-    gtf = gtf,
-    archs4db = archs4db,
-    tx_count = tx_count,
-    group_col = group_col,
+  if(is.null(tx_count)){
+    tx_count <- prepare_tx_count(
+      metadata = md_file,
+      gtf = gtf,
+      archs4db = archs4db,
+      group_col = group_col,
+      comparison = comparison
     )
+  }
+  
   
   paired_gsea(
     tx_count = tx_count,
@@ -52,6 +55,9 @@ runExperiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "gr
   
   
 }
+
+
+
 
 #' Analyse experiments
 #' 

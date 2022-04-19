@@ -44,7 +44,7 @@ paired_gsea <- function(tx_count,
   metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, comparison)
   
   # Check sample_col is in metadata
-  stopifnot("Sample column not in metadata" = sample_col %in% colnames(m))
+  stopifnot("Sample column not in metadata" = sample_col %in% colnames(metadata))
   
   # Subsample metadata to only include samples present in the count matrix
   metadata <- metadata[metadata[[sample_col]] %in% colnames(tx_count), ]

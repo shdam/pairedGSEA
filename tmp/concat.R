@@ -3,6 +3,7 @@
 concatFgseaResults <- function(experiments){
   
   concatFgsea <- tibble::tibble()
+  fgseatot <- tibble::tibble()
   
   for(row in 1:nrow(experiments)){
     row <- experiments[row, ]
@@ -22,13 +23,17 @@ concatFgseaResults <- function(experiments){
     
     ### Load results
     fgseaRes <- readRDS(paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))
-    fgseaDxr <- readRDS(paste0("results/", dataname, "_fgseaDxr_", experimentTitle, ".RDS"))
     fgseaDxr2 <- readRDS(paste0("results/", dataname, "_fgseaDxr2_", experimentTitle, ".RDS"))
+    fgseaDxr3 <- readRDS(paste0("results/", dataname, "_fgseaDxr3_", experimentTitle, ".RDS"))
+    
+    # fgseatot <- fgseatot <-
+    #   fgseaRes %>% 
+    #   
     
     ### Significant gene sets
     pathRes <- fgseaRes %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathDxr <- fgseaDxr %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathDxr2 <- fgseaDxr2 %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
+    pathDxr <- fgseaDxr2 %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
+    pathDxr2 <- fgseaDxr3 %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
     
     overlap <- union(pathRes, pathDxr) %>% union(pathDxr2) %>% 
       mutate(deseq2 = pathway %in% pathRes$pathway,
@@ -167,6 +172,9 @@ concatGene <- function(experiments){
     concatgene <- concatgene %>% 
       dplyr::bind_rows(comb)
   }
+  concatGenes <- concatGenes %>% 
+    dplyr::mutate(padj_deseq2 = p.adjust(pvalue_deseq2, "fdr"),
+                  padj_dexseq = p.adjust(pvalue_dexseq, "fdr"))
   saveRDS(concatgene, "results/concatGenes.RDS")
   return(concatgene)
 }
