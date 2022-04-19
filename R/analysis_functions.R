@@ -240,7 +240,7 @@ analyse_experiment <- function(row){
   
   ### Load metadata
   md_file <- row$filename
-  dataname <- basename(md_file) %>% 
+  data_name <- basename(md_file) %>% 
     stringr::str_remove(".xlsx") %>% 
     stringr::str_remove("csv") 
   
@@ -254,25 +254,25 @@ analyse_experiment <- function(row){
   
   
   message("Analysing ", experiment_title)
-  if(FALSE){
+  if(TRUE){
     # Load results
     message("Loading results")
     
-    res <- readRDS(paste0(experiment_title, "_deseq2res.RDS"))
-    dxr <- readRDS(paste0(experiment_title, "_dexseqres.RDS"))
+    res <- readRDS(paste0("results/", experiment_title, "_deseq2res.RDS"))
+    dxr <- readRDS(paste0("results/", experiment_title, "_dexseqres.RDS"))
     
     # p value aggregation
     
     message("Aggregating p values")
     
     dxr_agg <- per_gene_pvalue(dxr, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
-    res_agg <- per_gene_pvalue(res, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq2")
+    res_agg <- per_gene_pvalue(res, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
     
     (aggregated_pvals <- dplyr::full_join(res_agg, dxr_agg, by = "ensembl_gene", suffix = c("_deseq", "_dexseq")))
     
     
-    message("Storing aggregation result")
-    saveRDS(aggregated_pvals, paste0(experiment_title, "_aggregated_pvals.RDS"))
+    # message("Storing aggregation result")
+    pairedGSEA:::store_result(aggregated_pvals, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene aggregation")
   } else{
     comb <- readRDS(paste0(experiment_title, "_aggregated_pvals.RDS"))
   }
@@ -306,9 +306,8 @@ analyse_experiment <- function(row){
                                           eps = 10e-320,
                                           minSize = 25
     )
+    pairedGSEA:::store_result(fgsea_deseq, paste0(experiment_title, "_fgsea_deseq.RDS"), "fgsea on deseq2 results")
     
-    saveRDS(fgseaRes_oristd, paste0(experiment_title, "_fgsea_deseq.RDS"))
-    # fgseaRes_sig <- fgseaRes %>% filter(padj<0.05)
     message("Running fgsea on DEXSeq results")
     fgsea_dexseq <- fgsea::fgseaMultilevel(pathways = gene_sets,
                                            stats = stats_dexseq,
@@ -324,27 +323,27 @@ analyse_experiment <- function(row){
                                                eps = 10e-320,
                                                minSize = 25
     )
-    saveRDS(fgsea_dexseq, paste0(experiment_title, "_fgsea_dexseq.RDS"))
-    saveRDS(fgsea_lfc_dexseq, paste0(experiment_title, "_fgsea_dexseqlfc.RDS"))
+    pairedGSEA:::store_result(fgsea_dexseq, paste0(experiment_title, "_fgsea_dexseq.RDS"), "fgsea on dexseq results")
+    pairedGSEA:::store_result(fgsea_lfc_dexseq, paste0(experiment_title, "_fgsea_dexseqlfc.RDS"), "fgsea on dexseq results using LFC")
   
       message("fgsea results are stored in the results folder. Look for '*_fgsea_deseq.RDS' and '*_fgsea_dexseq*.RDS'")
   } # fgsea
   
-  if(FALSE){ # fora
+  if(TRUE){ # fora
     message("Running fora")
     ### Significant genes
     genes_deseq <- aggregated_pvals %>% 
-      filter(!is.na(pvalue_deseq) & !is.na(ensembl_gene)) %>%
-      mutate(padj = p.adjust(pvalue_deseq, "fdr")) %>% 
-      filter(padj < 0.05) %>% 
-      arrange(padj)
+      dplyr::filter(!is.na(pvalue_deseq) & !is.na(ensembl_gene)) %>%
+      dplyr::mutate(padj = p.adjust(pvalue_deseq, "fdr")) %>% 
+      dplyr::filter(padj < 0.05) %>% 
+      dplyr::arrange(padj)
     genes_dexseq <- aggregated_pvals %>% 
-      filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>%
-      mutate(padj = p.adjust(pvalue_dexseq, "fdr")) %>% 
-      filter(padj < 0.05) %>% 
-      arrange(padj)
+      dplyr::filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>%
+      dplyr::mutate(padj = p.adjust(pvalue_dexseq, "fdr")) %>% 
+      dplyr::filter(padj < 0.05) %>% 
+      dplyr::arrange(padj)
     genes_paired <- genes_deseq %>% 
-      full_join(genes_dexseq, by = "ensembl_gene")
+      dplyr::full_join(genes_dexseq, by = "ensembl_gene")
     
     fora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$ensembl_gene, 
                            universe = unique(aggregated_pvals$ensembl_gene), minSize = 25)
@@ -353,9 +352,9 @@ analyse_experiment <- function(row){
     fora_paired <- fgsea::fora(gene_sets, genes = genes_paired$ensembl_gene,
                               universe = unique(aggregated_pvals$ensembl_gene), minSize = 25)
     message("Storing fora results")
-    saveRDS(fora_deseq, paste0(experiment_title, "_fora_deseq.RDS"))
-    saveRDS(fora_dexseq, paste0(experiment_title, "_fora_dexseq.RDS"))
-    saveRDS(fora_paired, paste0(experiment_title, "_fora_paired.RDS"))
+    pairedGSEA:::store_result(fora_deseq, paste0(experiment_title, "_fora_deseq.RDS"), "fora on deseq2 results")
+    pairedGSEA:::store_result(fora_dexseq, paste0(experiment_title, "_fora_dexseq.RDS"), "fora on dexseq results")
+    pairedGSEA:::store_result(fora_paired, paste0(experiment_title, "_fora_paired.RDS"), "fora on paired results")
   }
   
   
@@ -363,11 +362,11 @@ analyse_experiment <- function(row){
 #' Per gene p value aggregation
 #' 
 perGenePValue <- function (df,
-                             gene = "gene",
-                             p = "pvalue",
-                             weights = "baseMean",
-                             lfc = "log2FC",
-                             type = "deseq2"){
+                           gene = "gene",
+                           p = "pvalue",
+                           weights = "baseMean",
+                           lfc = "log2FC",
+                           type = "deseq2"){
   stopifnot("data.frame" %in% class(df))
   stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
   type <- tolower(type)
@@ -399,11 +398,11 @@ perGenePValue <- function (df,
   return(res)
 }
 per_gene_pvalue <- function (df,
-                           gene = "gene",
-                           p = "pvalue",
-                           weights = "baseMean",
-                           lfc = "log2FC",
-                           type = "deseq"){
+                             gene = "gene",
+                             p = "pvalue",
+                             weights = "baseMean",
+                             lfc = "log2FC",
+                             type = "deseq"){
   stopifnot("data.frame" %in% class(df))
   stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
   type <- tolower(type)

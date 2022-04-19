@@ -21,13 +21,13 @@ run_dexseq <- function(dds,
   
   # Extract the found surrogate variables
   svs <- as.character(DESeq2::design(dds))[2] %>% 
-    stringr::str_split("\\+ ", n = 2, simplify = TRUE) %>% 
+    stringr::str_split(" \\+ ", n = 2, simplify = TRUE) %>% 
     .[2] %>% 
     stringr::str_split(" \\+ ", simplify = TRUE)
   
   # Add surrogate variables to DEXSeq design formula
   design_formula <- as.formula(
-    paste0("~ sample + exon + condition:exon + ", stringr::str_c(svs, ":exon"))
+    paste0("~ sample + exon + condition:exon + ", stringr::str_c(svs, ":exon", collapse = " + "))
   )
   
   # Define sample data based on DESeq2 object

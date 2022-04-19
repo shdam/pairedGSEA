@@ -19,10 +19,10 @@ BiocParallel::register(BiocParallel::MulticoreParam(workers = 10))
 
 ### Define file to read from and group column
 archs4db <- "/home/databases/archs4/v11/human_transcript_v11_counts.h5"
-groupCol <- "group_nr"
+# groupCol <- "group_nr"
 
-apply(experiments[82,], 1, runExperiment, archs4db)
-row <- experiments[19,]
+# apply(experiments[82,], 1, runExperiment, archs4db)
+# row <- experiments[19,]
 row <- experiments[1,]
 ### Analyse experiment results ----
 
@@ -31,7 +31,7 @@ gene_sets <- prepare_msigdb()
 
 apply(row, 1, run_experiment, archs4db)
 apply(experiments, 1, analyseExperiment)
-apply(row, 1, analyseExperiment)
+apply(row, 1, analyse_experiment)
 apply(experiments, 1, getDDS, archs4db)
 
 
