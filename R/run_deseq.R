@@ -19,7 +19,7 @@ run_deseq <- function(dds,
   
   # Store DESeqDataSet with DESeq2 analysis
   if(typeof(dds_out) == "character") {
-    pairedGSEA:::store_result(dds, dds_out, "DESeqDataSet")
+    pairedGSEA:::store_result(dds, dds_out, "DESeqDataSet", quiet = quiet)
   }
   
   # Ensure correct format for comparison

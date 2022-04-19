@@ -5,7 +5,7 @@ pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
 
 
 ### Combine each and extract the comparisons to be run
-experiments <- combineExperiments()
+experiments <- combine_experiments()
 
 ### Load GTF file
 gtf <- readRDS("gtfextract.rds")
@@ -27,7 +27,7 @@ row <- experiments[1,]
 ### Analyse experiment results ----
 
 # Load MSigDB
-gene_sets <- prepMsigdb()
+gene_sets <- prepare_msigdb()
 
 apply(row, 1, run_experiment, archs4db)
 apply(experiments, 1, analyseExperiment)

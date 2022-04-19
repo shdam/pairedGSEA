@@ -51,7 +51,7 @@ run_dexseq <- function(dds,
   
   # Store DEXSeqDataSet with DEXSeq analysis
   if(typeof(dxd_out) == "character") {
-    pairedGSEA:::store_result(dxd, dxd_out, "DEXSeqDataSet")
+    pairedGSEA:::store_result(dxd, dxd_out, "DEXSeqDataSet", quiet = quiet)
   }
   ### Run DEXSeq
   if(!quiet) message("Running DEXSeq")
