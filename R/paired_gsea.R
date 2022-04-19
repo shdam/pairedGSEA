@@ -73,7 +73,7 @@ paired_gsea <- function(tx_count,
     dds_out = dds_out,
     quiet = quiet,
     parallel = parallel,
-    BPPARAM = BiocParallel::bpparam()
+    BPPARAM = BPPARAM
     )
   
   # Store results
@@ -88,7 +88,7 @@ paired_gsea <- function(tx_count,
     dxd_out = dxd_out,
     quiet = quiet,
     parallel = parallel,
-    BPPARAM = BiocParallel::bpparam()
+    BPPARAM = BPPARAM
     )
   # Store results
   pairedGSEA:::store_result(dexseq_results, paste0(experiment_title, "_dexseqres.RDS"), "DEXSeq results", quiet = quiet)

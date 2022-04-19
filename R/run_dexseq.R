@@ -22,7 +22,8 @@ run_dexseq <- function(dds,
   # Extract the found surrogate variables
   svs <- as.character(DESeq2::design(dds))[2] %>% 
     stringr::str_split("\\+ ", n = 2, simplify = TRUE) %>% 
-    .[2]
+    .[2] %>% 
+    stringr::str_split(" \\+ ", simplify = TRUE)
   
   # Add surrogate variables to DEXSeq design formula
   design_formula <- as.formula(
@@ -55,11 +56,12 @@ run_dexseq <- function(dds,
   }
   ### Run DEXSeq
   if(!quiet) message("Running DEXSeq")
+  if(!parallel) BiocParallel::register(BiocParallel::SerialParam())
   dxr <- DEXSeq::DEXSeq(dxd,
                         reducedModel = as.formula(
                           paste0("~ sample + exon + ", stringr::str_c(svs, ":exon"))
                           ),
-                        BPPARAM = ifelse(parallel, BiocParallel::bpparam(), NULL),
+                        BPPARAM = BPPARAM,
                         quiet = quiet)
   # Rename LFC column for consistency and human-readability
   dxr <- dxr %>% 
