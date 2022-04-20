@@ -19,20 +19,23 @@ knitr::opts_chunk$set(
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-The goal of pairedGSEA is to ...
 
-## Installation
+## Install from Github
 
 
-``` {r isntall, eval=FALSE}
+``` {r install, eval=FALSE}
 devtools::install_github("shdam/pairedGSEA")
 ```
 
-## Example
 
-This is a basic example which shows you how to solve a common problem:
+## Vignettes
 
-```{r example, eval=FALSE}
+Vignettes are not finalized.
+
+
+## Usage
+
+```{r usage, eval=FALSE}
 library(pairedGSEA)
 ## basic example code
 ```

@@ -1,5 +1,5 @@
 #' Combine experiments
-#' 
+#' @noRd
 combine_experiments <- function(md_dir = "metadata"){
   ### List metadata files
   md_files <- list.files(md_dir, full.names = TRUE)
@@ -11,7 +11,7 @@ combine_experiments <- function(md_dir = "metadata"){
 }
 
 #' Load data from ARCHS4 database
-#' 
+#' @noRd
 load_archs4 <- function(samples, archs4db, gtf = NULL){
   
   pairedGSEA:::check_missing_package("rhdf5", repo = "Bioc")

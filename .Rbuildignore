@@ -7,4 +7,6 @@ $run_dev.*
 ^README\.Rmd$
 ^tmp$
 ^results$
+^metadata$
 ^figs$
+^LICENSE\.md$

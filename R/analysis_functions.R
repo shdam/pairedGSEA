@@ -1,6 +1,8 @@
 
 #' Run DESeq2 and DEXSeq analyses
 #' 
+#' @noRd
+#' @param row A row from the data.frame of experiments generated with \code{combine_experiments}
 run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
@@ -60,7 +62,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
 
 
 #' Analyse experiments
-#' 
+#' @noRd
 analyseExperiment <- function(row){
   
   
@@ -204,12 +206,12 @@ analyseExperiment <- function(row){
     ### Significant genes
     resGenes <- comb %>% 
       filter(!is.na(pvalue_deseq2) & !is.na(ensembl_gene)) %>%
-      mutate(padj = p.adjust(pvalue_deseq2, "fdr")) %>% 
+      mutate(padj = stats::p.adjust(pvalue_deseq2, "fdr")) %>% 
       filter(padj < 0.05) %>% 
       arrange(padj)
     dxrGenes <- comb %>% 
       filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>%
-      mutate(padj = p.adjust(pvalue_dexseq, "fdr")) %>% 
+      mutate(padj = stats::p.adjust(pvalue_dexseq, "fdr")) %>% 
       filter(padj < 0.05) %>% 
       arrange(padj)
     resdxrGenes <- resGenes %>% 
@@ -229,6 +231,9 @@ analyseExperiment <- function(row){
   
   
 }
+
+#' Analyse experiments
+#' @noRd
 analyse_experiment <- function(row){
   
   
@@ -334,12 +339,12 @@ analyse_experiment <- function(row){
     ### Significant genes
     genes_deseq <- aggregated_pvals %>% 
       dplyr::filter(!is.na(pvalue_deseq) & !is.na(ensembl_gene)) %>%
-      dplyr::mutate(padj = p.adjust(pvalue_deseq, "fdr")) %>% 
+      dplyr::mutate(padj = stats::p.adjust(pvalue_deseq, "fdr")) %>% 
       dplyr::filter(padj < 0.05) %>% 
       dplyr::arrange(padj)
     genes_dexseq <- aggregated_pvals %>% 
       dplyr::filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>%
-      dplyr::mutate(padj = p.adjust(pvalue_dexseq, "fdr")) %>% 
+      dplyr::mutate(padj = stats::p.adjust(pvalue_dexseq, "fdr")) %>% 
       dplyr::filter(padj < 0.05) %>% 
       dplyr::arrange(padj)
     genes_paired <- genes_deseq %>% 
@@ -359,8 +364,9 @@ analyse_experiment <- function(row){
   
   
 }
-#' Per gene p value aggregation
-#' 
+
+#' Per gene p-value aggregation
+#' @noRd
 perGenePValue <- function (df,
                            gene = "gene",
                            p = "pvalue",
@@ -397,6 +403,8 @@ perGenePValue <- function (df,
                                             TRUE ~ pvalue)) 
   return(res)
 }
+#' Per gene p-value aggregation
+#' @noRd
 per_gene_pvalue <- function (df,
                              gene = "gene",
                              p = "pvalue",
@@ -437,7 +445,7 @@ per_gene_pvalue <- function (df,
 
 
 #' Run SVA and export dds
-#' 
+#' @noRd
 getDDS <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble

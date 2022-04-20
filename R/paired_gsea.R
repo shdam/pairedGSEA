@@ -14,7 +14,6 @@
 #' @param parallel (Default: FALSE) If FALSE, no parallelization. If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.
 #' @param BPPARAM (Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE. If not specified, the parameters last registered with register will be used.
 #' 
-#' @importFrom magrittr %>%
 #' @export
 paired_gsea <- function(tx_count,
                         metadata,
@@ -94,4 +93,191 @@ paired_gsea <- function(tx_count,
   pairedGSEA:::store_result(dexseq_results, paste0(experiment_title, "_dexseqres.RDS"), "DEXSeq results", quiet = quiet)
   
   if(!quiet) message(experiment_title, " is analysed.")
+}
+
+
+#' Prepare metadata
+#' 
+#' @inheritParams paired_gsea
+prepare_metadata <- function(metadata, group_col, comparison){
+  
+  if(typeof(metadata[1]) == "character" & length(metadata) == 1){
+    if(stringr::str_ends(metadata, ".xlsx")) metadata <- readxl::read_excel(metadata)
+    else if(stringr::str_ends(metadata, ".csv")) metadata <- readr::read_csv(metadata)
+  } else if("data.frame" %!in% class(metadata)){stop("Please provide path to a metadata file or a data.frame object.")}
+  
+  if(group_col %!in% colnames(metadata)) stop("Could not find column ", group_col, " in metadata.")
+  # Ensure comparison is on the right format
+  comparison <- pairedGSEA:::check_comparison(comparison)
+  # Remove irrelevant groups
+  metadata <- metadata[metadata[[group_col]] %in% comparison, ]
+  
+  # Check metadata content
+  if(nrow(metadata) == 0) stop("The values in", group_col, "does not correspond to the comparison values.\nPlease ensure what comes before and after the 'v' in comparison are what is found in the", group_col, "column.")
+  
+  # Add comparison levels to metadata
+  metadata[[group_col]] <- factor(metadata[[group_col]], levels = comparison)
+  
+  return(metadata)
+}
+
+
+
+
+#' Run SVA on DESeqDataSet
+#' @inheritParams paired_gsea
+#' @param dds A DESeqDataSet
+run_sva <- function(dds, group_col, quiet = FALSE){
+  
+  
+  if(!quiet) message("Running SVA")
+  # Normalize counts with DESeq2 for SVA
+  normalized_counts <- DESeq2::normTransform(dds) %>% 
+    SummarizedExperiment::assay()
+  
+  # Extract metadata
+  metadata <- SummarizedExperiment::colData(dds)
+  # Define model matrix 
+  mod1 <- stats::model.matrix(~metadata[[group_col]])
+  mod0 <- cbind(mod1[, 1])
+  
+  # Run SVA
+  svseq <- sva::sva(normalized_counts, mod1, mod0)
+  message("Found ", svseq$n.sv, " surrogate variables")
+  # Store surrogate variables and rename for ease of reference
+  svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
+  colnames(svs) <- paste0("sv", 1:svseq$n.sv)
+  
+  if(!quiet) message("Redefining DESeq design formula\n")
+  # Add svs to dds colData
+  SummarizedExperiment::colData(dds) <- cbind(metadata, svs)
+  # Redefine design formula to include svs
+  DESeq2::design(dds) <- stats::formula(paste0("~", group_col, "+", stringr::str_c(colnames(svs), collapse = "+")))
+  
+  
+  return(dds)
+}
+
+
+#' Run DEXSeq analysis
+#' 
+#' @inheritParams paired_gsea
+#' @inheritParams run_sva
+run_dexseq <- function(dds,
+                       group_col,
+                       comparison,
+                       dxd_out = FALSE,
+                       quiet = FALSE,
+                       parallel = FALSE,
+                       BPPARAM = BiocParallel::bpparam()){
+  
+  if(parallel) pairedGSEA:::check_missing_package("BiocParallel", "Bioc")
+  
+  if(!quiet) message("Initiating DEXSeq")
+  # Ensure correct format for comparison
+  comparison <- pairedGSEA:::check_comparison(comparison)
+  
+  # Extract group and feature from rownames of DESeq2 object
+  group_feat <- rownames(dds) %>% 
+    stringr::str_split(":", simplify = TRUE)
+  
+  # Extract the found surrogate variables
+  svs <- as.character(DESeq2::design(dds))[2] %>% 
+    stringr::str_split(" \\+ ", n = 2, simplify = TRUE) %>% 
+    .[2] %>% 
+    stringr::str_split(" \\+ ", simplify = TRUE)
+  
+  # Add surrogate variables to DEXSeq design formula
+  design_formula <- stats::formula(
+    paste0("~ sample + exon + condition:exon + ", stringr::str_c(svs, ":exon", collapse = " + "))
+  )
+  
+  # Define sample data based on DESeq2 object
+  sample_data <- SummarizedExperiment::colData(dds) %>% 
+    as.data.frame(row.names = .$id) %>% 
+    dplyr::select(dplyr::all_of(group_col), dplyr::starts_with("sv")) %>% 
+    dplyr::rename(condition = dplyr::all_of(group_col)) %>% 
+    dplyr::mutate(condition = dplyr::case_when(condition == comparison[1] ~ "B",      # baseline 
+                                               condition == comparison[2] ~ "C") %>%  # condition
+                    factor(levels = c("C", "B")))
+  
+  
+  # Convert to DEXSeqDataSet
+  if(!quiet) message("Creating DEXSeqDataSet")
+  dxd <- DEXSeq::DEXSeqDataSet(
+    countData = DESeq2::counts(dds),
+    sampleData = sample_data,
+    design = design_formula,
+    groupID = group_feat[, 1],
+    featureID = group_feat[, 2]
+  )
+  
+  # Store DEXSeqDataSet with DEXSeq analysis
+  if(typeof(dxd_out) == "character") {
+    pairedGSEA:::store_result(dxd, dxd_out, "DEXSeqDataSet", quiet = quiet)
+  }
+  ### Run DEXSeq
+  if(!quiet) message("Running DEXSeq")
+  if(!parallel) BiocParallel::register(BiocParallel::SerialParam())
+  dxr <- DEXSeq::DEXSeq(dxd,
+                        reducedModel = stats::formula(
+                          paste0("~ sample + exon + ", stringr::str_c(svs, ":exon"))
+                        ),
+                        BPPARAM = BPPARAM,
+                        quiet = quiet)
+  # Rename LFC column for consistency and human-readability
+  dxr <- dxr %>% 
+    tibble::as_tibble() %>% 
+    dplyr::rename(log2FC_dexseq = log2fold_B_C)
+  
+  return(dxr)
+}
+
+
+
+
+
+
+
+#' Run DESeq2 analysis
+#' @inheritParams paired_gsea
+#' @inheritParams run_sva
+run_deseq <- function(dds,
+                      group_col,
+                      comparison,
+                      fit_type = "local",
+                      dds_out = FALSE,
+                      quiet = FALSE,
+                      parallel = FALSE,
+                      BPPARAM = BiocParallel::bpparam()){
+  
+  # Register parallel
+  if(parallel) pairedGSEA:::check_missing_package("BiocParallel", "Bioc")
+  
+  if(!quiet) message("Running DESeq2")
+  dds <- DESeq2::DESeq(dds, parallel = parallel, BPPARAM = BPPARAM,
+                       fitType = fit_type, quiet = FALSE)
+  
+  # Store DESeqDataSet with DESeq2 analysis
+  if(typeof(dds_out) == "character") {
+    pairedGSEA:::store_result(dds, dds_out, "DESeqDataSet", quiet = quiet)
+  }
+  
+  # Ensure correct format for comparison
+  comparison <- pairedGSEA:::check_comparison(comparison)
+  
+  if(!quiet) message("Extracting results")
+  deseq_results <- DESeq2::results(dds,
+                                   contrast = c(group_col, comparison),
+                                   parallel = parallel,
+                                   BPPARAM = BPPARAM)
+  
+  
+  # Convert result to tibble
+  deseq_results <- deseq_results %>% 
+    tibble::as_tibble(rownames = "gene_tx") %>% 
+    tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
+    dplyr::rename(log2FC_deseq = log2FoldChange)
+  
+  return(deseq_results)
 }

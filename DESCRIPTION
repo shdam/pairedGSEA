@@ -1,17 +1,32 @@
 Package: pairedGSEA
 Title: Paired DESeq and DEXSeq analysis
 Version: 0.0.0.9000
-Authors@R: 
-    person("Søren H.", "Dam", , "sohdam@dtu.dk", role = c("cre", "aut"))
+Authors@R: c(
+  person(given = "Søren Helweg",
+    family = "Dam",
+    email = "sohdam@dtu.dk",
+    role = c("cre", "aut"),
+    comment = c(ORCID = "0000-0002-9895-0930")),
+  person(given = "Lars Rønn",
+    family = "Olsen",
+    email = "lronn@dtu.dk",
+    role = "aut",
+    comment = c(ORCID = "0000-0002-6725-7850")),
+  person(given = "Kristoffer",
+    family = "Vitting-Seerup",
+    email = "krivi@dtu.dk",
+    role = "aut",
+    comment = c(ORCID = "0000-0002-6450-0608"))
+    )
 Description: PKG_DESC.
-License: What license is it under?
+License: MIT + file LICENSE
 Imports: 
-    aggregation,
     DESeq2,
     DEXSeq,
     dplyr,
     magrittr,
     fgsea,
+    aggregation,
     purrr,
     readr,
     readxl,
@@ -20,12 +35,14 @@ Imports:
     SummarizedExperiment,
     sva,
     tibble,
-    tidyr
+    tidyr,
+    utils
 Suggests: 
     BiocParallel,
     openxlsx,
     rhdf5,
     msigdbr,
+    spelling,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Encoding: UTF-8

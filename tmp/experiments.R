@@ -30,8 +30,10 @@ row <- experiments[1,]
 gene_sets <- prepare_msigdb()
 
 apply(row, 1, run_experiment, archs4db)
-apply(experiments, 1, analyseExperiment)
 apply(row, 1, analyse_experiment)
+
+apply(experiments, 1, run_experiment, archs4db)
+apply(experiments, 1, analyse_experiment)
 apply(experiments, 1, getDDS, archs4db)
 
 
@@ -41,8 +43,6 @@ test <- stringr::str_c(experiments$study, experiments$`comparison_title (empty_i
 
 test[which(table(test)>1)]
 
-apply(experiments[rerun, ], 1, runExperiment)
-apply(experiments[rerun, ], 1, analyseExperiment)
 
 named_group_split <- function(.tbl, ...) {
   grouped <- group_by(.tbl, ...)
@@ -54,6 +54,8 @@ named_group_split <- function(.tbl, ...) {
 }
 
 rerun <- c(59,60, 73, 74, 184, 185)
+apply(experiments[rerun, ], 1, runExperiment)
+apply(experiments[rerun, ], 1, analyseExperiment)
 
 apply(experiments, 1, missingExperiment)
 
@@ -212,7 +214,7 @@ foratot <- foratot %>%
   dplyr::select(-dplyr::starts_with("overlapG"))
 concatFora %>% 
   # filter(experiment == experiment[[1]]) %>% 
-  pivot_longer(cols = starts_with("de"),names_to = "analysis", values_to = "present") %>% 
+  pivot_longer(cols = starts_with("de"), names_to = "analysis", values_to = "present") %>% 
   mutate(present = as.factor(present),
          id = 1:nrow(.)) %>% 
   ggplot(aes(x = analysis, y = id, fill = present)) +
