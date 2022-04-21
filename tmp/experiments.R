@@ -2,7 +2,8 @@
 pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
 # pkgload::load_all()
 
-
+source("tmp/run_experiment.R")
+source("tmp/run_analysis.R")
 
 ### Combine each and extract the comparisons to be run
 experiments <- combine_experiments()
@@ -35,7 +36,6 @@ apply(row, 1, analyse_experiment)
 apply(experiments, 1, run_experiment, archs4db)
 apply(experiments, 1, analyse_experiment)
 apply(experiments, 1, getDDS, archs4db)
-
 
 
 ### Check missing
@@ -523,7 +523,7 @@ gene_similarity <- concatGenes %>%
     jaccard <- df %>% 
       select(starts_with("DE")) %>% 
       proxy::simil(by_rows = FALSE, method = "Jaccard")
-    tibble(Simpson = simpson[1], Jaccard = jaccard[1])
+    tibble(`Overlap Coefficient` = simpson[1], Jaccard = jaccard[1])
   }) %>% 
   bind_rows() %>% 
   mutate(experiment = concatGenes %>% distinct(experiment) %>% pull())
@@ -532,8 +532,8 @@ fig1c <- gene_similarity %>%
   pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
   ggplot(aes(x = Similarity, fill = Method)) +
   geom_density(alpha = 0.5) +
-  labs(x = "Similarity scores",
-       y = "Density") +
+  # geom_histogram(binwidth = 0.02) +
+  labs(x = "Similarity scores") +
   theme_classic()
 
 ggsave(plot = fig1c, filename = "figs/fig1c.png")
@@ -553,18 +553,22 @@ foratot <- readRDS("results/foratot.RDS")
 found_pathways <- foratot %>% 
   group_by(experiment) %>% 
   summarise(DESeq2 = sum(padj_deseq2 < 0.05, na.rm = TRUE),
-            # DEXSeq = sum(padj_dexseq < 0.05, na.rm = TRUE),
-            Paired = sum(padj_decombined < 0.05, na.rm = TRUE),
-            Overlap = sum((padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
-            `Only paired` = sum((padj_decombined < 0.05) & !(padj_deseq2 < 0.05), na.rm = TRUE),
-            `Only DESeq2` = sum(!(padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE)
+            DEXSeq = sum(padj_dexseq < 0.05, na.rm = TRUE),
+            Overlap = sum((padj_dexseq < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
+            # Paired = sum(padj_decombined < 0.05, na.rm = TRUE),
+            # Overlap2 = sum((padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
+            # `Only paired` = sum((padj_decombined < 0.05) & !(padj_deseq2 < 0.05), na.rm = TRUE),
+            # `Only DESeq2` = sum(!(padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
+            `Only DEXSeq` = sum(!(padj_deseq2 < 0.05) & (padj_dexseq < 0.05), na.rm = TRUE)
             )
 
 ## as violin
 fig1d <- found_pathways %>% 
   pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "Pathways") %>% 
   # filter(Pathways != 0) %>%
-  mutate(Analysis = factor(Analysis, levels = c("DESeq2", "Paired", "Overlap", "Only paired", "Only DESeq2"))) %>% 
+  mutate(Analysis = factor(Analysis, levels = c("DESeq2", "DEXSeq", "Overlap", "Only DEXSeq")
+                             #c("DESeq2", "Paired", "Overlap", "Only paired", "Only DESeq2")
+                             )) %>% 
   ggplot(aes(y = Pathways, x = Analysis)) +
   scale_y_log10() +
   # stat_summary(fun = median, geom = "point", size = 3, color = "red", shape = 18) +
@@ -645,6 +649,20 @@ foratot %>%
   theme_classic()
 
 
+# Odds ratio ----
+
+
+fora_res <- readRDS("results/1_GSE154968_HaCaT cells transfected with miR-21-3p_fora_deseq.RDS")
+overlap <- 277
+size <- 990
+size_genes <- 1748
+size_universe <- 17073
+
+(overlap / size_genes) / (size / size_universe)
+# (overlap / size) / (size_genes / size_universe)
+# (overlap*size_universe)/(size_genes*size)
+fora_res %>% mutate(odds_ratio = (overlap / size_genes) / (size_geneset / size_universe)) %>% pull(odds_ratio) %>% qplot()
+# fora_res %>% mutate(odds_ratio = (overlap / size_geneset) / (size_genes / size_universe)) %>% pull(odds_ratio) %>% qplot()
 ## Gene correlation ----
 
 correlated_genes <- concatGenes %>% 

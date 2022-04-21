@@ -39,7 +39,7 @@ Imports:
     utils
 Suggests: 
     BiocParallel,
-    openxlsx,
+    writexl,
     rhdf5,
     msigdbr,
     spelling,

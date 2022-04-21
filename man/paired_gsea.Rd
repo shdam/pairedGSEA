@@ -11,11 +11,10 @@ paired_gsea(
   sample_col,
   comparison,
   experiment_title = "MyLittleExperiment",
+  store_results = TRUE,
   run_sva = TRUE,
   prefilter = 10,
   fit_type = "local",
-  dds_out = FALSE,
-  dxd_out = FALSE,
   quiet = FALSE,
   parallel = FALSE,
   BPPARAM = BiocParallel::bpparam()
@@ -34,15 +33,13 @@ paired_gsea(
 
 \item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
 
+\item{store_results}{(Default: TRUE) A logical indicating if results should be stored in the folder "results/".}
+
 \item{run_sva}{(Default: TRUE) A logical stating whether SVA should be run.}
 
 \item{prefilter}{(Default: 10) The prefilter threshold, where rowSums lower than the prefilter threshold will be removed from the count matrix. Set to 0 or FALSE to prevent prefiltering}
 
 \item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or "glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
-
-\item{dds_out}{(Default: FALSE) Put a file string to store DESeqDataSet after DESeq analysis, before results are extracted}
-
-\item{dxd_out}{(Default: FALSE) Put a file string to store DEXSeqDataSet after DEXSeq analysis, before results are extracted}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 

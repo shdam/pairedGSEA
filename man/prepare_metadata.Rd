@@ -16,3 +16,4 @@ prepare_metadata(metadata, group_col, comparison)
 \description{
 Prepare metadata
 }
+\keyword{internal}

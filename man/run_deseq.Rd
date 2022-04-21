@@ -9,7 +9,8 @@ run_deseq(
   group_col,
   comparison,
   fit_type = "local",
-  dds_out = FALSE,
+  experiment_title = "MyLittleExperiment",
+  store_results = FALSE,
   quiet = FALSE,
   parallel = FALSE,
   BPPARAM = BiocParallel::bpparam()
@@ -24,7 +25,9 @@ run_deseq(
 
 \item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or "glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
 
-\item{dds_out}{(Default: FALSE) Put a file string to store DESeqDataSet after DESeq analysis, before results are extracted}
+\item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
+
+\item{store_results}{(Default: TRUE) A logical indicating if results should be stored in the folder "results/".}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 
@@ -35,3 +38,4 @@ run_deseq(
 \description{
 Run DESeq2 analysis
 }
+\keyword{internal}

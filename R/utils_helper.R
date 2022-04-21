@@ -79,14 +79,14 @@ check_comparison <- function(comparison){
 #' Store result object
 #' @noRd
 store_result <- function(object, file, analysis = "results", quiet = FALSE){
-  pairedGSEA:::check_make_dir("results/")
+  check_make_dir("results/")
   if(!startsWith(file, "results")) file <- paste0("results/", file)
   
   if(endsWith(toupper(file), ".RDS")) saveRDS(object, file = file)
   else if(endsWith(tolower(file), ".rdata")) save(object, file = file)
   else if(endsWith(tolower(file), ".csv")) utils::write.csv(object, file =  file)
   else if(endsWith(tolower(file), ".tsv")) utils::write.table(object, file = file)
-  else if(endsWith(tolower(file), ".xlsx")) {pairedGSEA:::check_missing_package("openxlsx"); openxlsx::write.xlsx(object, file = file)}
+  else if(endsWith(tolower(file), ".xlsx")) {check_missing_package("writexl"); writexl::write_xlsx(object, path = file)}
   else{stop("Could not store result object ", file)}
   if(!quiet) message("Stored ", analysis, " in ", file)
 }

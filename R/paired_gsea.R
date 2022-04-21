@@ -8,8 +8,7 @@
 #' @param run_sva (Default: TRUE) A logical stating whether SVA should be run.
 #' @param prefilter (Default: 10) The prefilter threshold, where rowSums lower than the prefilter threshold will be removed from the count matrix. Set to 0 or FALSE to prevent prefiltering
 #' @param fit_type (Default: "local") Either "parametric", "local", "mean", or "glmGamPoi" for the type of fitting of dispersions to the mean intensity.
-#' @param dds_out (Default: FALSE) Put a file string to store DESeqDataSet after DESeq analysis, before results are extracted
-#' @param dxd_out (Default: FALSE) Put a file string to store DEXSeqDataSet after DEXSeq analysis, before results are extracted
+#' @param store_results (Default: TRUE) A logical indicating if results should be stored in the folder "results/".
 #' @param quiet (Default: FALSE) Whether to print messages
 #' @param parallel (Default: FALSE) If FALSE, no parallelization. If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.
 #' @param BPPARAM (Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE. If not specified, the parameters last registered with register will be used.
@@ -21,26 +20,25 @@ paired_gsea <- function(tx_count,
                         sample_col,
                         comparison,
                         experiment_title = "MyLittleExperiment",
+                        store_results = TRUE,
                         run_sva = TRUE,
                         prefilter = 10,
                         fit_type = "local",
-                        dds_out = FALSE,
-                        dxd_out = FALSE,
                         quiet = FALSE,
                         parallel = FALSE,
                         BPPARAM = BiocParallel::bpparam()){
   
   # Check parallel
-  if(parallel) pairedGSEA:::check_missing_package("BiocParallel", "Bioc")
+  if(parallel) check_missing_package("BiocParallel", "Bioc")
   
   # Ensure correct format for comparison
-  comparison <- pairedGSEA:::check_comparison(comparison)
+  comparison <- check_comparison(comparison)
   
   if(!quiet) message("Running ", experiment_title)
   
   # Load metadata
   if(!quiet) message("Preparing metadata")
-  metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, comparison)
+  metadata <- prepare_metadata(metadata, group_col, comparison)
   
   # Check sample_col is in metadata
   stopifnot("Sample column not in metadata" = sample_col %in% colnames(metadata))
@@ -52,53 +50,59 @@ paired_gsea <- function(tx_count,
   tx_count <- tx_count[, metadata[[sample_col]]]
   
   ### Prefiltering
-  if(prefilter) tx_count <- pairedGSEA:::pre_filter(tx_count, prefilter)
+  if(prefilter) tx_count <- pre_filter(tx_count, prefilter)
   
   if(!quiet) message("Converting count matrix to DESeqDataSet")
   # Create DDS from count matrix
-  dds <- pairedGSEA:::convert_matrix_to_dds(tx_count, metadata, group_col)
+  dds <- convert_matrix_to_dds(tx_count, metadata, group_col)
   
   if(run_sva){
-    dds <- pairedGSEA:::run_sva(dds, group_col, quiet = quiet)
+    dds <- run_sva(dds, group_col, quiet = quiet)
   }
   
 
+
   ### Run DESeq2
-  deseq_results <- pairedGSEA:::run_deseq(
+  deseq_results <- run_deseq(
     dds,
     group_col = group_col,
     comparison = comparison,
     fit_type = fit_type,
-    dds_out = dds_out,
+    experiment_title = experiment_title,
+    store_results = store_results,
     quiet = quiet,
     parallel = parallel,
     BPPARAM = BPPARAM
     )
   
   # Store results
-  pairedGSEA:::store_result(deseq_results, paste0(experiment_title, "_deseq2res.RDS"), "DESeq2 results", quiet = quiet)
-  rm(deseq_results)
+  if(store_results) store_result(deseq_results, paste0(experiment_title, "_deseq2res.RDS"), "DESeq2 results", quiet = quiet)
+  
   
   ### Run DEXSeq
-  dexseq_results <- pairedGSEA:::run_dexseq(
+  dexseq_results <- run_dexseq(
     dds,
     group_col = group_col,
     comparison = comparison,
-    dxd_out = dxd_out,
+    experiment_title = experiment_title,
+    store_results = store_results,
     quiet = quiet,
     parallel = parallel,
     BPPARAM = BPPARAM
     )
   # Store results
-  pairedGSEA:::store_result(dexseq_results, paste0(experiment_title, "_dexseqres.RDS"), "DEXSeq results", quiet = quiet)
+  if(store_results) store_result(dexseq_results, paste0(experiment_title, "_dexseqres.RDS"), "DEXSeq results", quiet = quiet)
   
   if(!quiet) message(experiment_title, " is analysed.")
+  
+  return(list("deseq" = deseq_results, "dexseq" = dexseq_results))
 }
 
 
 #' Prepare metadata
 #' 
 #' @inheritParams paired_gsea
+#' @keywords internal
 prepare_metadata <- function(metadata, group_col, comparison){
   
   if(typeof(metadata[1]) == "character" & length(metadata) == 1){
@@ -108,7 +112,7 @@ prepare_metadata <- function(metadata, group_col, comparison){
   
   if(group_col %!in% colnames(metadata)) stop("Could not find column ", group_col, " in metadata.")
   # Ensure comparison is on the right format
-  comparison <- pairedGSEA:::check_comparison(comparison)
+  comparison <- check_comparison(comparison)
   # Remove irrelevant groups
   metadata <- metadata[metadata[[group_col]] %in% comparison, ]
   
@@ -127,6 +131,7 @@ prepare_metadata <- function(metadata, group_col, comparison){
 #' Run SVA on DESeqDataSet
 #' @inheritParams paired_gsea
 #' @param dds A DESeqDataSet
+#' @keywords internal
 run_sva <- function(dds, group_col, quiet = FALSE){
   
   
@@ -163,19 +168,21 @@ run_sva <- function(dds, group_col, quiet = FALSE){
 #' 
 #' @inheritParams paired_gsea
 #' @inheritParams run_sva
+#' @keywords internal
 run_dexseq <- function(dds,
                        group_col,
                        comparison,
-                       dxd_out = FALSE,
+                       experiment_title = "MyLittleExperiment",
+                       store_results = FALSE,
                        quiet = FALSE,
                        parallel = FALSE,
                        BPPARAM = BiocParallel::bpparam()){
   
-  if(parallel) pairedGSEA:::check_missing_package("BiocParallel", "Bioc")
+  if(parallel) check_missing_package("BiocParallel", "Bioc")
   
   if(!quiet) message("Initiating DEXSeq")
   # Ensure correct format for comparison
-  comparison <- pairedGSEA:::check_comparison(comparison)
+  comparison <- check_comparison(comparison)
   
   # Extract group and feature from rownames of DESeq2 object
   group_feat <- rownames(dds) %>% 
@@ -212,25 +219,28 @@ run_dexseq <- function(dds,
     featureID = group_feat[, 2]
   )
   
-  # Store DEXSeqDataSet with DEXSeq analysis
-  if(typeof(dxd_out) == "character") {
-    pairedGSEA:::store_result(dxd, dxd_out, "DEXSeqDataSet", quiet = quiet)
+  # Store DEXSeqDataSet before DEXSeq analysis
+  if(store_results) {
+    store_result(dxd, paste0(experiment_title, "_dxd.RDS"), "DEXSeqDataSet", quiet = quiet)
   }
+  
   ### Run DEXSeq
   if(!quiet) message("Running DEXSeq")
   if(!parallel) BiocParallel::register(BiocParallel::SerialParam())
-  dxr <- DEXSeq::DEXSeq(dxd,
+  dexseq_results <- DEXSeq::DEXSeq(dxd,
                         reducedModel = stats::formula(
-                          paste0("~ sample + exon + ", stringr::str_c(svs, ":exon"))
+                          paste0("~ sample + exon + ", stringr::str_c(svs, ":exon", collapse = " + "))
                         ),
                         BPPARAM = BPPARAM,
                         quiet = quiet)
+  
+  
   # Rename LFC column for consistency and human-readability
-  dxr <- dxr %>% 
+  dexseq_results <- dexseq_results %>% 
     tibble::as_tibble() %>% 
     dplyr::rename(log2FC_dexseq = log2fold_B_C)
   
-  return(dxr)
+  return(dexseq_results)
 }
 
 
@@ -242,29 +252,31 @@ run_dexseq <- function(dds,
 #' Run DESeq2 analysis
 #' @inheritParams paired_gsea
 #' @inheritParams run_sva
+#' @keywords internal
 run_deseq <- function(dds,
                       group_col,
                       comparison,
                       fit_type = "local",
-                      dds_out = FALSE,
+                      experiment_title = "MyLittleExperiment",
+                      store_results = FALSE,
                       quiet = FALSE,
                       parallel = FALSE,
                       BPPARAM = BiocParallel::bpparam()){
   
   # Register parallel
-  if(parallel) pairedGSEA:::check_missing_package("BiocParallel", "Bioc")
+  if(parallel) check_missing_package("BiocParallel", "Bioc")
   
   if(!quiet) message("Running DESeq2")
   dds <- DESeq2::DESeq(dds, parallel = parallel, BPPARAM = BPPARAM,
                        fitType = fit_type, quiet = FALSE)
   
   # Store DESeqDataSet with DESeq2 analysis
-  if(typeof(dds_out) == "character") {
-    pairedGSEA:::store_result(dds, dds_out, "DESeqDataSet", quiet = quiet)
+  if(store_results) {
+    store_result(dds, "_dds", "DESeqDataSet", quiet = quiet)
   }
   
   # Ensure correct format for comparison
-  comparison <- pairedGSEA:::check_comparison(comparison)
+  comparison <- check_comparison(comparison)
   
   if(!quiet) message("Extracting results")
   deseq_results <- DESeq2::results(dds,

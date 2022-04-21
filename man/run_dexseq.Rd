@@ -8,7 +8,8 @@ run_dexseq(
   dds,
   group_col,
   comparison,
-  dxd_out = FALSE,
+  experiment_title = "MyLittleExperiment",
+  store_results = FALSE,
   quiet = FALSE,
   parallel = FALSE,
   BPPARAM = BiocParallel::bpparam()
@@ -21,7 +22,9 @@ run_dexseq(
 
 \item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
 
-\item{dxd_out}{(Default: FALSE) Put a file string to store DEXSeqDataSet after DEXSeq analysis, before results are extracted}
+\item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
+
+\item{store_results}{(Default: TRUE) A logical indicating if results should be stored in the folder "results/".}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 
@@ -32,3 +35,4 @@ run_dexseq(
 \description{
 Run DEXSeq analysis
 }
+\keyword{internal}

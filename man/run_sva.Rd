@@ -16,3 +16,4 @@ run_sva(dds, group_col, quiet = FALSE)
 \description{
 Run SVA on DESeqDataSet
 }
+\keyword{internal}

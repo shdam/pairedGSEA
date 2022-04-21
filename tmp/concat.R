@@ -113,7 +113,47 @@ concatForaResults <- function(experiments){
   saveRDS(concatFora, "results/concatFora.RDS")
   return(concatFora)
 }
-
+concatenate_fora <- function(experiments){
+  
+  fora_all <- tibble::tibble()
+  
+  for(num in 1:nrow(experiments)){
+    row <- experiments[num, ]
+    ### Load metadata
+    md_file <- row$filename
+    data_name <- basename(md_file) %>% 
+      stringr::str_remove(".xlsx") %>% 
+      stringr::str_remove(".csv") 
+    ### Define experiment details
+    comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+    
+    message("Adding ", experiment_title)
+    
+    ### Load results
+    fora_deseq <- readRDS(paste0("results/", experiment_title, "_fora_deseq.RDS"))
+    fora_dexseq <- readRDS(paste0("results/", experiment_title, "_fora_dexseq.RDS"))
+    fora_paired <- readRDS(paste0("results/", experiment_title, "_fora_paired.RDS"))
+    
+    ### Join results
+    fora_joined <- fora_deseq %>% 
+      dplyr::full_join(fora_dexseq, by = c("pathway", "size_geneset", "size_universe"), suffix = c("_deseq", "_dexseq")) %>% 
+      dplyr::full_join(fora_paired, by = c("pathway", "size_geneset", "size_universe")) %>% 
+      dplyr::rename(padj_paired = padj,
+                    pval_paired = pval,
+                    overlap_paired = overlap,
+                    size_genes_paired = size_genes,
+                    odds_ratio_paired = odds_ratio,
+                    enrichment_score_paired = enrichment_score) %>% 
+      dplyr::select(-dplyr::starts_with("overlapGenes")) %>% 
+      dplyr::mutate(experiment = experiment_title)
+    
+    fora_all <- fora_all %>% 
+      dplyr::bind_rows(fora_joined)
+  }
+  saveRDS(fora_all, "results/fora_all.RDS")
+  return(fora_all)
+}
 # deseq2 + dexseq ----
 concatRes <- function(experiments){
   
