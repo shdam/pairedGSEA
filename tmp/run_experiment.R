@@ -27,7 +27,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   
   ### Prepare for DE
   if(is.null(tx_count)){
-    tx_count <- pairedGSEA:::prepare_tx_count(
+    tx_count <- prepare_tx_count(
       metadata = md_file,
       gtf = gtf,
       archs4db = archs4db,
@@ -73,7 +73,7 @@ combine_experiments <- function(md_dir = "metadata"){
 #' @noRd
 load_archs4 <- function(samples, archs4db, gtf = NULL){
   
-  check_missing_package("rhdf5", repo = "Bioc")
+  pairedGSEA:::check_missing_package("rhdf5", repo = "Bioc")
   
   # Check that archsdb exists
   if(!file.exists(archs4db) | stringr::str_ends(archs4db, ".h5", negate = TRUE)){
@@ -134,7 +134,7 @@ add_tpm <- function(deseq_results, samples, archs4db_tpm, gtf = NULL){
 #' 
 #' @noRd
 prepare_msigdb <- function(category = "C5"){
-  check_missing_package("msigdbr")
+  pairedGSEA:::check_missing_package("msigdbr")
   
   gene_sets <- msigdbr::msigdbr(category = "C5")
   # Split dataframe based on gene set names
@@ -162,7 +162,7 @@ prepare_tx_count <- function(metadata,
   if(!is.null(archs4db)) if(!file.exists(archs4db)) stop("Database file is missing!\nLooking for: ", archs4db)
   
   # Loading metadata
-  metadata <- prepare_metadata(metadata, group_col, comparison)
+  metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, comparison)
   
   # Define samples
   if(samples %in% colnames(metadata)) {samples <- metadata[[samples]]
