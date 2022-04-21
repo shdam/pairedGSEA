@@ -272,7 +272,7 @@ run_deseq <- function(dds,
   
   # Store DESeqDataSet with DESeq2 analysis
   if(store_results) {
-    store_result(dds, "_dds", "DESeqDataSet", quiet = quiet)
+    store_result(dds, paste0(experiment_title, "_dds.RDS"), "DESeqDataSet", quiet = quiet)
   }
   
   # Ensure correct format for comparison
