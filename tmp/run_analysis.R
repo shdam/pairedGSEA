@@ -44,16 +44,16 @@ run_analysis <- function(row){
     dxr_agg <- per_gene_pvalue(dxr, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
     res_agg <- per_gene_pvalue(res, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
     
-    (aggregated_pvals <- dplyr::full_join(res_agg, dxr_agg, by = "ensembl_gene", suffix = c("_deseq", "_dexseq")))
+    aggregated_pvals <- dplyr::full_join(res_agg, dxr_agg, by = "ensembl_gene", suffix = c("_deseq", "_dexseq"))
     
     
     # message("Storing aggregation result")
     pairedGSEA:::store_result(aggregated_pvals, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene aggregation")
   } else{
-    comb <- readRDS(paste0(experiment_title, "_aggregated_pvals.RDS"))
+    aggregated_pvals <- readRDS(paste0(experiment_title, "_aggregated_pvals.RDS"))
   }
   
-  if(FALSE){
+  if(TRUE){#fgsea
     message("Gene set enrichment analysis")
     
     ### Defining stats
@@ -106,7 +106,7 @@ run_analysis <- function(row){
   } # fgsea
   
   if(TRUE){ # fora
-    message("Running fora")
+    message("Over-representation analysis")
     ### Significant genes
     genes_deseq <- aggregated_pvals %>% 
       dplyr::filter(!is.na(pvalue_deseq) & !is.na(ensembl_gene)) %>%
@@ -121,6 +121,7 @@ run_analysis <- function(row){
     genes_paired <- genes_deseq %>% 
       dplyr::full_join(genes_dexseq, by = "ensembl_gene")
     
+    ### fora
     fora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$ensembl_gene, 
                               universe = unique(aggregated_pvals$ensembl_gene), minSize = 25) %>% 
       dplyr::rename(size_geneset = size) %>% 

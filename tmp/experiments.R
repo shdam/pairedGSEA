@@ -30,13 +30,14 @@ row <- experiments[1,]
 # Load MSigDB
 gene_sets <- prepare_msigdb()
 
-apply(row, 1, run_experiment, archs4db)
-apply(row, 1, analyse_experiment)
+# apply(row, 1, run_experiment, archs4db)
+# apply(row, 1, analyse_experiment)
 
 apply(experiments, 1, run_experiment, archs4db)
-apply(experiments, 1, analyse_experiment)
+apply(experiments[100:149, ], 1, run_analysis)
 apply(experiments, 1, getDDS, archs4db)
 
+#4_GSE156101_TP53 and TNKS1-2T Knockout  
 
 ### Check missing
 test <- stringr::str_c(experiments$study, experiments$`comparison_title (empty_if_not_okay)`)
@@ -207,7 +208,7 @@ concatFgsea %>%
 
 
 
-concatFora <- concatForaResults(experiments)
+concatFora <- concatenate_fora(experiments)
 concatFora <- readRDS("results/concatFora.RDS")
 foratot <- readRDS("results/foratot.RDS")
 foratot <- foratot %>% 
@@ -320,24 +321,27 @@ foratot %>%
 # [1] 71002
 
 # Rank each geneset within the experiments
-ranks <- foratot %>% 
-  dplyr::filter(padj_deseq2 < 0.05 | padj_decombined < 0.05) %>% 
+shifts <- foratot %>% 
+  dplyr::filter(padj_deseq < 0.05 | padj_dexseq < 0.05) %>% 
   dplyr::group_by(experiment) %>% 
-  dplyr::mutate(rank_deseq2 = rank(pval_deseq2),
+  dplyr::mutate(rank_deseq = rank(pval_deseq),
                 rank_dexseq = rank(pval_dexseq),
-                rank_combined = rank(pval_decombined),
-                rank_shift = rank_deseq2 - rank_combined,
-                rank_shift2 = rank_deseq2 - rank_dexseq) %>% 
+                rank_paired = rank(pval_paired),
+                rank_shift = rank_deseq - rank_dexseq,
+                rank_shift_paired = rank_deseq - rank_paired,
+                ES_shift = enrichment_score_deseq - enrichment_score_dexseq,
+                ES_shift_paired = enrichment_score_deseq - enrichment_score_paired) %>% 
   dplyr::arrange(desc(rank_shift))
 qplot(ranks$rank_shift)
 
 # Store a list of all the top 20 ranked pathways of the paired analysis that were not in the top 20 for the deseq2 analysis
-ranks %>% 
+shifts %>% 
   dplyr::filter(
-    rank_deseq2 > 50 & rank_combined < 50
-  ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank")) %>% dplyr::arrange(experiment) %>% 
+    rank_deseq > 50 & rank_paired < 50
+  ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank"), dplyr::starts_with("odds_ratio"), dplyr::starts_with("enrichment_score"), dplyr::starts_with("ES_")) %>% #dplyr::arrange(experiment) %>% 
+  dplyr::arrange(dplyr::desc(rank_shift_paired)) %>% 
   # pull(rank_shift) %>% qplot()
-  write.csv("results/fora_combined_top50.csv")
+  write.csv("results/fora_dge_v_paired_top50.csv")
 
 # List of all the top 20 ranked pathways of the deseq2 analysis that were not in the top 20 for the paired analysis
 ranks %>% 
@@ -345,13 +349,13 @@ ranks %>%
     rank_deseq2 < 20 & rank_combined > 20
   ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank")) %>% dplyr::arrange(experiment)
 
-ranks %>% 
+shifts %>% 
   dplyr::filter(
-    rank_deseq2 > 50 & rank_dexseq < 50
-  ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank")) %>% 
-  dplyr::arrange(dplyr::desc(rank_shift2)) %>% 
+    rank_deseq > 50 & rank_dexseq < 50
+  ) %>%  dplyr::select(pathway, experiment, dplyr::starts_with("rank"), dplyr::starts_with("odds_ratio"), dplyr::starts_with("enrichment_score"), dplyr::starts_with("ES_")) %>% 
+  dplyr::arrange(dplyr::desc(rank_shift)) %>% 
   # pull(rank_shift) %>% qplot()
-  write.csv("results/fora_compared_top50.csv")
+  write.csv("results/fora_dge_v_dtu_top50.csv")
 
 ### Plotting ----
 
@@ -425,7 +429,7 @@ concatResults %>%
 
 # Concat gene level ----
 
-# concatGenes <- concatGene(experiments)
+# concatGenes <- concatenate_genes(experiments)
 
 concatGenes <- readRDS("results/concatGenes.RDS")
 
@@ -468,7 +472,7 @@ p3 <- um %>%
 library("dplyr")
 library("tidyr")
 library("ggplot2")
-concatGenes <- readRDS("results/concatGenes.RDS")
+concatGenes <- readRDS("results/concatenated_genes.RDS")
 concatGenes <- readRDS("results/concatGenes_small.RDS")
 
 # concatGenes <- concatGenes %>% 
@@ -476,16 +480,13 @@ concatGenes <- readRDS("results/concatGenes_small.RDS")
 # saveRDS(concatGenes, "results/concatGenes_small.RDS")
 
 # Number of genes
-concatGenes <- concatGenes %>% 
-  group_by(experiment) %>% 
-  mutate(padj_deseq2 = p.adjust(pvalue_deseq2, "fdr"),
-         padj_dexseq = p.adjust(pvalue_dexseq, "fdr"))
+
 found_genes <- concatGenes %>% 
-  # group_by(experiment) %>% 
-  summarise(DESeq2 = sum(padj_deseq2 < 0.05, na.rm = TRUE),
+  group_by(experiment) %>%
+  summarise(DESeq2 = sum(padj_deseq < 0.05, na.rm = TRUE),
             DEXSeq = sum(padj_dexseq < 0.05, na.rm = TRUE),
-            Overlap = sum(padj_dexseq < 0.05 & padj_deseq2 < 0.05, na.rm = TRUE),
-            `DEXSeq Only` = sum((padj_dexseq < 0.05) & !(padj_deseq2 < 0.05), na.rm = TRUE))
+            Overlap = sum(padj_dexseq < 0.05 & padj_deseq < 0.05, na.rm = TRUE),
+            `DEXSeq Only` = sum((padj_dexseq < 0.05) & !(padj_deseq < 0.05), na.rm = TRUE))
 
 ## as density
 found_genes %>% 
@@ -513,7 +514,7 @@ ggsave(plot = fig1b, filename = "figs/fig1b.png")
 # Fig 1c ------------------------------------------------------------------
 
 gene_similarity <- concatGenes %>%
-  mutate(DESeq2 = padj_deseq2 < 0.05,
+  mutate(DESeq2 = padj_deseq < 0.05,
          DEXSeq = padj_dexseq < 0.05) %>% 
   group_by(experiment) %>% 
   group_map(.f = function(df, ...){
@@ -542,7 +543,7 @@ ggsave(plot = fig1c, filename = "figs/fig1c.png")
 # Fig 1d ------------------------------------------------------------------
 
 
-foratot <- readRDS("results/foratot.RDS")
+foratot <- readRDS("results/fora_all.RDS")
 
 # foratot <- foratot %>% 
 #   select(-starts_with("overlapG")) %>% 
@@ -552,14 +553,14 @@ foratot <- readRDS("results/foratot.RDS")
 
 found_pathways <- foratot %>% 
   group_by(experiment) %>% 
-  summarise(DESeq2 = sum(padj_deseq2 < 0.05, na.rm = TRUE),
+  summarise(DESeq2 = sum(padj_deseq < 0.05, na.rm = TRUE),
             DEXSeq = sum(padj_dexseq < 0.05, na.rm = TRUE),
-            Overlap = sum((padj_dexseq < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
+            Overlap = sum((padj_dexseq < 0.05) & (padj_deseq < 0.05), na.rm = TRUE),
             # Paired = sum(padj_decombined < 0.05, na.rm = TRUE),
             # Overlap2 = sum((padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
             # `Only paired` = sum((padj_decombined < 0.05) & !(padj_deseq2 < 0.05), na.rm = TRUE),
             # `Only DESeq2` = sum(!(padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
-            `Only DEXSeq` = sum(!(padj_deseq2 < 0.05) & (padj_dexseq < 0.05), na.rm = TRUE)
+            `Only DEXSeq` = sum(!(padj_deseq < 0.05) & (padj_dexseq < 0.05), na.rm = TRUE)
             )
 
 ## as violin
@@ -585,10 +586,10 @@ ggsave(plot = fig1d, filename = "figs/fig1d.png")
 
 
 pathway_similarity <- foratot %>%
-  mutate(DESeq2 = padj_deseq2 < 0.05,
+  mutate(DESeq2 = padj_deseq < 0.05,
          DEXSeq = padj_dexseq < 0.05,
-         paired = padj_decombined < 0.05,
-         added = padj_deseq2 < 0.05 | padj_dexseq < 0.05) %>% 
+         paired = padj_paired < 0.05,
+         added = padj_deseq < 0.05 | padj_dexseq < 0.05) %>% 
   group_by(experiment) %>% 
   group_map(.f = function(df, ...){
     dge_dtu <- df %>% 

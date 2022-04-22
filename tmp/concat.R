@@ -9,22 +9,19 @@ concatFgseaResults <- function(experiments){
     row <- experiments[row, ]
     ### Load metadata
     md_file <- row$filename
-    dataname <- basename(md_file) %>% 
+    data_name <- basename(md_file) %>% 
       stringr::str_remove(".xlsx") %>% 
       stringr::str_remove("csv") 
     ### Define experiment details
-    comparison <- row$`comparison (baseline_v_condition)`
-    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
-    ### Check that results exists
-    deseq2file <- paste0("results/", dataname, "_deseq2res_", experimentTitle, ".RDS")
-    if(!file.exists(deseq2file)) stop(paste0("File:", deseq2file, " does not exists.\\n","Please run experiment before analysing. See ?runExperiment"))
-    
+    comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+
     message("Adding ", row$study, " ", experimentTitle)
     
     ### Load results
-    fgseaRes <- readRDS(paste0("results/", dataname, "_fgseaRes_", experimentTitle, ".RDS"))
-    fgseaDxr2 <- readRDS(paste0("results/", dataname, "_fgseaDxr2_", experimentTitle, ".RDS"))
-    fgseaDxr3 <- readRDS(paste0("results/", dataname, "_fgseaDxr3_", experimentTitle, ".RDS"))
+    fgsea_deseq <- readRDS(paste0("results/", experiment_title, "_fgsea_deseq.RDS"))
+    fgsea_dexseq <- readRDS(paste0("results/", experiment_title, "_fgsea_dexseq.RDS"))
+    fgsea_paired <- readRDS(paste0("results/", experiment_title, "_fgsea_paired.RDS"))
     
     # fgseatot <- fgseatot <-
     #   fgseaRes %>% 
@@ -189,34 +186,34 @@ concatRes <- function(experiments){
 
 
 # Concat gene level ----
-concatGene <- function(experiments){
+concatenate_genes <- function(experiments){
   
-  concatgene <- tibble::tibble()
+  concatenated_genes <- tibble::tibble()
   
   for(num in 1:nrow(experiments)){
     row <- experiments[num, ]
     ### Load metadata
     md_file <- row$filename
-    dataname <- basename(md_file) %>% 
+    data_name <- basename(md_file) %>% 
       stringr::str_remove(".xlsx") %>% 
       stringr::str_remove("csv") 
     ### Define experiment details
-    comparison <- row$`comparison (baseline_v_condition)`
-    experimentTitle <- row$`comparison_title (empty_if_not_okay)`
+    comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
     ### Check that results exists
-    message("Adding ", row$study, " ", experimentTitle)
-    comb <- readRDS(paste0("results/", dataname, "_aggpval_", experimentTitle, ".RDS"))
-    comb$experiment <- paste(row$study, experimentTitle)
+    message("Adding ", experiment_title)
+    comb <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
+    comb$experiment <- experiment_title
     
     
-    concatgene <- concatgene %>% 
+    concatenated_genes <- concatenated_genes %>% 
       dplyr::bind_rows(comb)
   }
-  concatGenes <- concatGenes %>% 
-    dplyr::mutate(padj_deseq2 = p.adjust(pvalue_deseq2, "fdr"),
+  concatenated_genes <- concatenated_genes %>% 
+    dplyr::mutate(padj_deseq = p.adjust(pvalue_deseq, "fdr"),
                   padj_dexseq = p.adjust(pvalue_dexseq, "fdr"))
-  saveRDS(concatgene, "results/concatGenes.RDS")
-  return(concatgene)
+  saveRDS(concatenated_genes, "results/concatenated_genes.RDS")
+  return(concatenated_genes)
 }
 
 
