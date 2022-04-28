@@ -29,7 +29,7 @@ paired_gsea(
 
 \item{sample_col}{The column in the metadata that specifies the sample IDs (should correspond to column names in tx_count)}
 
-\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
+\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2". In that example "1" would define the baseline and "2" would define to case samples.}
 
 \item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
 

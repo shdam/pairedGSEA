@@ -202,12 +202,12 @@ concatenate_genes <- function(experiments){
     experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
     ### Check that results exists
     message("Adding ", experiment_title)
-    comb <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
-    comb$experiment <- experiment_title
+    aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
+    aggregated_pvals$experiment <- experiment_title
     
     
     concatenated_genes <- concatenated_genes %>% 
-      dplyr::bind_rows(comb)
+      dplyr::bind_rows(aggregated_pvals)
   }
   concatenated_genes <- concatenated_genes %>% 
     dplyr::mutate(padj_deseq = p.adjust(pvalue_deseq, "fdr"),

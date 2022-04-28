@@ -2,7 +2,7 @@
 #' @param metadata A metadata file or data frame object
 #' @param group_col The metadata column specifying the what group each sample is associated with
 #' @param sample_col The column in the metadata that specifies the sample IDs (should correspond to column names in tx_count)
-#' @param comparison The comparison to use for this particular experiment. Format example: "1v2"
+#' @param comparison The comparison to use for this particular experiment. Format example: "1v2". In that example "1" would define the baseline and "2" would define to case samples.
 #' @param tx_count The transcripts count matrix of an RNA-seq analysis
 #' @param experiment_title Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").
 #' @param run_sva (Default: TRUE) A logical stating whether SVA should be run.
@@ -101,6 +101,15 @@ paired_gsea <- function(tx_count,
 
 #' Prepare metadata
 #' 
+#' This internal function reads a filepath for a metadata file (or a data.frame object), loads it, 
+#'   and filters out the rows that do not contain data from the relevant patient group, as defined in the \code{comparison} argument.
+#' 
+#' @examples 
+#' \dontrun{
+#' metadata <- prepare_metadata(metadata = "path/to/metadata.xlsx",
+#'   group_col = "group", comparison = "2v1")
+#' }
+#' 
 #' @inheritParams paired_gsea
 #' @keywords internal
 prepare_metadata <- function(metadata, group_col, comparison){
@@ -129,8 +138,12 @@ prepare_metadata <- function(metadata, group_col, comparison){
 
 
 #' Run SVA on DESeqDataSet
+#' 
+#' This internal function runs a surrogate variable analysis on the count matrix in the DESeqDataSet. 
+#'   The found surrogate variables will then be added to the metadata and the design formula in the DESeqDataSet object to be used in the DGE and DTU analyses.
+#'  
 #' @inheritParams paired_gsea
-#' @param dds A DESeqDataSet
+#' @param dds A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} for more information about the object type.
 #' @keywords internal
 run_sva <- function(dds, group_col, quiet = FALSE){
   
@@ -166,6 +179,9 @@ run_sva <- function(dds, group_col, quiet = FALSE){
 
 #' Run DEXSeq analysis
 #' 
+#' This internal function runs a differential transcript usage analysis using DEXSeq (See \code{?DEXSeq::DEXSeq} for more detailed information).
+#'   Here, the surrogate variables found by \code{\link{run_sva}}, if any, will be added to the DEXSeqDataSet before running the analysis.
+#' 
 #' @inheritParams paired_gsea
 #' @inheritParams run_sva
 #' @keywords internal
@@ -195,8 +211,18 @@ run_dexseq <- function(dds,
     stringr::str_split(" \\+ ", simplify = TRUE)
   
   # Add surrogate variables to DEXSeq design formula
+  if(svs == ""){
+    new_design <- "~sample + exon + condition:exon"
+    reduced_design <- "~sample + exon"
+  } else{
+    new_design <- paste0("~sample + exon + condition:exon + ", stringr::str_c(svs, ":exon", collapse = " + "))
+    reduced_design <- paste0("~sample + exon + ", stringr::str_c(svs, ":exon", collapse = " + "))
+  }
   design_formula <- stats::formula(
-    paste0("~ sample + exon + condition:exon + ", stringr::str_c(svs, ":exon", collapse = " + "))
+    new_design
+  )
+  reduced_formula <- stats::formula(
+    reduced_design
   )
   
   # Define sample data based on DESeq2 object
@@ -228,9 +254,7 @@ run_dexseq <- function(dds,
   if(!quiet) message("Running DEXSeq")
   if(!parallel) BiocParallel::register(BiocParallel::SerialParam())
   dexseq_results <- DEXSeq::DEXSeq(dxd,
-                        reducedModel = stats::formula(
-                          paste0("~ sample + exon + ", stringr::str_c(svs, ":exon", collapse = " + "))
-                        ),
+                        reducedModel = reduced_formula,
                         BPPARAM = BPPARAM,
                         quiet = quiet)
   

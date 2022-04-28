@@ -7,13 +7,14 @@
 run_sva(dds, group_col, quiet = FALSE)
 }
 \arguments{
-\item{dds}{A DESeqDataSet}
+\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} for more information about the object type.}
 
 \item{group_col}{The metadata column specifying the what group each sample is associated with}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 }
 \description{
-Run SVA on DESeqDataSet
+This internal function runs a surrogate variable analysis on the count matrix in the DESeqDataSet. 
+  The found surrogate variables will then be added to the metadata and the design formula in the DESeqDataSet object to be used in the DGE and DTU analyses.
 }
 \keyword{internal}

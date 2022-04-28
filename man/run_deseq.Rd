@@ -17,11 +17,11 @@ run_deseq(
 )
 }
 \arguments{
-\item{dds}{A DESeqDataSet}
+\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} for more information about the object type.}
 
 \item{group_col}{The metadata column specifying the what group each sample is associated with}
 
-\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
+\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2". In that example "1" would define the baseline and "2" would define to case samples.}
 
 \item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or "glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
 

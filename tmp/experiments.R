@@ -208,10 +208,10 @@ concatFgsea %>%
 
 
 
-concatFora <- concatenate_fora(experiments)
+fora_all <- concatenate_fora(experiments)
 concatFora <- readRDS("results/concatFora.RDS")
-foratot <- readRDS("results/foratot.RDS")
-foratot <- foratot %>% 
+fora_all <- readRDS("results/fora_all.RDS")
+fora_all <- fora_all %>% 
   dplyr::select(-dplyr::starts_with("overlapG"))
 concatFora %>% 
   # filter(experiment == experiment[[1]]) %>% 
@@ -255,11 +255,19 @@ concatFora %>%
   group_by(experiment) %>% 
   summarise(deseq2 = sum(deseq2), dexseq = sum(dexseq), decombined = sum(decombined))
 
-# Median pathways per analysis
+# Median pathways per analysis ----
+concatFora %>% 
+  group_by(experiment) %>% 
+  summarise(deseq = sum(deseq2), dexseq = sum(dexseq), decombined = sum(decombined)) %>% 
+  summarise(med_deseq2 = median(deseq2), med_dexseq = median(dexseq), med_decombined = median(decombined))
+
+# Median pathways per analysis ----
 concatFora %>% 
   group_by(experiment) %>% 
   summarise(deseq2 = sum(deseq2), dexseq = sum(dexseq), decombined = sum(decombined)) %>% 
   summarise(med_deseq2 = median(deseq2), med_dexseq = median(dexseq), med_decombined = median(decombined))
+
+
 
 # Median combined not in other
 concatFora %>% 

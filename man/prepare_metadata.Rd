@@ -11,9 +11,17 @@ prepare_metadata(metadata, group_col, comparison)
 
 \item{group_col}{The metadata column specifying the what group each sample is associated with}
 
-\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
+\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2". In that example "1" would define the baseline and "2" would define to case samples.}
 }
 \description{
-Prepare metadata
+This internal function reads a filepath for a metadata file (or a data.frame object), loads it, 
+  and filters out the rows that do not contain data from the relevant patient group, as defined in the \code{comparison} argument.
+}
+\examples{
+\dontrun{
+metadata <- prepare_metadata(metadata = "path/to/metadata.xlsx",
+  group_col = "group", comparison = "2v1")
+}
+
 }
 \keyword{internal}

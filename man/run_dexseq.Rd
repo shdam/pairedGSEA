@@ -16,11 +16,11 @@ run_dexseq(
 )
 }
 \arguments{
-\item{dds}{A DESeqDataSet}
+\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} for more information about the object type.}
 
 \item{group_col}{The metadata column specifying the what group each sample is associated with}
 
-\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2"}
+\item{comparison}{The comparison to use for this particular experiment. Format example: "1v2". In that example "1" would define the baseline and "2" would define to case samples.}
 
 \item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
 
@@ -33,6 +33,7 @@ run_dexseq(
 \item{BPPARAM}{(Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE. If not specified, the parameters last registered with register will be used.}
 }
 \description{
-Run DEXSeq analysis
+This internal function runs a differential transcript usage analysis using DEXSeq (See \code{?DEXSeq::DEXSeq} for more detailed information).
+  Here, the surrogate variables found by \code{\link{run_sva}}, if any, will be added to the DEXSeqDataSet before running the analysis.
 }
 \keyword{internal}

@@ -9,4 +9,5 @@ $run_dev.*
 ^results$
 ^metadata$
 ^figs$
+^doc$
 ^LICENSE\.md$
