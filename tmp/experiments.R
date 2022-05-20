@@ -36,7 +36,7 @@ gene_sets <- pairedGSEA::prepare_msigdb()
 # apply(row, 1, analyse_experiment)
 
 apply(experiments[1, ], 1, run_experiment, archs4db)
-apply(experiments[101:199, ], 1, run_analysis, gene_sets)
+apply(experiments[1, ], 1, run_analysis, gene_sets)
 apply(experiments, 1, getDDS, archs4db)
 
 #4_GSE156101_TP53 and TNKS1-2T Knockout  

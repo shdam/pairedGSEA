@@ -73,7 +73,7 @@ run_analysis <- function(row, gene_sets){
   if(TRUE){ # fora
     message("Over-representation analysis")
     
-    results <- pairedGSEA::paired_ora(aggregated_pvals, gene_sets, experiment_title = experiment_title)
+    results <- paired_ora(aggregated_pvals, gene_sets, experiment_title = experiment_title)
     
     }
   

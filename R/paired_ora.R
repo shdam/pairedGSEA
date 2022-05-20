@@ -21,27 +21,27 @@ paired_ora <- function(paired_de_result,
   # Check column names are as expected
   check_colname(paired_de_result, "pvalue_deseq", "paired_de_result")
   check_colname(paired_de_result, "pvalue_dexseq", "paired_de_result")
-  check_colname(paired_de_result, "ensembl_gene", "paired_de_result")
+  check_colname(paired_de_result, "gene", "paired_de_result")
   
   # Significant genes
   if(!quiet)  message("Identifying differentially expressed genes")
   genes_deseq <- paired_de_result %>% 
-    dplyr::filter(!is.na(pvalue_deseq) & !is.na(ensembl_gene)) %>%
+    dplyr::filter(!is.na(pvalue_deseq) & !is.na(gene)) %>%
     dplyr::mutate(padj = stats::p.adjust(pvalue_deseq, "fdr")) %>% 
     dplyr::filter(padj < 0.05) %>% 
     dplyr::arrange(padj)
   
   genes_dexseq <- paired_de_result %>% 
-    dplyr::filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>%
+    dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene)) %>%
     dplyr::mutate(padj = stats::p.adjust(pvalue_dexseq, "fdr")) %>% 
     dplyr::filter(padj < 0.05) %>% 
     dplyr::arrange(padj)
   
   # fora
   if(!quiet) message("Running over-representation analysis")
-  universe <- unique(paired_de_result$ensembl_gene)
+  universe <- unique(paired_de_result$gene)
   ## ORA on DESeq2 results
-  fora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$ensembl_gene, 
+  fora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$gene, 
                             universe = universe, minSize = min_size) %>% 
     dplyr::rename(size_geneset = size) %>% 
     dplyr::mutate(size_genes = nrow(genes_deseq),
@@ -50,7 +50,7 @@ paired_ora <- function(paired_de_result,
                   enrichment_score = log2(odds_ratio)) 
   
   ## ORA on DEXSeq results
-  fora_dexseq <- fgsea::fora(gene_sets, genes = genes_dexseq$ensembl_gene,
+  fora_dexseq <- fgsea::fora(gene_sets, genes = genes_dexseq$gene,
                              universe = universe, minSize = min_size) %>% 
     dplyr::rename(size_geneset = size) %>% 
     dplyr::mutate(size_genes = nrow(genes_dexseq),
@@ -60,7 +60,7 @@ paired_ora <- function(paired_de_result,
   
   if(!quiet) message("Joining result")
   fora_joined <- fora_deseq %>% 
-    dplyr::full_join(fora_dexseq, by = c("gene_sets", "size_geneset", "size_universe"), suffix = c("_deseq", "_dexseq"))
+    dplyr::full_join(fora_dexseq, by = c("pathway", "size_geneset", "size_universe"), suffix = c("_deseq", "_dexseq"))
   fora_joined$experiment_title <- experiment_title
   
   if(!is.null(experiment_title)){

@@ -109,7 +109,7 @@ paired_de <- function(tx_count,
   dexseq_aggregated <- aggregate_pvalue(dexseq_results, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
   deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
   
-  aggregated_pvals <- dplyr::full_join(deseq_aggregated, dexseq_aggregated, by = "ensembl_gene", suffix = c("_deseq", "_dexseq"))
+  aggregated_pvals <- dplyr::full_join(deseq_aggregated, dexseq_aggregated, by = "gene", suffix = c("_deseq", "_dexseq"))
   
   
   if(store_results) store_result(aggregated_pvals, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene pvalue aggregation")
@@ -396,7 +396,7 @@ aggregate_pvalue <- function (df,
   res <- df %>% 
     dplyr::filter(!is.na(padj)) %>% 
     dplyr::rename(pvalue = .data[[p]],
-                  ensembl_gene = .data[[gene]],
+                  gene = .data[[gene]],
                   lfc = .data[[lfc]],
                   weights = .data[[weights]]) %>% 
     # Prevent warning from Lancaster
