@@ -255,7 +255,7 @@ run_deseq <- function(dds,
                        reduced = reduced,
                        test = test,
                        parallel = parallel, 
-                       PPARAM = BPPARAM,
+                       BPPARAM = BPPARAM,
                        fitType = fit_type,
                        quiet = quiet,
                        ...)
