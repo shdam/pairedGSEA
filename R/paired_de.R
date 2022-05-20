@@ -161,12 +161,11 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
 #' 
 #' @inheritParams paired_de
 #' @keywords internal
-convert_matrix_to_dds <- function(tx_count, metadata, design, tidy){
+convert_matrix_to_dds <- function(tx_count, metadata, design){
   
   dds <- DESeq2::DESeqDataSetFromMatrix(countData = tx_count,
                                         colData = metadata,
-                                        design = design,
-                                        tidy = tidy)
+                                        design = design)
   return(dds)
 }
 

@@ -4,7 +4,7 @@
 \alias{convert_matrix_to_dds}
 \title{Convert matrix to DESeqDataSet}
 \usage{
-convert_matrix_to_dds(tx_count, metadata, design, tidy)
+convert_matrix_to_dds(tx_count, metadata, design)
 }
 \arguments{
 \item{tx_count}{The transcripts count matrix of an RNA-seq analysis}

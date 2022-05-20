@@ -21,7 +21,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
   ### Define experiment details
-  baseline_case <- row$`comparison (baseline_v_condition)` %>% tringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
+  baseline_case <- row$`comparison (baseline_v_condition)` %>% stringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
   experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
   
   
@@ -54,6 +54,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
     BPPARAM = BiocParallel::bpparam()
   )
   
+  return(NULL)
   
 }
 

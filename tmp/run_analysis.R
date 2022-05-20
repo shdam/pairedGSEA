@@ -1,11 +1,8 @@
 
 
-
-
-
 #' Analyse experiments
 #' @noRd
-run_analysis <- function(row){
+run_analysis <- function(row, gene_sets){
   
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
@@ -21,7 +18,89 @@ run_analysis <- function(row){
     stringr::str_remove(".csv") 
   
   ### Define experiment details
-  baseline_case <- row$`comparison (baseline_v_condition)` %>% tringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
+  baseline_case <- row$`comparison (baseline_v_condition)` %>% stringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
+  experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+  
+  ### Check that results exists
+  # deseq2file <- paste0("results/", experimentTitle, "_deseq2res.RDS")
+  # if(!file.exists(deseq2file)) stop(paste0("File:", experimentTitle, " does not exists.\\n","Please run experiment before analysing. See ?runExperiment"))
+  
+  
+  message("Analysing ", experiment_title)
+  
+  aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
+  
+  if(TRUE){#fgsea
+    message("Gene set enrichment analysis")
+    
+    ### Defining stats
+    stats_deseq <- aggregated_pvals %>% 
+      dplyr::filter(!is.na(pvalue_deseq) & !is.na(ensembl_gene)) %>% 
+      dplyr::mutate(pvalue = -log10(pvalue_deseq) * sign(lfc_deseq)) %>% 
+      dplyr::pull(pvalue, name = ensembl_gene)
+    
+    
+    stats_dexseq <- aggregated_pvals %>% 
+      dplyr::filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>% 
+      dplyr::mutate(pvalue = -log10(pvalue_dexseq)) %>% 
+      dplyr::pull(pvalue, name = ensembl_gene) 
+    
+    
+    ### Run fgsea
+    message("Running fgsea on DESeq2 results")
+    fgsea_deseq <- fgsea::fgseaMultilevel(pathways = gene_sets,
+                                          stats = stats_deseq,
+                                          nproc = 10,
+                                          scoreType = "std",
+                                          eps = 10e-320,
+                                          minSize = 25
+    )
+    pairedGSEA:::store_result(fgsea_deseq, paste0(experiment_title, "_fgsea_deseq.RDS"), "fgsea on deseq2 results")
+    
+    message("Running fgsea on DEXSeq results")
+    fgsea_dexseq <- fgsea::fgseaMultilevel(pathways = gene_sets,
+                                           stats = stats_dexseq,
+                                           nproc = 10,
+                                           scoreType = "std",
+                                           eps = 10e-320,
+                                           minSize = 25
+    )
+    pairedGSEA:::store_result(fgsea_dexseq, paste0(experiment_title, "_fgsea_dexseq.RDS"), "fgsea on dexseq results")
+    
+    message("fgsea results are stored in the results folder. Look for '*_fgsea_deseq.RDS' and '*_fgsea_dexseq*.RDS'")
+  } # fgsea
+  
+  if(TRUE){ # fora
+    message("Over-representation analysis")
+    
+    results <- pairedGSEA::paired_ora(aggregated_pvals, gene_sets, experiment_title = experiment_title)
+    
+    }
+  
+  return(NULL)
+  
+}
+
+
+#' Analyse experiments
+#' @noRd
+run_analysis_old <- function(row){
+  
+  
+  if(typeof(row) == "character"){ # Convert apply-made row to tibble
+    row <- tibble::as_tibble(row, rownames = "names") %>% 
+      tidyr::pivot_wider(values_from = value, names_from = names)
+  }
+  
+  
+  ### Load metadata
+  md_file <- row$filename
+  data_name <- basename(md_file) %>% 
+    stringr::str_remove(".xlsx") %>% 
+    stringr::str_remove(".csv") 
+  
+  ### Define experiment details
+  baseline_case <- row$`comparison (baseline_v_condition)` %>% stringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
   experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
   
   ### Check that results exists
