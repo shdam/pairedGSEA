@@ -15,7 +15,7 @@
 
 ## Dependencies ----
 ## Add one line by package you want to add as dependency
-usethis::use_package( "tidyr" )
+usethis::use_package( "aggregation" )
 usethis::use_package( "BiocParallel", type = "Suggests" )
 
 ## Add modules ----

@@ -52,6 +52,7 @@ check_make_dir <- function(dir_path) {
 #' Check colname
 #' @noRd
 check_colname <- function(df_colnames, col_name, location = "metadata"){
+  if("data.frame" %in% class(df_colnames)) df_colnames <- colnames(df_colnames)
   if(!is.null(col_name)){
     if(col_name %!in% df_colnames){
       stop("Column \"", col_name, "\" was not found in the ", location)
@@ -94,7 +95,7 @@ store_result <- function(object, file, analysis = "results", quiet = FALSE){
 
 
 #' Pre-filter
-#' @inheritParams paired_gsea
+#' @inheritParams paired_de
 #' @noRd
 pre_filter <- function(tx_count, threshold = 10){
   if(threshold < 1) return(tx_count)
@@ -105,14 +106,54 @@ pre_filter <- function(tx_count, threshold = 10){
   return(tx_count)
 }
 
+#' Convert character vector into a stats formula
+#' @param vector Character vector of variables to add to model
+formularise_vector <- function(vector){
+  stopifnot("Names must not contain spaces" = stringr::str_detect(vector, " ", negate = TRUE))
+  if(is.null(vector)){
+    formula <- NULL
+  } else if(length(vector) == 1){
+    formula <- stats::formula(paste0("~", vector))
+  } else{
+    formula <- stats::formula(paste0("~", vector[1], paste("+", vector[2:length(vector)], collapse = " ")))
+  }
+  return(formula)
+}
 
-#' Convert matrix to DESeqDataSet
-#' @inheritParams paired_gsea
-#' @noRd
-convert_matrix_to_dds <- function(tx_count, metadata, group_col){
+#' Reduce design formula by removing first variable
+#' 
+#' This internal function assumes the design formula has the format as imposed by \code{\link[pairedGSEA:formularise_vector]{formularise_vector()}}
+#'   and that the defining variable is the first occurring variable in the design.
+#' @param formula A design formula to reduce. The first variable will be removed.
+#' @param formularise (Default: TRUE) A logical determining if the design should be formularised
+reduce_formula <- function(formula, formularise = TRUE){
   
-  dds <- DESeq2::DESeqDataSetFromMatrix(countData = tx_count,
-                                        colData = metadata,
-                                        design = formula(paste0("~", group_col)))
-  return(dds)
+  # Convert design formula to character string
+  formula_vector <- as.character(formula)[2] %>% 
+    stringr::str_split(" \\+ ", simplify = TRUE)
+  
+  # If design only contains 1 variable, return ~1
+  if(length(formula_vector) == 1) reduced_vector <- "1"
+  # Else, remove first variable
+  else reduced_vector <- formula_vector[2:length(formula_vector)]
+  
+  if(formularise) return(formularise_vector(reduced_vector))
+  
+  return(reduced_vector)
+  
+}
+
+
+#' Load MSigDB and convert to names list of gene sets
+#' 
+#' @param category The MSigDB category to extract
+#' 
+prepare_msigdb <- function(category = "C5"){
+  check_missing_package("msigdbr")
+  
+  gene_sets <- msigdbr::msigdbr(category = "C5")
+  # Split dataframe based on gene set names
+  gene_sets <- gene_sets %>% 
+    base::split(x = .$ensembl_gene, f = .$gs_name)
+  return(gene_sets)
 }

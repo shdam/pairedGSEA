@@ -21,7 +21,7 @@ run_analysis <- function(row){
     stringr::str_remove(".csv") 
   
   ### Define experiment details
-  comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+  baseline_case <- row$`comparison (baseline_v_condition)` %>% tringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
   experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
   
   ### Check that results exists
@@ -41,8 +41,8 @@ run_analysis <- function(row){
     
     message("Aggregating p values")
     
-    dxr_agg <- per_gene_pvalue(dxr, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
-    res_agg <- per_gene_pvalue(res, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
+    dxr_agg <- aggregate_pvalue(dxr, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
+    res_agg <- aggregate_pvalue(res, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
     
     aggregated_pvals <- dplyr::full_join(res_agg, dxr_agg, by = "ensembl_gene", suffix = c("_deseq", "_dexseq"))
     
@@ -50,7 +50,7 @@ run_analysis <- function(row){
     # message("Storing aggregation result")
     pairedGSEA:::store_result(aggregated_pvals, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene aggregation")
   } else{
-    aggregated_pvals <- readRDS(paste0(experiment_title, "_aggregated_pvals.RDS"))
+    aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
   }
   
   if(TRUE){#fgsea
@@ -122,27 +122,28 @@ run_analysis <- function(row){
       dplyr::full_join(genes_dexseq, by = "ensembl_gene")
     
     ### fora
+    universe <- unique(aggregated_pvals$ensembl_gene)
     fora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$ensembl_gene, 
-                              universe = unique(aggregated_pvals$ensembl_gene), minSize = 25) %>% 
+                              universe = universe, minSize = 25) %>% 
       dplyr::rename(size_geneset = size) %>% 
-      dplyr::mutate(size_genes = length(genes_deseq$ensembl_gene),
-                    size_universe = length(unique(aggregated_pvals$ensembl_gene)),
+      dplyr::mutate(size_genes = nrow(genes_deseq),
+                    size_universe = length(universe),
                     odds_ratio = (overlap / size_genes) / (size_geneset / size_universe),
                     enrichment_score = log2(odds_ratio)) 
     
     fora_dexseq <- fgsea::fora(gene_sets, genes = genes_dexseq$ensembl_gene,
-                               universe = unique(aggregated_pvals$ensembl_gene), minSize = 25) %>% 
+                               universe = universe, minSize = 25) %>% 
       dplyr::rename(size_geneset = size) %>% 
-      dplyr::mutate(size_genes = length(genes_dexseq$ensembl_gene),
-                    size_universe = length(unique(aggregated_pvals$ensembl_gene)),
-                    odds_ratio = (overlap / size_genes) / (size_geneset / size_universe),
+      dplyr::mutate(size_genes = nrow(genes_dexseq),
+                    size_universe = length(universe),
+                    odds_ratio = (overlap / (size_geneset-overlap)) / (size_genes / (size_universe-size_genes)),
                     enrichment_score = log2(odds_ratio))
     
     fora_paired <- fgsea::fora(gene_sets, genes = genes_paired$ensembl_gene,
-                               universe = unique(aggregated_pvals$ensembl_gene), minSize = 25) %>% 
+                               universe = universe, minSize = 25) %>% 
       dplyr::rename(size_geneset = size) %>% 
-      dplyr::mutate(size_genes = length(genes_paired$ensembl_gene),
-                    size_universe = length(unique(aggregated_pvals$ensembl_gene)),
+      dplyr::mutate(size_genes = nrow(genes_paired),
+                    size_universe = length(universe),
                     odds_ratio = (overlap / size_genes) / (size_geneset / size_universe),
                     enrichment_score = log2(odds_ratio))
     
@@ -193,9 +194,12 @@ perGenePValue <- function (df,
                                             TRUE ~ pvalue)) 
   return(res)
 }
-#' Per gene p-value aggregation
-#' @noRd
-per_gene_pvalue <- function (df,
+#' p-value aggregation
+#' 
+#' This function aggregates p-values to gene level.
+#' 
+#' 
+aggregate_pvalue <- function (df,
                              gene = "gene",
                              p = "pvalue",
                              weights = "baseMean",
@@ -255,19 +259,19 @@ getDDS <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr"
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
   ### Define experiment details
-  comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+  baseline_case <- row$`comparison (baseline_v_condition)` %>% tringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
   experiment_title <- row$`comparison_title (empty_if_not_okay)`
   
   if(!is.null(archs4db)) tx_count <- prepare_tx_count(md_file,
                                                       group_col,
-                                                      comparison,
+                                                      baseline_case,
                                                       archs4db)
   # Check parallel
   if(parallel) pairedGSEA:::check_missing_package("BiocParallel", "Bioc")
   
   # Load metadata
   message("Preparing metadata")
-  metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, comparison)
+  metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, baseline_case)
   
   # Subsample in case metadata 
   metadata <- metadata[metadata[[sample_col]] %in% colnames(tx_count), ]

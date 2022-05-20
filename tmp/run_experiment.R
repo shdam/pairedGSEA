@@ -21,7 +21,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
   ### Define experiment details
-  comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
+  baseline_case <- row$`comparison (baseline_v_condition)` %>% tringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
   experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
   
   
@@ -32,17 +32,18 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
       gtf = gtf,
       archs4db = archs4db,
       group_col = group_col,
-      comparison = comparison
+      baseline_case = baseline_case
     )
   }
   
   
-  results <- pairedGSEA::paired_gsea(
+  results <- pairedGSEA::paired_de(
     tx_count = tx_count,
     metadata = md_file,
     group_col = group_col,
     sample_col = "id",
-    comparison = comparison,
+    baseline = baseline_case[1],
+    case = baseline_case[2],
     experiment_title = experiment_title,
     run_sva = TRUE,
     prefilter = prefilter,
@@ -130,18 +131,7 @@ add_tpm <- function(deseq_results, samples, archs4db_tpm, gtf = NULL){
 }
 
 
-#' Load MSigDB and convert to names list of gene sets
-#' 
-#' @noRd
-prepare_msigdb <- function(category = "C5"){
-  pairedGSEA:::check_missing_package("msigdbr")
-  
-  gene_sets <- msigdbr::msigdbr(category = "C5")
-  # Split dataframe based on gene set names
-  gene_sets <- gene_sets %>% 
-    base::split(x = .$ensembl_gene, f = .$gs_name)
-  return(gene_sets)
-}
+
 
 
 #' Prepare DESeqDataSet from ARCHS4 database
@@ -149,9 +139,10 @@ prepare_msigdb <- function(category = "C5"){
 #' @param gtf Optional: Adds GTF gene and transcript labels to the ARCHS4 data extract
 #' @param samples The column in the metadata that specifies the samples
 #' @inheritParams paired_gsea
+#' @inheritParams prepare_metadata
 prepare_tx_count <- function(metadata,
                              group_col,
-                             comparison,
+                             baseline_case,
                              archs4db = NULL,
                              gtf = NULL,
                              samples = "id"){
@@ -162,7 +153,7 @@ prepare_tx_count <- function(metadata,
   if(!is.null(archs4db)) if(!file.exists(archs4db)) stop("Database file is missing!\nLooking for: ", archs4db)
   
   # Loading metadata
-  metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, comparison)
+  metadata <- pairedGSEA:::prepare_metadata(metadata, group_col, baseline_case)
   
   # Define samples
   if(samples %in% colnames(metadata)) {samples <- metadata[[samples]]

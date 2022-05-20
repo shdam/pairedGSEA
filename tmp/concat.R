@@ -16,28 +16,28 @@ concatFgseaResults <- function(experiments){
     comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
     experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
 
-    message("Adding ", row$study, " ", experimentTitle)
+    message("Adding ", row$study, " ", experiment_title)
     
     ### Load results
     fgsea_deseq <- readRDS(paste0("results/", experiment_title, "_fgsea_deseq.RDS"))
     fgsea_dexseq <- readRDS(paste0("results/", experiment_title, "_fgsea_dexseq.RDS"))
-    fgsea_paired <- readRDS(paste0("results/", experiment_title, "_fgsea_paired.RDS"))
+    fgsea_dexseqlfc <- readRDS(paste0("results/", experiment_title, "_fgsea_dexseqlfc.RDS"))
     
     # fgseatot <- fgseatot <-
     #   fgseaRes %>% 
     #   
     
     ### Significant gene sets
-    pathRes <- fgseaRes %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathDxr <- fgseaDxr2 %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
-    pathDxr2 <- fgseaDxr3 %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
+    pathRes <- fgsea_deseq %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
+    pathDxr <- fgsea_dexseq %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
+    pathDxr2 <- fgsea_dexseqlfc %>% filter(padj < 0.05) %>% select(pathway) %>% as_tibble
     
     overlap <- union(pathRes, pathDxr) %>% union(pathDxr2) %>% 
-      mutate(deseq2 = pathway %in% pathRes$pathway,
+      mutate(deseq = pathway %in% pathRes$pathway,
              dexseq = pathway %in% pathDxr$pathway,
-             dexseq2 = pathway %in% pathDxr2$pathway,
-             overlap = deseq2 + dexseq + dexseq2,
-             experiment = paste(row$study, experimentTitle)
+             dexseqlfc = pathway %in% pathDxr2$pathway,
+             overlap = deseq + dexseq + dexseqlfc,
+             experiment = experiment_title
       )
     concatFgsea <- concatFgsea %>% 
       dplyr::bind_rows(overlap)
