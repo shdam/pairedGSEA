@@ -6,6 +6,7 @@ source("tmp/run_experiment.R")
 source("tmp/run_analysis.R")
 source("tmp/concat.R")
 
+rm(aggregate_pvalue)
 ### Combine each and extract the comparisons to be run
 experiments <- combine_experiments()
 

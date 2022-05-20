@@ -314,7 +314,7 @@ run_dexseq <- function(dds,
     reduce_formula(formularise = FALSE)
   
   # Add surrogate variables and covariates to DEXSeq design formula
-  if(svs_covariates == "1"){
+  if(svs_covariates[[1]] == "1"){
     design_formula <- formularise_vector(c("sample", "exon", "condition:exon"))
     reduced_formula <- formularise_vector(c("sample", "exon"))
   } else{
@@ -329,7 +329,7 @@ run_dexseq <- function(dds,
   # Define sample data based on DESeq2 object
   sample_data <- SummarizedExperiment::colData(dds) %>% 
     as.data.frame(row.names = .$id) %>% 
-    dplyr::select(dplyr::all_of(group_col, svs_covariates)) %>% 
+    dplyr::select(dplyr::all_of(c(group_col, svs_covariates))) %>% 
     dplyr::rename(condition = dplyr::all_of(group_col)) %>% 
     dplyr::mutate(condition = dplyr::case_when(condition == baseline ~ "B", 
                                                condition == case ~ "C") %>% 
