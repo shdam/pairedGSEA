@@ -1,4 +1,6 @@
 #' Run paired DESeq2 and DEXSeq analyses
+#' 
+#' @inheritParams DESeq2::DESeq
 #' @param metadata A metadata file or data frame object
 #' @param group_col The metadata column specifying the what group each sample is associated with
 #' @param sample_col The column in the metadata that specifies the sample IDs (should correspond to column names in tx_count)
@@ -14,7 +16,7 @@
 #' @param quiet (Default: FALSE) Whether to print messages
 #' @param parallel (Default: FALSE) If FALSE, no parallelization. If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.
 #' @param BPPARAM (Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE. If not specified, the parameters last registered with register will be used.
-#' 
+#' @param ... Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @family paired
 #' @export
 paired_de <- function(tx_count,
@@ -28,10 +30,12 @@ paired_de <- function(tx_count,
                       store_results = TRUE,
                       run_sva = TRUE,
                       prefilter = 10,
+                      test = "LRT",
                       fit_type = "local",
                       quiet = FALSE,
                       parallel = FALSE,
-                      BPPARAM = BiocParallel::bpparam()){
+                      BPPARAM = BiocParallel::bpparam(),
+                      ...){
   
   # Check parallel
   if(parallel) check_missing_package("BiocParallel", "Bioc")
@@ -75,11 +79,13 @@ paired_de <- function(tx_count,
     baseline = baseline,
     case = case,
     fit_type = fit_type,
+    test = test,
     experiment_title = experiment_title,
     store_results = store_results,
     quiet = quiet,
     parallel = parallel,
-    BPPARAM = BPPARAM
+    BPPARAM = BPPARAM,
+    ...
     )
   
   # Store results
@@ -109,7 +115,13 @@ paired_de <- function(tx_count,
   dexseq_aggregated <- aggregate_pvalue(dexseq_results, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
   deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
   
-  aggregated_pvals <- dplyr::full_join(deseq_aggregated, dexseq_aggregated, by = "gene", suffix = c("_deseq", "_dexseq"))
+  aggregated_pvals <- dplyr::full_join(deseq_aggregated,
+                                       dexseq_aggregated,
+                                       by = "gene",
+                                       suffix = c("_deseq", "_dexseq")) %>% 
+    dplyr::mutate(padj_deseq = stats::p.adjust(pvalue_deseq, "fdr"),
+                  padj_dexseq = stats::p.adjust(pvalue_dexseq, "fdr"))
+  
   
   
   if(store_results) store_result(aggregated_pvals, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene pvalue aggregation")
@@ -225,7 +237,6 @@ run_sva <- function(dds, quiet = FALSE){
 #'   
 #' @inheritParams paired_de
 #' @inheritParams run_sva
-#' @inheritParams DESeq2::DESeq
 #' @param ... Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @keywords internal
 run_deseq <- function(dds,

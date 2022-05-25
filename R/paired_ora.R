@@ -7,6 +7,7 @@
 #' 
 #' @param paired_de_result The output of \code{\link[pairedGSEA:paired_de]{paired_de()}}
 #' @param gene_sets List of gene sets to analyse
+#' @param cutoff (Default: 0.05) Adjusted p-value cutoff for selecting significant genes
 #' @param min_size (Default: 25) Minimal size of a gene set to test. All pathways below the threshold are excluded.
 #' @param experiment_title Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_fora.RDS").
 #' @param quiet (Default: FALSE) Whether to print messages
@@ -14,6 +15,7 @@
 #' @export 
 paired_ora <- function(paired_de_result,
                        gene_sets,
+                       cutoff = 0.05,
                        min_size = 25,
                        experiment_title = NULL,
                        quiet = FALSE){
@@ -25,53 +27,60 @@ paired_ora <- function(paired_de_result,
   
   # Significant genes
   if(!quiet)  message("Identifying differentially expressed genes")
+  #remove
+  # paired_de_result <- paired_de_result %>% 
+  #   dplyr::mutate(padj_deseq = stats::p.adjust(pvalue_deseq, "fdr"),
+  #               padj_dexseq = stats::p.adjust(pvalue_dexseq, "fdr"))
+  
   genes_deseq <- paired_de_result %>% 
-    dplyr::filter(!is.na(pvalue_deseq) & !is.na(gene)) %>%
-    dplyr::mutate(padj = stats::p.adjust(pvalue_deseq, "fdr")) %>% 
-    dplyr::filter(padj < 0.05) %>% 
-    dplyr::arrange(padj)
+    dplyr::filter(!is.na(pvalue_deseq) & !is.na(gene),
+                  padj_deseq < cutoff) %>%
+    dplyr::arrange(padj_deseq)
   
   genes_dexseq <- paired_de_result %>% 
-    dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene)) %>%
-    dplyr::mutate(padj = stats::p.adjust(pvalue_dexseq, "fdr")) %>% 
-    dplyr::filter(padj < 0.05) %>% 
-    dplyr::arrange(padj)
+    dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene),
+                  padj_dexseq < cutoff) %>%
+    dplyr::arrange(padj_dexseq)
   
   # fora
   if(!quiet) message("Running over-representation analysis")
-  universe <- unique(paired_de_result$gene)
+  universe_deseq <- unique(paired_de_result$gene)
   ## ORA on DESeq2 results
-  fora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$gene, 
-                            universe = universe, minSize = min_size) %>% 
+  ora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$gene, 
+                           universe = universe, minSize = min_size) %>% 
     dplyr::rename(size_geneset = size) %>% 
     dplyr::mutate(size_genes = nrow(genes_deseq),
                   size_universe = length(universe),
-                  odds_ratio = (overlap / size_genes) / (size_geneset / size_universe),
-                  enrichment_score = log2(odds_ratio)) 
+                  relative_risk = (overlap / size_geneset) / (size_genes / size_universe),
+                  enrichment_score = log2(relative_risk + 0.06)) 
   
   ## ORA on DEXSeq results
-  fora_dexseq <- fgsea::fora(gene_sets, genes = genes_dexseq$gene,
-                             universe = universe, minSize = min_size) %>% 
+  ora_dexseq <- fgsea::fora(gene_sets, genes = genes_dexseq$gene,
+                            universe = universe, minSize = min_size) %>% 
     dplyr::rename(size_geneset = size) %>% 
     dplyr::mutate(size_genes = nrow(genes_dexseq),
                   size_universe = length(universe),
-                  odds_ratio = (overlap / (size_geneset-overlap)) / (size_genes / (size_universe-size_genes)),
-                  enrichment_score = log2(odds_ratio))
+                  relative_risk = (overlap / size_geneset) / (size_genes / size_universe),
+                  enrichment_score = log2(relative_risk + 0.06))
   
   if(!quiet) message("Joining result")
-  fora_joined <- fora_deseq %>% 
-    dplyr::full_join(fora_dexseq, by = c("pathway", "size_geneset", "size_universe"), suffix = c("_deseq", "_dexseq"))
-  fora_joined$experiment_title <- experiment_title
+  ora_joined <- ora_deseq %>% 
+    dplyr::full_join(ora_dexseq,
+                     by = c("pathway", "size_geneset", "size_universe"),
+                     suffix = c("_deseq", "_dexseq")) %>% 
+    dplyr::mutate(enrichment_score_shift = relative_risk_dexseq - relative_risk_deseq,
+                  enrichment_score_shift = log2(abs(enrichment_score_shift)) * sign(enrichment_score_shift),
+                  experiment = experiment_title) %>% 
+    dplyr::arrange(enrichment_score_shift)
   
   if(!is.null(experiment_title)){
     if(!quiet) message("Storing fora results")
     # pairedGSEA:::store_result(fora_deseq, paste0(experiment_title, "_fora_deseq.RDS"), "fora on DESeq2 results", quiet = quiet)
     # pairedGSEA:::store_result(fora_dexseq, paste0(experiment_title, "_fora_dexseq.RDS"), "fora on DEXSeq results", quiet = quiet)
-    store_result(fora_joined, paste0(experiment_title, "_fora.RDS"), "fora on both DESeq2 and DEXSeq results", quiet = quiet)
+    store_result(ora_joined, paste0(experiment_title, "_ora.RDS"), "ORA on both DESeq2 and DEXSeq results", quiet = quiet)
   }
   
   
-  return(fora_joined)
+  return(ora_joined)
 }
-
 

@@ -35,15 +35,15 @@ run_analysis <- function(row, gene_sets){
     
     ### Defining stats
     stats_deseq <- aggregated_pvals %>% 
-      dplyr::filter(!is.na(pvalue_deseq) & !is.na(ensembl_gene)) %>% 
+      dplyr::filter(!is.na(pvalue_deseq) & !is.na(gene)) %>% 
       dplyr::mutate(pvalue = -log10(pvalue_deseq) * sign(lfc_deseq)) %>% 
-      dplyr::pull(pvalue, name = ensembl_gene)
+      dplyr::pull(pvalue, name = gene)
     
     
     stats_dexseq <- aggregated_pvals %>% 
-      dplyr::filter(!is.na(pvalue_dexseq) & !is.na(ensembl_gene)) %>% 
+      dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene)) %>% 
       dplyr::mutate(pvalue = -log10(pvalue_dexseq)) %>% 
-      dplyr::pull(pvalue, name = ensembl_gene) 
+      dplyr::pull(pvalue, name = gene) 
     
     
     ### Run fgsea

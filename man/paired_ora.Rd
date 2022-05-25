@@ -7,6 +7,7 @@
 paired_ora(
   paired_de_result,
   gene_sets,
+  cutoff = 0.05,
   min_size = 25,
   experiment_title = NULL,
   quiet = FALSE
@@ -16,6 +17,8 @@ paired_ora(
 \item{paired_de_result}{The output of \code{\link[pairedGSEA:paired_de]{paired_de()}}}
 
 \item{gene_sets}{List of gene sets to analyse}
+
+\item{cutoff}{(Default: 0.05) Adjusted p-value cutoff for selecting significant genes}
 
 \item{min_size}{(Default: 25) Minimal size of a gene set to test. All pathways below the threshold are excluded.}
 

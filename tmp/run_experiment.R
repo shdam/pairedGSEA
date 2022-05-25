@@ -2,7 +2,7 @@
 #' 
 #' @noRd
 #' @param row A row from the data.frame of experiments generated with \code{combine_experiments}
-run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE){
+run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE, gtf = NULL){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -29,7 +29,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   if(is.null(tx_count)){
     tx_count <- prepare_tx_count(
       metadata = md_file,
-      gtf = gtf,
+      gtf = NULL,#gtf,
       archs4db = archs4db,
       group_col = group_col,
       baseline_case = baseline_case

@@ -16,10 +16,12 @@ paired_de(
   store_results = TRUE,
   run_sva = TRUE,
   prefilter = 10,
+  test = "LRT",
   fit_type = "local",
   quiet = FALSE,
   parallel = FALSE,
-  BPPARAM = BiocParallel::bpparam()
+  BPPARAM = BiocParallel::bpparam(),
+  ...
 )
 }
 \arguments{
@@ -45,6 +47,11 @@ paired_de(
 
 \item{prefilter}{(Default: 10) The prefilter threshold, where rowSums lower than the prefilter threshold will be removed from the count matrix. Set to 0 or FALSE to prevent prefiltering}
 
+\item{test}{either "Wald" or "LRT", which will then use either 
+Wald significance tests (defined by \code{\link[DESeq2]{nbinomWaldTest}}),
+or the likelihood ratio test on the difference in deviance between a
+full and reduced model formula (defined by \code{\link[DESeq2]{nbinomLRT}})}
+
 \item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or "glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
@@ -52,6 +59,8 @@ paired_de(
 \item{parallel}{(Default: FALSE) If FALSE, no parallelization. If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.}
 
 \item{BPPARAM}{(Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE. If not specified, the parameters last registered with register will be used.}
+
+\item{...}{Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}}
 }
 \description{
 Run paired DESeq2 and DEXSeq analyses
