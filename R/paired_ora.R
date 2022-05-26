@@ -27,11 +27,6 @@ paired_ora <- function(paired_de_result,
   
   # Significant genes
   if(!quiet)  message("Identifying differentially expressed genes")
-  #remove
-  # paired_de_result <- paired_de_result %>% 
-  #   dplyr::mutate(padj_deseq = stats::p.adjust(pvalue_deseq, "fdr"),
-  #               padj_dexseq = stats::p.adjust(pvalue_dexseq, "fdr"))
-  
   genes_deseq <- paired_de_result %>% 
     dplyr::filter(!is.na(pvalue_deseq) & !is.na(gene),
                   padj_deseq < cutoff) %>%
@@ -44,7 +39,7 @@ paired_ora <- function(paired_de_result,
   
   # fora
   if(!quiet) message("Running over-representation analysis")
-  universe_deseq <- unique(paired_de_result$gene)
+  universe <- unique(paired_de_result$gene)
   ## ORA on DESeq2 results
   ora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$gene, 
                            universe = universe, minSize = min_size) %>% 
@@ -75,8 +70,6 @@ paired_ora <- function(paired_de_result,
   
   if(!is.null(experiment_title)){
     if(!quiet) message("Storing fora results")
-    # pairedGSEA:::store_result(fora_deseq, paste0(experiment_title, "_fora_deseq.RDS"), "fora on DESeq2 results", quiet = quiet)
-    # pairedGSEA:::store_result(fora_dexseq, paste0(experiment_title, "_fora_dexseq.RDS"), "fora on DEXSeq results", quiet = quiet)
     store_result(ora_joined, paste0(experiment_title, "_ora.RDS"), "ORA on both DESeq2 and DEXSeq results", quiet = quiet)
   }
   

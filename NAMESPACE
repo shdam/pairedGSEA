@@ -3,4 +3,5 @@
 export("%>%")
 export(paired_de)
 export(paired_ora)
+export(plot_ora)
 importFrom(magrittr,"%>%")

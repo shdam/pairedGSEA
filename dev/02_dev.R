@@ -45,7 +45,7 @@ usethis::use_test( "app" )
 # Documentation
 
 ## Vignette ----
-usethis::use_vignette("pairedGSEA")
+usethis::use_vignette("pairedGSEA-intro", title = "Paired DGE and DGS")
 devtools::build_vignettes()
 
 ## Code Coverage----

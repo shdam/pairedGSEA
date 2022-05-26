@@ -1,5 +1,5 @@
 Package: pairedGSEA
-Title: Paired DGE and DTU analysis
+Title: Paired DGE and DGS analysis
 Version: 0.0.0.9000
 Authors@R: c(
   person(given = "Søren Helweg",
@@ -18,7 +18,8 @@ Authors@R: c(
     role = "aut",
     comment = c(ORCID = "0000-0002-6450-0608"))
     )
-Description: PKG_DESC.
+Description: pairedGSEA is essentially a wrapper around DESeq2 and DEXSeq.
+  It's purpose is to make paired differential gene expression and differential gene splicing analysis easy and intuitive.
 License: MIT + file LICENSE
 Imports: 
     DESeq2,
@@ -44,8 +45,12 @@ Suggests:
     msigdbr,
     spelling,
     plotly,
-    testthat (>= 3.0.0)
+    ggplot2,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
 RoxygenNote: 7.1.2
+VignetteBuilder: knitr

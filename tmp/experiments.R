@@ -1,6 +1,7 @@
 ### Load package
 pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
 # pkgload::load_all()
+library(tidyverse)
 
 source("tmp/run_experiment.R")
 source("tmp/run_analysis.R")
@@ -35,8 +36,8 @@ gene_sets <- pairedGSEA::prepare_msigdb()
 # apply(row, 1, run_experiment, archs4db)
 # apply(row, 1, analyse_experiment)
 
-apply(experiments[1, ], 1, run_experiment, archs4db, gtf = NULL)
-apply(experiments, 1, run_analysis, gene_sets)
+apply(experiments[100:199, ], 1, run_experiment, archs4db, gtf = NULL)
+apply(experiments[100:199, ], 1, run_analysis, gene_sets)
 apply(experiments, 1, getDDS, archs4db)
 
 #4_GSE156101_TP53 and TNKS1-2T Knockout  
@@ -628,7 +629,7 @@ fig1d <- transcript_fractions %>%
   # anti_join(exclude, by = "experiment") %>% 
   filter(gene != "NA") %>% 
   ggplot() +
-  aes(x = fraction*n, y = n, color = experiment) +
+  aes(x = fraction, y = n, color = experiment) +
   geom_point(alpha = 0.1) +
   # geom_density(fill = NA) +
   scale_color_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
