@@ -488,6 +488,7 @@ p3 <- um %>%
 # SVA metrics -------------------------------------------------------------
 
 # concatenated_design <- concatenate_design(experiments)
+# concatenated_design <- readRDS("results/concatenated_design.RDS)
 
 (total_svas <- concatenated_design %>% 
   dplyr::mutate(design = as.character(design),
@@ -598,7 +599,6 @@ concatenated_results <- readRDS("results/concatenated_results.RDS")
 
 transcript_fractions <- concatenated_results %>% 
   semi_join(significant_genes, by = c("experiment", "gene")) %>% 
-  # filter(gene %in% analysed_genes) %>% 
   group_by(experiment, gene) %>% 
   summarise(fraction = sum(padj_dexseq < 0.05, na.rm = TRUE) / n(), n = n()) %>% 
   filter(n > 1)
@@ -612,12 +612,28 @@ exclude <- transcript_fractions %>%
   filter(n < 10)
 
 fig1d <- transcript_fractions %>% 
-  anti_join(exclude, by = "experiment") %>% 
+  anti_join(exclude, by = "experiment") %>%
   ggplot() +
   aes(x = fraction, fill = experiment) +
   geom_density(alpha = 0.02, color = NA) +
   geom_density(fill = NA) +
   scale_fill_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
+  labs(y = "Density",
+       x = "Fraction of significant transcripts in a gene") +
+  theme_classic(base_size = 20) +
+  theme(legend.position = "none")
+
+ggsave(plot = fig1d, filename = "figs/fig1d.png")
+
+
+# This one!
+fig1d <- transcript_fractions %>% 
+  anti_join(exclude, by = "experiment") %>%
+  ggplot() +
+  aes(x = fraction, color = experiment) +
+  geom_density(alpha = 0.03) +
+  geom_density(bw = 1, color = "black") +
+  scale_color_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
   labs(y = "Density",
        x = "Fraction of significant transcripts in a gene") +
   theme_classic(base_size = 20) +
@@ -749,10 +765,22 @@ pathway_similarity %>%
 ora_all <- readRDS("results/ora_all.RDS")
 
 ora_all %>% 
-  filter(padj_dexseq < 0.05) %>%
-  ggplot(aes(x = relative_risk_dexseq,
-             y = relative_risk_deseq)) +
-  geom_point()
+  mutate(color = case_when(padj_dexseq < 0.05 & padj_deseq < 0.05 ~ "Both",
+                           padj_dexseq < 0.05 ~ "DGS",
+                           padj_deseq < 0.05 ~ "DGE",
+                           TRUE ~ "NA"),
+         color = factor(color, levels = c("DGE", "DGS", "Both"))) %>% 
+  filter(color != "NA") %>%
+  ggplot(aes(x = enrichment_score_dexseq,
+             y = enrichment_score_deseq,
+             color = color)) +
+  geom_point(alpha = 0.07, shape = 18) +
+  scale_color_manual(values = c("gray", "lightblue", "purple")) +
+  theme_classic(base_size = 20) +
+  guides(colour = guide_legend(override.aes = list(size=5, alpha = 1))) +
+  ggplot2::labs(x = "Enrichment Score\nDifferential Splicing",
+                y = "Enrichment Score\nDifferential Expression",
+                color = "padj < 0.05")
 
 ora_all %>% 
   filter(padj_dexseq < 0.05,
@@ -767,7 +795,7 @@ fig2e <- ora_all %>%
   mutate(enrichment_score_s = log2(abs(enrichment_score_s))* sign(enrichment_score_s)) %>%
   ggplot() +
   aes(x = enrichment_score_s, fill = experiment) +
-  # geom_density(alpha = 0.02, color = NA) +
+  geom_density(alpha = 0.02, color = NA) +
   geom_density(fill = NA) +
   scale_fill_manual(values = rep("gray", length(unique(ora_all$experiment)))) +
   # scale_x_continuous(trans = "log2") +
@@ -883,9 +911,30 @@ rr_shifts %>%
   # geom_boxplot(width = 0.05) +
   labs(x = "") +
   theme_classic() +
-  theme(axis.text.y=element_blank(),
+  theme(axis.text.y = element_blank(),
         axis.text.x = element_text(angle = 90)) +
   scale_fill_gradient2(low = "darkred", high = "navy")
+
+
+## ORA correlations ----
+
+correlation <- ora_all %>% 
+  filter(padj_dexseq < 0.05 | padj_deseq < 0.05,
+         !is.na(padj_dexseq),
+         !is.na(padj_deseq)) %>% 
+  group_by(experiment) %>% 
+  summarise(correlation = cor(enrichment_score_dexseq,
+                              enrichment_score_deseq, method = "spearman")) %>% 
+  filter(!is.na(correlation))
+correlation %>% 
+  ggplot(aes(x = correlation)) +
+  geom_histogram(fill = "navy", color = "white", alpha = 0.8) +
+  labs(x = paste0("Spearman correlation (Median: ", round(median(correlation$correlation),2), ")"),
+       y = "Counts") +
+  theme_classic(base_size = 20)
+
+  
+
 
 
 experiment_title <- "76_GSE183984_Cetuximab treatment of primary colorectal cancer"

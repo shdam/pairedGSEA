@@ -4,7 +4,7 @@
 \alias{plot_ora}
 \title{Scatter plot of Over-Representation Analysis results}
 \usage{
-plot_ora(ora, plotly = FALSE, pattern = NULL)
+plot_ora(ora, plotly = FALSE, pattern = NULL, cutoff = 0.05, lines = TRUE)
 }
 \arguments{
 \item{ora}{Output of \code{\link[pairedGSEA:paired_ora]{paired_ora()}}}
@@ -12,6 +12,10 @@ plot_ora(ora, plotly = FALSE, pattern = NULL)
 \item{plotly}{(Default: FALSE) Logical on whether to return plot as an interactive plotly plot or a simple ggplot.}
 
 \item{pattern}{Highlight pathways containing a specific regex pattern}
+
+\item{cutoff}{(Default: 0.2) Adjusted p-value cutoff for pathways to include}
+
+\item{lines}{(Default: TRUE) Whether to show dashed lines}
 }
 \description{
 Scatter plot of Over-Representation Analysis results

@@ -36,4 +36,7 @@ utils::globalVariables(c(".data",
                          "pathway",
                          "relative_risk",
                          "relative_risk_deseq",
-                         "relative_risk_dexseq"))
+                         "relative_risk_dexseq",
+                         "enrichment_score_dexseq",
+                         "enrichment_score_deseq",
+                         "pattern_match"))
