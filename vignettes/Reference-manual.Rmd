@@ -1,0 +1,218 @@
+---
+title: "Reference Manual"
+output: 
+  # rmarkdown::html_vignette:
+  html_document:
+    toc: true
+    toc_float: true
+    highlight: kate
+author: "Søren Helweg Dam"
+date: "Last updated on May 28, 2022"
+vignette: >
+  %\VignetteIndexEntry{Reference Manual}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+<style type="text/css">
+
+h1.title {
+  color: #004d66;
+}
+h4.author {
+  font-style: italic;
+  font-size: 18px;
+  color: #008cba;
+}
+h4.date {
+  font-style: italic;
+  font-size: 16px;
+  color: #008cba;
+}
+h1 { /* Header 1 */
+  color: #004d66;
+  font-size: 28px;
+}
+h2 { /* Header 2 */
+  color: #004d66;
+  font-size: 22px;
+}
+h3 { /* Header 3 */
+  color: #004d66;
+  font-size: 16px;
+}
+pre code, pre, code {
+  white-space: pre !important;
+  overflow-x: scroll !important;
+  word-break: keep-all !important;
+  word-wrap: initial !important;
+}
+</style>
+
+
+
+<br>
+
+Welcome to the Reference Manual for pairedGSEA!
+This manual will guide you through how to use the main functions of pairedGSEA.
+
+
+`pariedGSEA` assumes you have already preprocessed and aligned your sequencing reads to transcript level.
+Before starting, you should therefore have a counts matrix and a metadata file.
+Please ensure the counts matrix rownames have the format: `gene:transcript`.
+
+The metadata should as a minimum contain the `sample IDs` corresponding to the column names of the count matrix, a `group` column containing information on which samples corresponds to the baseline (controls) and the case (condition). Bear in mind, the column names can be as you wish, but the names must be provided in the `sample_col` and `group_col` parameters, respectively.
+
+To see an example of a counts matrix and metadata, please see `pairedGSEA::example_data` and `pairedGSEA::example_md`.
+
+## Paired DGE and DGS
+
+### Preparing the experiment parameters
+
+Running a paired Differential Gene Expression (DGE) and Differential Gene Splicing (DGS) analysis is the first step in the `pairedGSEA` workflow.
+
+But before running the `paired_de` function, we recommend storing the experiment parameters in a set of variables at the top of your script for future reference and easy access:
+
+```{r setup, eval=FALSE}
+library("pairedGSEA")
+
+## Experiment parameters
+tx_count <- read.csv("path/to/counts.csv") # Or other load function depending on how you stored your results.
+md_file <- "path/to/metadata.xlsx" # Can also be a .csv file or a data.frame object
+group_col <- "condition" # Name of column that specifies the groups you would like to compare
+sample_col <- "id" # Name of column that specifies the sample id of each sample. This is used to ensure the metadata and count data contains the same samples and to arrange the data according to the metadata (important for underlying tools)
+baseline <- "Healthy" # Name of baseline group, as they are named in the group_col column
+case <- "Patient" # Name of case group, as they are named in the group_col column
+experiment_title <- "Investigating healthy vs gene knockout" # Name of your experiment. This is used in the file names that are stored if store_results is TRUE (recommended)
+
+```
+
+### Running the analysis
+
+The paired DGE/DGS analysis is the run with `paired_de`.
+`paired_de` is essentially a wrapper function around `DESeq2::DESeq` and `DEXSeq::DEXSeq`, the latter takes in the ball park of 20-30 minutes to run.
+
+```{r paired_de, eval=FALSE}
+de_results <- paired_de(
+  tx_count = tx_count,
+  metadata = md_file,
+  group_col = group_col,
+  sample_col = sample_col,
+  baseline = baseline,
+  case = case,
+  experiment_title = experiment_title
+  )
+```
+
+After running the analyses, `paired_de` will aggregate the p-values to gene level using lancaster aggregation (see `?paired:::aggregate_pvalue` for more information) and calculate the FDR-adjusted p-values.
+For the DGE transcripts, the log2 fold changes will be aggregated using a weighted mean, whereas the DGS log2 fold changes will be assigned to the log2 fold change of the transcript with the lowest p-value. Use the latter with a grain of salt.
+
+From here, feel free to analyse the gene-level results using your preferred method.
+If you set `store_results = TRUE`, you could extract the transcript level results found in the `results` folder under the names "\*_deseqres.RDS" and "\*_dexseqres.RDS" for the DGE and DGS analysis, respectively.
+
+
+
+### Additional parameters
+
+There are a range of other parameters you can play with to tailor-make the experience. Here, the default settings are showed. See `?pairedGSEA::paired_de` for further details.
+
+```{r extra settings, eval=FALSE}
+  covariates = NULL,
+  run_sva = TRUE,
+  prefilter = 10,
+  fit_type = "local",
+  test = "LRT",
+  store_results = TRUE,
+  quiet = FALSE,
+  parallel = TRUE,
+  BPPARAM = BiocParallel::bpparam(),
+  ...
+```
+
+To highlight some examples of use:
+
+1. You can store intermediate results (e.g., transcript level DE) by keeping `store_results` on defaul settings, allowing you to analyse those results as well.
+2. You can use additional columns in your metadata as covariates in the model matrix by setting `covariates` to a character vector of the specific names. This will be used in SVA, DGE, and DGS.
+3. The test should always be kept at default settings, but advanced users may use the "wald" test instead, if they wish.
+4. The `...` parameters will be fed to `DESeq2::DESeq`, see their manual for options.
+5. If you want a stricter, more loose, or more advanced prefiltering (generally not necessary, as DESeq2 and DEXSeq performs their own prefiltering), you can set the parameter to a different value or NULL and use your own prefiltering method directly on the counts matrix.
+
+
+<br>
+
+## Over-Representation Analysis
+
+
+`pairedGSEA` comes with a wrapper function for `fgsea::fora`. If you wish, feel free to use that directly or any other gene set analysis method - investigate the `de_results` object before use to see what information it contains.
+
+The inbuilt wrapper also computes the relative risk for each gene set and an enrichment score (`log2(relative_risk + 0.06)`, the pseudo count is for plotting purposes).
+
+### Running the inbuilt ORA function
+
+Before you get going, you will need a list of gene sets (aka. pathways) according to the species you are running with the category of gene sets of interest.
+For this purpose, feel free to use the internal `msigdbr` wrapper function in `pairedGSEA`: `pairedGSEA:::prepare_msigdb`. If you do, see `?pairedGSEA:::prepare_msigdb` for further details.
+
+The inbuilt ORA function is called `paired_ora` and is run as follows
+```{r paied_ora, eval=FALSE}
+# Define gene sets in your preferred way
+gene_sets <- pairedGSEA:::prepare_msigdb(category = "C5")
+
+ora <- paired_ora(
+  paired_de_result = de_result,
+  gene_sets = gene_sets,
+  experiment_title = experiment_title
+  )
+```
+
+
+### Additional parameters
+
+```{r paied_ora_settings, eval=FALSE}
+  cutoff = 0.05,
+  min_size = 25,
+  quiet = FALSE
+```
+
+Please investigate the returned object to see the column names and what they contain.
+
+<br>
+
+## Analysing ORA results
+
+There is a plethora of options for investigating your ORA results.
+`pairedGSEA` comes with an inbuilt scatter plot function that plots the enrichment score of DGE against those of DGS.
+
+The function allows you to interactively look at the placement of the significant pathways using `plotly`, and you can color specific points based on a regular expression for gene sets of interest.
+
+### Scatter plot of enrichment scores
+
+
+```{r scatter, eval=FALSE}
+# Scatter plot function with default settings
+plot_ora(
+  ora,
+  plotly = FALSE,
+  pattern = NULL,
+  cutoff = 0.05,
+  lines = TRUE
+  )
+
+```
+
+As mentioned, this function can be utilized in a few different ways.
+The default settings will plot the enrichment scores of each analysis and draw dashed lines for the `y = x` line, `y = 0`, and `x = 0`.
+Remove those by setting `lines = FALSE`.
+
+Make the plot interactive with `plotly = TRUE`.
+
+Highlight gene sets containing a specific regex pattern by setting `pattern` to the regex pattern of interest.
+
+See the [vignette XX](https://biosurf.org/) for a walked through example.

@@ -1,5 +1,5 @@
 Package: pairedGSEA
-Title: Paired DGE and DGS analysis
+Title: Paired DGE and DGS analysis for gene set enrichment analysis
 Version: 0.0.0.9000
 Authors@R: c(
   person(given = "Søren Helweg",
@@ -18,8 +18,9 @@ Authors@R: c(
     role = "aut",
     comment = c(ORCID = "0000-0002-6450-0608"))
     )
-Description: pairedGSEA is essentially a wrapper around DESeq2 and DEXSeq.
-  It's purpose is to make paired differential gene expression and differential gene splicing analysis easy and intuitive.
+Description: pairedGSEA makes it easy as 1-2-3 to run a paired Differential Gene Expression (DGE) and Differencital Gene Splicing (DGS) analysis.
+  The package allows you to store intermediate results for further investiation, if desired.
+  And its comes with a wrapper function for running an Over-Representation Analysis (ORA) and plotting the results.
 License: MIT + file LICENSE
 Imports: 
     DESeq2,
@@ -27,6 +28,7 @@ Imports:
     dplyr,
     magrittr,
     fgsea,
+    BiocParallel,
     aggregation,
     purrr,
     readr,
@@ -39,7 +41,6 @@ Imports:
     tidyr,
     utils
 Suggests: 
-    BiocParallel,
     writexl,
     rhdf5,
     msigdbr,

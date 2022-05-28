@@ -146,14 +146,23 @@ reduce_formula <- function(formula, formularise = TRUE){
 
 #' Load MSigDB and convert to names list of gene sets
 #' 
-#' @param category The MSigDB category to extract
-#' 
-prepare_msigdb <- function(category = "C5"){
+#' This internal function is wrapper around \code{\link[msigdbr:msigdbr]{msigdbr()}}. Please see their manual for details on its use.
+#'   The function extracts the gene set name and a user-defined gene id type (Defualt: "ensembl_gene").
+#'   Please make sure the gene IDs match those from your DE analysis.
+#'   This function will format the gene sets such that they can be directly used with \code{\link[pairedGSEA:paired_ora]{paired_ora()}}.
+#'   
+#' @param gene_id_type (Default: "ensemble_gene") The gene ID type to extract. The IDs should match the gene IDs from your DE analysis.
+#' @inheritParams msigdbr::msigdbr
+#' @keywords internal
+prepare_msigdb <- function(gene_id_type = "ensembl_gene",
+                           species = "Homo sapiens", 
+                           category = "C5"){
   check_missing_package("msigdbr")
   
-  gene_sets <- msigdbr::msigdbr(category = "C5")
+  gene_sets <- msigdbr::msigdbr(species = species,
+                                category = category)
   # Split dataframe based on gene set names
   gene_sets <- gene_sets %>% 
-    base::split(x = .$ensembl_gene, f = .$gs_name)
+    base::split(x = .[[gene_id_type]], f = .$gs_name)
   return(gene_sets)
 }

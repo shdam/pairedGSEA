@@ -37,8 +37,7 @@ paired_de <- function(tx_count,
                       BPPARAM = BiocParallel::bpparam(),
                       ...){
   
-  # Check parallel
-  if(parallel) check_missing_package("BiocParallel", "Bioc")
+  # Checking column names
   stopifnot("Covariate names must not contain spaces" = stringr::str_detect(covariates, " ", negate = TRUE))
   stopifnot("group_col name must not contain spaces" = stringr::str_detect(group_col, " ", negate = TRUE))
   
@@ -252,9 +251,6 @@ run_deseq <- function(dds,
                       BPPARAM = BiocParallel::bpparam(),
                       ...){
   
-  # Register parallel
-  if(parallel) check_missing_package("BiocParallel", "Bioc")
-  
   if(!quiet) message("Running DESeq2")
   
   # Reduce design formula to surrogate variables and covariates
@@ -311,8 +307,6 @@ run_dexseq <- function(dds,
                        quiet = FALSE,
                        parallel = FALSE,
                        BPPARAM = BiocParallel::bpparam()){
-  
-  if(parallel) check_missing_package("BiocParallel", "Bioc")
   
   if(!quiet) message("Initiating DEXSeq")
   

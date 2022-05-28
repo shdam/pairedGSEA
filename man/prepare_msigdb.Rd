@@ -4,11 +4,23 @@
 \alias{prepare_msigdb}
 \title{Load MSigDB and convert to names list of gene sets}
 \usage{
-prepare_msigdb(category = "C5")
+prepare_msigdb(
+  gene_id_type = "ensembl_gene",
+  species = "Homo sapiens",
+  category = "C5"
+)
 }
 \arguments{
-\item{category}{The MSigDB category to extract}
+\item{gene_id_type}{(Default: "ensemble_gene") The gene ID type to extract. The IDs should match the gene IDs from your DE analysis.}
+
+\item{species}{Species name, such as Homo sapiens or Mus musculus.}
+
+\item{category}{MSigDB collection abbreviation, such as H or C1.}
 }
 \description{
-Load MSigDB and convert to names list of gene sets
+This internal function is wrapper around \code{\link[msigdbr:msigdbr]{msigdbr()}}. Please see their manual for details on its use.
+  The function extracts the gene set name and a user-defined gene id type (Defualt: "ensembl_gene").
+  Please make sure the gene IDs match those from your DE analysis.
+  This function will format the gene sets such that they can be directly used with \code{\link[pairedGSEA:paired_ora]{paired_ora()}}.
 }
+\keyword{internal}

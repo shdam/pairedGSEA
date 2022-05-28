@@ -23,7 +23,7 @@ devtools::install_github("shdam/pairedGSEA")
 
 ## Vignettes
 
-Vignettes will be available at [https://biosurf.org/](biosurf).
+Vignettes will be available at [biosurf](https://biosurf.org/).
 
 If you have any issues or questions regarding the use of pairedGSEA,
 please do not hesitate to raise an issue on GitHub. In this way, others
@@ -31,41 +31,5 @@ may also benefit from the answers and discussions.
 
 ## Usage
 
-pairedGSEA assumes you already preprocessed and aligned your sequencing
-reads to transcript level. Please ensure the matrix rownames have the
-format: gene:transcript. See `pairedGSEA::example_object` for an
-example.
-
-``` r
-library(pairedGSEA)
-
-# Load your transcription counts matrix
-tx_count <- read.csv("path/to/counts.csv") # Or other load function depending on how you stored your results.
-md_file <- "path/to/metadata.xlsx" # Can also be a .csv file or a data.frame object
-group_col <- "condition" # Name of column that specifies the groups you would like to compare
-sample_col <- "id" # Name of column that specifies the sample id of each sample. This is used to ensure the metadata and count data contains the same samples and to arrange the data according to the metadata (important for underlying tools)
-baseline <- "Healthy" # Name of baseline group, as they are named in the group_col column
-case <- "Patient" # Name of case group, as they are named in the group_col column
-experiment_title <- "Healthy vs gene knockout" # Name of your experiment. This is used in the file names that are stored if store_results is TRUE
-```
-
-Running a paired differential gene expression and splicing analysis.
-
-``` r
-de_results <- paired_de(
-    tx_count = tx_count,
-    metadata = md_file,
-    group_col = group_col,
-    sample_col = sample_col,
-    baseline = baseline,
-    case = case,
-    experiment_title = experiment_title,
-    run_sva = TRUE,
-    prefilter = 10,
-    fit_type = "local",
-    store_results = TRUE,
-    quiet = FALSE,
-    parallel = TRUE,
-    BPPARAM = BiocParallel::bpparam()
-  )
-```
+Please see the [Reference Manual](https://biosurf.org/) for a detailed
+description of usage.
