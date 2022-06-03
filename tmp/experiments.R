@@ -8,12 +8,13 @@ source("tmp/run_analysis.R")
 source("tmp/concat.R")
 
 rm(aggregate_pvalue)
+theme_set(theme_classic(base_size = 20))
 ### Combine each and extract the comparisons to be run
 experiments <- combine_experiments()
 
 ### Load GTF file
-# gtf <- readRDS("gtfextract.rds")
-# gtf <- tibble::tibble(gene = gtf$gene, transcript = gtf$transcript)
+gtf <- readRDS("gtfextract.rds")
+gtf <- tibble::tibble(gene = gtf$gene, transcript = gtf$transcript)
 
 BiocParallel::register(BiocParallel::MulticoreParam(workers = 10))
 
@@ -561,17 +562,19 @@ gene_similarity <- concatenated_genes %>%
            )
   }) %>% 
   bind_rows() %>% 
-  mutate(experiment = concatenated_genes %>% distinct(experiment) %>% pull())
+  mutate(experiment = concatenated_genes %>% distinct(experiment) %>% pull()) %>% 
+  pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity")
 
 fig1c <- gene_similarity %>% 
-  pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
   ggplot(aes(x = Similarity, fill = Method)) +
   geom_density(alpha = 0.5) +
+  geom_vline(xintercept = median(Similarity), linetype = "dashed") +
   # geom_histogram(binwidth = 0.02) +
   labs(#title = "Overlap coefficient between DGE and DGS significant genes",
        x = "Overlap coefficient",
        y = "Density") +
   scale_fill_manual(values = "gray") + 
+  coord_cartesian(xlim = c(0,1)) +
   theme_classic(base_size = 20) +
   theme(legend.position = "none")
 
@@ -587,7 +590,8 @@ ggsave(plot = fig1c, filename = "figs/fig1c.png")
 concatenated_genes <- readRDS("results/concatenated_genes.RDS")
 
 significant_genes <- concatenated_genes %>% 
-  filter(padj_dexseq < 0.05 & padj_deseq < 0.05)
+  filter(padj_dexseq < 0.05 | padj_deseq < 0.05)
+  
 
 # concatenated_results <- concatenate_results(experiments)
 concatenated_results <- readRDS("results/concatenated_results.RDS")
@@ -598,61 +602,142 @@ concatenated_results <- readRDS("results/concatenated_results.RDS")
 #   distinct(experiment, gene)
 
 transcript_fractions <- concatenated_results %>% 
-  semi_join(significant_genes, by = c("experiment", "gene")) %>% 
+  semi_join(significant_genes, by = c("experiment", "gene")) %>%
   group_by(experiment, gene) %>% 
-  summarise(fraction = sum(padj_dexseq < 0.05, na.rm = TRUE) / n(), n = n()) %>% 
-  filter(n > 1)
+  summarise(fraction_dtu = sum(padj_dexseq < 0.05, na.rm = TRUE) / n(), 
+            fraction_dte = sum(padj_deseq < 0.05, na.rm = TRUE) / n(),
+            n = n()) %>% 
+  filter(n > 1) %>%
+  left_join(significant_genes, by = c("experiment", "gene")) %>% 
+  mutate(association = dplyr::case_when(
+    padj_dexseq < 0.05 & padj_deseq < 0.05 ~ "Both",
+    padj_dexseq < 0.05 ~ "DGS",
+    padj_deseq < 0.05 ~ "DGE",
+    TRUE ~ "NA"
+  ))
 
 saveRDS(transcript_fractions, "results/transcript_fractions.RDS")
 
 transcript_fractions <- readRDS("results/transcript_fractions.RDS")
 
 exclude <- transcript_fractions %>% 
-  count(experiment) %>% 
+  count(experiment, association) %>% 
   filter(n < 10)
 
-fig1d <- transcript_fractions %>% 
-  anti_join(exclude, by = "experiment") %>%
+# densities <- transcript_fractions %>% 
+#   anti_join(exclude, by = "experiment") %>%
+#   group_by(experiment) %>%
+#   summarise(dens = graphics::hist(fraction, breaks = seq(-0.06, 1.06, by = 0.12),
+#                plot = FALSE)$density,
+#             frac = graphics::hist(fraction, breaks = seq(-0.06, 1.06, by = 0.12),
+#                                   plot = FALSE)$mids)
+
+# This one!!
+densities <- transcript_fractions %>% 
+  anti_join(exclude, by = c("experiment", "association")) %>%
+  group_by(experiment, association) %>%
+  summarise(dens = density(fraction_dte, from = 0, to = 1)$y,
+            frac = density(fraction_dte, from = 0, to = 1)$x,
+            association = association[1])
+
+fig1d <- densities %>% 
+  filter(association != "NA") %>% 
   ggplot() +
-  aes(x = fraction, fill = experiment) +
-  geom_density(alpha = 0.02, color = NA) +
-  geom_density(fill = NA) +
-  scale_fill_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
-  labs(y = "Density",
-       x = "Fraction of significant transcripts in a gene") +
-  theme_classic(base_size = 20) +
-  theme(legend.position = "none")
-
-ggsave(plot = fig1d, filename = "figs/fig1d.png")
-
-
-# This one!
-fig1d <- transcript_fractions %>% 
-  anti_join(exclude, by = "experiment") %>%
-  ggplot() +
-  aes(x = fraction, color = experiment) +
-  geom_density(alpha = 0.03) +
-  geom_density(bw = 1, color = "black") +
+  aes(x = frac, y = dens, color = experiment) +
+  # geom_smooth(method = "loess", se = FALSE) +
+  geom_line() +
+  geom_smooth(color = "black", se = FALSE, size = 1) +
   scale_color_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
   labs(y = "Density",
        x = "Fraction of significant transcripts in a gene") +
   theme_classic(base_size = 20) +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  facet_wrap(~association)
 
 ggsave(plot = fig1d, filename = "figs/fig1d.png")
 
-fig1d <- transcript_fractions %>% 
-  # anti_join(exclude, by = "experiment") %>% 
-  filter(gene != "NA") %>% 
+# Median fraction per study
+
+transcript_fractions %>% 
+  anti_join(exclude, by = c("experiment", "association")) %>%
+  filter(association != "DGS") %>% 
+  mutate(n = case_when(n == 2 ~ "2",
+                       n == 3 ~ "3",
+                       n %in% 4:6~ "4-6",
+                       n >6 ~ "7+"),
+         association = paste0(n, association)) %>% pull(fraction_dte) %>% table
+  group_by(experiment, association) %>% 
+  summarise(mean = mean(fraction_dte), med = median(fraction_dte), med_dtu = median(fraction_dtu)) %>% 
+# box_data %>% 
+  # filter()
   ggplot() +
-  aes(x = fraction, y = n, color = experiment) +
-  geom_point(alpha = 0.1) +
-  # geom_density(fill = NA) +
-  scale_color_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
-  labs(y = "Number of transcripts in gene",
-       x = "Fraction of significant transcripts in a gene") +
-  theme_classic(base_size = 20) +
-  theme(legend.position = "none")
+  aes(x = association, y = mean) +
+  geom_boxplot() +
+  theme_classic(base_size = 20)
+
+# not this!
+if(FALSE){
+  transcript_fractions %>% 
+    anti_join(exclude, by = "experiment") %>%
+    ggplot() +
+    aes(x = fraction, y = ..density.., color = experiment) +
+    # aes(x = frac, y = dens color = experiment) +
+    # geom_smooth(method = "loess", se = FALSE) +
+    geom_line(stat = "density") +
+    # geom_line(stat = "density", color = "black") +
+    # geom_smooth(data = densities, mapping = aes(x = frac, y = dens), color = "black", se = FALSE) +
+    scale_color_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
+    labs(y = "Density",
+         x = "Fraction of significant transcripts in a gene") +
+    theme_classic(base_size = 20) +
+    theme(legend.position = "none")
+  
+  
+  
+  fig1d <- transcript_fractions %>% 
+    anti_join(exclude, by = "experiment") %>%
+    ggplot() +
+    aes(x = fraction, fill = experiment) +
+    geom_density(alpha = 0.02, color = NA) +
+    geom_density(fill = NA) +
+    scale_fill_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
+    labs(y = "Density",
+         x = "Fraction of significant transcripts in a gene") +
+    theme_classic(base_size = 20) +
+    theme(legend.position = "none")
+  
+  ggsave(plot = fig1d, filename = "figs/fig1d.png")
+  
+  
+  # This one!
+  fig1d <- transcript_fractions %>% 
+    anti_join(exclude, by = "experiment") %>%
+    ggplot() +
+    aes(x = fraction, color = experiment) +
+    geom_density(alpha = 0.03) +
+    geom_density(bw = 1, color = "black") +
+    scale_color_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
+    labs(y = "Density",
+         x = "Fraction of significant transcripts in a gene") +
+    theme_classic(base_size = 20) +
+    theme(legend.position = "none")
+  
+  ggsave(plot = fig1d, filename = "figs/fig1d.png")
+  
+  fig1d <- transcript_fractions %>% 
+    # anti_join(exclude, by = "experiment") %>% 
+    filter(gene != "NA") %>% 
+    ggplot() +
+    aes(x = fraction, y = n, color = experiment) +
+    geom_point(alpha = 0.1) +
+    # geom_density(fill = NA) +
+    scale_color_manual(values = rep("gray", length(unique(transcript_fractions$experiment)))) +
+    labs(y = "Number of transcripts in gene",
+         x = "Fraction of significant transcripts in a gene") +
+    theme_classic(base_size = 20) +
+    theme(legend.position = "none")
+  
+}
 
 # Fig 2a ------------------------------------------------------------------
 
@@ -934,8 +1019,35 @@ correlation %>%
   theme_classic(base_size = 20)
 
   
+# SVA contrasts----
 
+deseq_genes_no_sva <- deseq_no_sva(experiments, archs4db, gtf)
 
+deseq_genes_no_sva <- readRDS("results/concatenated_no_sva_genes.RDS")
+
+deseq_genes <- concatenated_genes %>% filter(padj_deseq < 0.05)
+
+gene_counts <- deseq_genes %>% 
+  dplyr::count(experiment)
+median_gene_counts <- median(gene_counts$n)
+median_gene_counts
+
+gene_counts_no_sva <- deseq_genes_no_sva %>% 
+  dplyr::count(experiment)
+median_gene_counts_no_sva <- median(gene_counts_no_sva$n)
+median_gene_counts_no_sva
+
+gene_diff <- deseq_genes %>% 
+  full_join(deseq_genes_no_sva, by = c("experiment", "gene")) %>% 
+  group_by(experiment) %>% 
+  summarise(count = sum(!is.na(padj_deseq)), count_no_sva = sum(!is.na(padj))) %>% 
+  mutate(diff = count_no_sva - count)
+
+gene_diff %>% 
+  ggplot() +
+  aes(y = diff, x = "SVA genes") +
+  geom_boxplot() +
+  theme_classic()
 
 experiment_title <- "76_GSE183984_Cetuximab treatment of primary colorectal cancer"
 # experiment_title <- "79_GSE139262_SMARCB1 overexpression"

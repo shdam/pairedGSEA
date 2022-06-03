@@ -29,7 +29,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   if(is.null(tx_count)){
     tx_count <- prepare_tx_count(
       metadata = md_file,
-      gtf = NULL,#gtf,
+      gtf = gtf,
       archs4db = archs4db,
       group_col = group_col,
       baseline_case = baseline_case

@@ -98,7 +98,7 @@ experiment_title <- "Investigating healthy vs gene knockout" # Name of your expe
 ### Running the analysis
 
 The paired DGE/DGS analysis is the run with `paired_de`.
-`paired_de` is essentially a wrapper function around `DESeq2::DESeq` and `DEXSeq::DEXSeq`, the latter takes in the ball park of 20-30 minutes to run.
+`paired_de` is essentially a wrapper function around `DESeq2::DESeq` and `DEXSeq::DEXSeq`, the latter takes in the ballpark of 20-30 minutes to run.
 
 ```{r paired_de, eval=FALSE}
 de_results <- paired_de(
