@@ -35,6 +35,7 @@ paired_de <- function(tx_count,
                       quiet = FALSE,
                       parallel = FALSE,
                       BPPARAM = BiocParallel::bpparam(),
+                      deseq_only = FALSE,
                       ...){
   
   # Checking column names
@@ -90,6 +91,12 @@ paired_de <- function(tx_count,
   # Store results
   if(store_results) store_result(deseq_results, paste0(experiment_title, "_deseqres.RDS"), "DESeq2 results", quiet = quiet)
   
+  if(deseq_only){
+    deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq") %>% 
+      dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"),
+                    experiment = experiment_title)
+    return(deseq_aggregated)
+  }
   
   ### Run DEXSeq
   dexseq_results <- run_dexseq(

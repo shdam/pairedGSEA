@@ -4,6 +4,7 @@
 #'   First the aggregated pvalues are adjusted using the Benjamini & Hochberg method.
 #'   The analysis is run on all significant genes found by DESeq2 and DEXSeq individually.
 #'   I.e., two runs of fora() are executed and subsequently joined into a single object.
+#'   You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb()}} to create a list of gene_sets.
 #' 
 #' @param paired_de_result The output of \code{\link[pairedGSEA:paired_de]{paired_de()}}
 #' @param gene_sets List of gene sets to analyse
@@ -78,3 +79,25 @@ paired_ora <- function(paired_de_result,
 }
 
 
+#' Load MSigDB and convert to names list of gene sets
+#' 
+#' This function is wrapper around \code{\link[msigdbr:msigdbr]{msigdbr()}}. Please see their manual for details on its use.
+#'   The function extracts the gene set name and a user-defined gene id type (Defualt: "ensembl_gene").
+#'   Please make sure the gene IDs match those from your DE analysis.
+#'   This function will format the gene sets such that they can be directly used with \code{\link[pairedGSEA:paired_ora]{paired_ora()}}.
+#'   
+#' @param gene_id_type (Default: "ensemble_gene") The gene ID type to extract. The IDs should match the gene IDs from your DE analysis.
+#' @inheritParams msigdbr::msigdbr
+#' @export
+prepare_msigdb <- function(gene_id_type = "ensembl_gene",
+                           species = "Homo sapiens", 
+                           category = "C5"){
+  check_missing_package("msigdbr")
+  
+  gene_sets <- msigdbr::msigdbr(species = species,
+                                category = category)
+  # Split dataframe based on gene set names
+  gene_sets <- gene_sets %>% 
+    base::split(x = .[[gene_id_type]], f = .$gs_name)
+  return(gene_sets)
+}
