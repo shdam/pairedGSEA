@@ -210,8 +210,6 @@ concatFgsea %>%
 
 ### ora analysis ----
 
-
-
 ora_all <- concatenate_ora(experiments)
 concatora <- readRDS("results/concatora.RDS")
 ora_all <- readRDS("results/ora_all.RDS")
@@ -448,75 +446,10 @@ concatResults %>%
 "GSE147851 Cell-line difference in SMARCB1 overexpression background"
 
 
-# Concat gene level ----
-
-# concatenated_genes <- concatenate_genes(experiments)
-
-concatenated_genes <- readRDS("results/concatenated_genes.RDS")
 
 
-# Median genes per analysis ----
-concatenated_genes %>% 
-  group_by(experiment) %>% 
-  summarise(deseq = sum(padj_deseq < 0.05, na.rm = TRUE),
-            num_genes = n(),
-            dexseq = sum(padj_dexseq < 0.05, na.rm = TRUE)) %>% 
-  summarise(med_deseq = median(deseq), med_dexseq = median(dexseq),
-            frac_deseq = median(deseq/num_genes),
-            frac_dexseq = median(dexseq/num_genes))
-
-# Sina plot of fraction of found genes
-figx <- concatenated_genes %>% 
-  group_by(experiment) %>% 
-  summarise(deseq = sum(padj_deseq < 0.05, na.rm = TRUE),
-            num_genes = n(),
-            dexseq = sum(padj_dexseq < 0.05, na.rm = TRUE)) %>% 
-  mutate(DGE = deseq/num_genes,
-         DGS = dexseq/num_genes) %>% 
-  pivot_longer(cols = c("DGE", "DGS"), names_to = "Method", values_to = "Fraction") %>% 
-  ggplot() +
-  aes(x = Method, y = Fraction) +
-  # scale_y_log10() +
-  ggforce::geom_sina() +
-  # stat_summary(fun = median, geom = "point", size = 3, color = "red", shape = 18) +
-  # geom_violin() +
-  geom_boxplot(width = 0.05) +
-  labs(x = "",
-       y = "Fraction of significant genes") +
-  theme_classic(base_size = 20)
-
-ggsave(plot = figx, filename = "figs/frac_sig.png")
 
 
-deseq_genes_no_sva %>% 
-  group_by(experiment) %>% 
-  summarise(deseq = sum(padj < 0.05, na.rm = TRUE),
-            num_genes = n()) %>% 
-  summarise(med_deseq = median(deseq),
-            frac_deseq = median(deseq/num_genes),
-            )
-
-
-umap_data <- concatenated_genes %>% 
-  dplyr::select(experiment, ensembl_gene, lfc_deseq2) %>% 
-  dplyr::rename(gene = ensembl_gene,
-                lfc = lfc_deseq2) %>% 
-  dplyr::filter(!is.na(lfc)) %>% 
-  dplyr::distinct(gene, experiment, .keep_all = TRUE) %>% 
-  tidyr::pivot_wider(names_from = "experiment", values_from = "lfc")
-
-um <- umap_data %>% 
-  dplyr::select(-gene) %>% 
-  dplyr::filter(across(everything(), ~ !is.na(.x))) %>% 
-  as.matrix() %>% 
-  t() %>% 
-  uwot::umap(n_neighbors = 3)
-
-p3 <- um %>% 
-  as_tibble(rownames = "Experiment") %>% 
-  ggplot(aes(x = V1, y = V2))+
-  geom_point() + 
-  labs(caption = "n_neighbors = 3")
 
 #  genes per dataset ----
 
@@ -585,69 +518,9 @@ dexseq_genes %>%
 
 
 
-# Fig 1b ------------------------------------------------------------------
 
-library("dplyr")
-library("tidyr")
-library("ggplot2")
-concatenated_genes <- readRDS("results/concatenated_genes.RDS")
-concatenated_genes <- readRDS("results/concatGenes_small.RDS")
+# Gene OC ------------------------------------------------------------------
 
-# concatenated_genes <- concatenated_genes %>% 
-#     filter(pvalue_deseq < 0.05 | pvalue_dexseq < 0.05)
-# saveRDS(concatenated_genes, "results/cconcatenated_genes_small.RDS")
-
-# Number of genes
-
-found_genes <- concatenated_genes %>% 
-  group_by(experiment) %>%
-  summarise(`Differential\nExpression` = sum(padj_deseq < 0.05, na.rm = TRUE),
-            `Differential\nSplicing` = sum(padj_dexseq < 0.05, na.rm = TRUE),
-            Overlap = sum(padj_dexseq < 0.05 & padj_deseq < 0.05, na.rm = TRUE),
-            `Only\nDifferential\nSplicing` = sum((padj_dexseq < 0.05) & !(padj_deseq < 0.05), na.rm = TRUE))
-
-## as density
-found_genes %>% 
-  pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "genes") %>% 
-  ggplot(aes(x = genes, fill = Analysis)) +
-  geom_density(alpha = 0.5)
-
-## as violin
-fig1b <- found_genes %>% 
-  pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "Genes") %>% 
-  mutate(Analysis = factor(Analysis, levels = c("Differential\nExpression",
-                                                "Differential\nSplicing",
-                                                "Overlap",
-                                                "Only\nDifferential\nSplicing"))) %>% 
-  ggplot(aes(y = Genes, x = Analysis)) +
-  scale_y_log10() +
-  ggforce::geom_sina() +
-  # stat_summary(fun = median, geom = "point", size = 3, color = "red", shape = 18) +
-  # geom_violin() +
-  geom_boxplot(width = 0.05) +
-  labs(x = "",
-       y = "Significant genes per experiment") +
-  theme_classic(base_size = 20)
-
-ggsave(plot = fig1b, filename = "figs/fig1b.png")
-
-
-# Fig 1c ------------------------------------------------------------------
-
-gene_similarity <- concatenated_genes %>%
-  mutate(DGE = padj_deseq < 0.05,
-         DGS = padj_dexseq < 0.05) %>% 
-  group_by(experiment) %>% 
-  summarise(Similarity = proxy::simil(x = DGE, y = DGS, 
-                                                 by_rows = FALSE, method = "Simpson")[1],
-            n_DGE = sum(DGE, na.rm = T),
-            n_DGS = sum(DGS, na.rm = T),
-            p_overlap = (min(n_DGS, n_DGE)*Similarity) / n_DGE,
-            p_signal = n_DGS / (n_DGE + n_DGS - min(n_DGS, n_DGE)*Similarity)
-            ) %>% 
-  filter(!is.na(Similarity))
-median(gene_similarity$p_overlap)
-median(gene_similarity$p_signal)
 
 fig1c <- gene_similarity %>% 
   ggplot(aes(x = Similarity, fill = "Gray")) +
@@ -664,7 +537,7 @@ fig1c <- gene_similarity %>%
 
 ggsave(plot = fig1c, filename = "figs/fig1c.png")
 
-# Fig 1d ------------------------------------------------------------------
+# Transcript fractions ------------------------------------------------------------------
 
 # Distribution of fraction of tested transcripts that are DTE? 
 # (with the notion if it is only 1 of 10 transcripts that are DTE 
@@ -817,7 +690,7 @@ transcript_fractions %>%
   theme_classic(base_size = 20)
 
 
-## Fig 2c ----
+## TF V2 ----
 if(TRUE){
 
 n_transcripts <- transcript_fractions %>% 
@@ -1014,53 +887,8 @@ if(FALSE){
   
 }
 
-# Fig 2a ------------------------------------------------------------------
 
-
-ora_all <- readRDS("results/ora_all.RDS")
-# ora_all <- rename(ora_all, experiment = experiment_title)
-
-# ora_all <- ora_all %>% 
-#   select(-starts_with("overlapG")) %>% 
-#   filter(padj_deseq < 0.05 | padj_dexseq < 0.05 | padj_decombined < 0.05)
-# saveRDS(ora_all, "results/ora_all_small.RDS")
-# Number of significant pathways
-
-found_pathways <- ora_all %>% 
-  group_by(experiment) %>% 
-  summarise(`Differential\nExpression` = sum(padj_deseq < 0.05, na.rm = TRUE),
-            `Differential\nSplicing` = sum(padj_dexseq < 0.05, na.rm = TRUE),
-            Overlap = sum((padj_dexseq < 0.05) & (padj_deseq < 0.05), na.rm = TRUE),
-            # Paired = sum(padj_decombined < 0.05, na.rm = TRUE),
-            # Overlap2 = sum((padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
-            # `Only paired` = sum((padj_decombined < 0.05) & !(padj_deseq2 < 0.05), na.rm = TRUE),
-            # `Only DESeq2` = sum(!(padj_decombined < 0.05) & (padj_deseq2 < 0.05), na.rm = TRUE),
-            `Only\nDifferential\nSplicing` = sum(!(padj_deseq < 0.05) & (padj_dexseq < 0.05), na.rm = TRUE)
-            )
-
-## as violin
-fig2a <- found_pathways %>% 
-  pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "Pathways") %>% 
-  # filter(Pathways != 0) %>%
-  mutate(Analysis = factor(Analysis, levels = c("Differential\nExpression",
-                                                "Differential\nSplicing",
-                                                "Overlap",
-                                                "Only\nDifferential\nSplicing")
-                             #c("DESeq2", "Paired", "Overlap", "Only paired", "Only DESeq2")
-                             )) %>% 
-  ggplot(aes(y = Pathways, x = Analysis)) +
-  scale_y_log10() +
-  # stat_summary(fun = median, geom = "point", size = 3, color = "red", shape = 18) +
-  # geom_violin() +
-  ggforce::geom_sina() +
-  geom_boxplot(width = 0.05) +
-  labs(x = "",
-       y = "Significant pathways per experiment") +
-  theme_classic(base_size = 20)
-
-ggsave(plot = fig2a, filename = "figs/fig2a.png")
-
-# Fig 2b ------------------------------------------------------------------
+# Pathway OC ------------------------------------------------------------------
 
 
 pathway_similarity <- ora_all %>%
@@ -1072,30 +900,6 @@ pathway_similarity <- ora_all %>%
   summarise(Similarity = proxy::simil(x = DGE, y = DGS, 
                                       by_rows = FALSE, method = "Simpson")[1]) %>% 
   filter(!is.na(Similarity))
-  # group_map(.f = function(df, ...){
-  #   dge_dtu <- df %>% 
-  #     select(DESeq2, DEXSeq) %>% 
-  #     proxy::simil(by_rows = FALSE, method = "Simpson")
-  #   # dge_paired <- df %>% 
-  #   #   select(DESeq2, paired) %>% 
-  #   #   proxy::simil(by_rows = FALSE, method = "Simpson")
-  #   # paired_added <- df %>% 
-  #   #   select(added, paired) %>% 
-  #   #   proxy::simil(by_rows = FALSE, method = "Simpson")
-  #   tibble(DGE_DTU = dge_dtu[1]
-  #          # , DGE_Paired = dge_paired[1], Paired_Added = paired_added[1]
-  #          )
-  # }) %>% 
-  # bind_rows() %>% 
-  # mutate(experiment = ora_all %>% distinct(experiment) %>% pull())
-
-
-# Median line
-eta <- pathway_similarity %>% 
-  # pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity") %>% 
-  # filter(!is.na(Similarity)) %>% 
-  # group_by(Method) %>% 
-  summarise(group_median = median(Similarity))
 
 # as density
 fig2b <- pathway_similarity %>% 
@@ -1122,34 +926,11 @@ pathway_similarity %>%
   ggforce::geom_sina() +
   theme_classic()
 
-# Fig 2e ------------------------------------------------------------------
+# Enrichment density ------------------------------------------------------------------
 
 # ora_all <- concatenate_ora(experiments)
 ora_all <- readRDS("results/ora_all.RDS")
 
-ora_all %>% 
-  mutate(color = case_when(padj_dexseq < 0.05 & padj_deseq < 0.05 ~ "Both",
-                           padj_dexseq < 0.05 ~ "DGS",
-                           padj_deseq < 0.05 ~ "DGE",
-                           TRUE ~ "NA"),
-         color = factor(color, levels = c("DGE", "DGS", "Both"))) %>% 
-  filter(color != "NA") %>%
-  ggplot(aes(x = enrichment_score_dexseq,
-             y = enrichment_score_deseq,
-             color = color)) +
-  geom_point(alpha = 0.07, shape = 18) +
-  scale_color_manual(values = c("gray", "lightblue", "purple")) +
-  theme_classic(base_size = 20) +
-  guides(colour = guide_legend(override.aes = list(size=5, alpha = 1))) +
-  ggplot2::labs(x = "Enrichment Score\nDifferential Splicing",
-                y = "Enrichment Score\nDifferential Expression",
-                color = "padj < 0.05")
-
-ora_all %>% 
-  filter(padj_dexseq < 0.05,
-         abs(relative_risk_dexseq - relative_risk_deseq) > 1) %>%
-  ggplot(aes(x = relative_risk_dexseq - relative_risk_deseq)) +
-  geom_density()
 
 fig2e <- ora_all %>% 
   filter(padj_dexseq < 0.05) %>%
@@ -1170,54 +951,11 @@ fig2e <- ora_all %>%
 
 ggsave(plot = fig2e, filename = "figs/fig2e.png")
 
-# Pathway overlap ----
 
-ora_all %>% 
-  mutate(DESeq2 = overlap_deseq / size,
-         DEXSeq = overlap_dexseq / size#,
-         # Combined = overlap_decombined / size
-         ) %>% 
-  select(pathway, DESeq2, DEXSeq
-         # , Combined
-         ) %>% 
-  pivot_longer(cols = -pathway, names_to = "Method", values_to = "Overlap") %>% 
-  filter(!is.na(Overlap)) %>% 
-  ggplot(aes(x = Overlap, color = Method)) +
-  geom_density(alpha = 0) +
-  labs(x = "Pathway overlap (%)", y = "Density") +
-  theme_classic()
-
-
-# Odds ratio ----
-
-
-ora_res <- readRDS("results/1_GSE154968_HaCaT cells transfected with miR-21-3p_ora_deseq.RDS")
-overlap <- 277
-size <- 990
-size_genes <- 1748
-size_universe <- 17073
-
-(overlap / size_genes) / (size / size_universe)
-# (overlap / size) / (size_genes / size_universe)
-# (overlap*size_universe)/(size_genes*size)
-ora_res %>% mutate(odds_ratio = (overlap / size_genes) / (size_geneset / size_universe)) %>% pull(odds_ratio) %>% qplot()
-# ora_res %>% mutate(odds_ratio = (overlap / size_geneset) / (size_genes / size_universe)) %>% pull(odds_ratio) %>% qplot()
-## Gene correlation ----
-
-correlated_genes <- concatGenes %>% 
-  filter(pvalue_deseq2 < 0.05 | pvalue_dexseq < 0.05,
-         !is.na(pvalue_deseq2),
-         !is.na(pvalue_dexseq)) %>% 
-  group_by(experiment) %>% 
-  # mutate(sig_deseq2 = pvalue_deseq2 < 0.05,
-  #        sig_dexseq = pvalue_dexseq < 0.05) %>% 
-  summarise(correlation = cor(pvalue_deseq2, pvalue_dexseq))
-
-qplot(correlated_genes$correlation)
 
 ## fgsa analysis ----
 
-concatFgsea <- concatFgseaResults(experiments)
+# concatFgsea <- concatFgseaResults(experiments)
 
 concatFgsea %>% 
   group_by(experiment) %>% 
@@ -1235,24 +973,6 @@ rr_shifts <- ora_all %>%
   dplyr::select(pathway, experiment, dplyr::starts_with("relative")) %>% 
   dplyr::arrange(desc(relative_risk_shift))
 
-# V1
-rr_shifts %>% 
-  dplyr::ungroup() %>% 
-  dplyr::rename(DESeq2 = relative_risk_deseq,
-                DEXSeq = relative_risk_dexseq,
-                Shift = relative_risk_shift) %>% 
-  pivot_longer(cols = -c("experiment", "pathway"), names_to = "Analysis", values_to = "Pathways") %>% 
-  mutate(Analysis = factor(Analysis, levels = c("DESeq2", "DEXSeq", "Shift")
-                           #c("DESeq2", "Paired", "Overlap", "Only paired", "Only DESeq2")
-  )) %>% 
-  ggplot(aes(y = Pathways, x = Analysis)) +
-  # stat_summary(fun = median, geom = "point", size = 3, color = "red", shape = 18) +
-  # geom_violin() +
-  ggforce::geom_sina() +
-  # geom_boxplot(width = 0.05) +
-  labs(x = "",
-       y = "Odds Ratio") +
-  theme_classic()
 
 # V2
 rr_shifts %>% 
@@ -1292,7 +1012,6 @@ rr_shifts %>%
 
 # V4
 
-
 rr_shifts <- ora_all %>% 
   dplyr::mutate(Shift = relative_risk_dexseq - relative_risk_deseq,
                 association = dplyr::case_when(
@@ -1306,7 +1025,7 @@ rr_shifts <- ora_all %>%
   dplyr::arrange(desc(Shift))
 
 rr_shifts %>% 
-  # dplyr::mutate(Shift = log2(abs(Shift))*sign(Shift)) %>% 
+  dplyr::mutate(Shift = log2(abs(Shift))*sign(Shift)) %>%
   ggplot(aes(x = Shift, fill = association)) +
   geom_histogram(color = "white") +
   facet_grid(~association, space="free_x")  +
@@ -1354,6 +1073,19 @@ rr_shifts %>%
   theme_classic(base_size = 20) +
   theme(legend.position = "none")
 
+rr_shift_median <- rr_shifts %>%
+  group_by(experiment) %>% 
+  summarise(Shift = median(abs(Shift)))
+rr_shift_median %>% 
+  ggplot(aes(x = Shift)) +
+  geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
+  geom_vline(xintercept = median(rr_shift_median$Shift), linetype = "dashed") +
+  labs(x = paste0("Relative risk shift (Median: ", round(median(rr_shift_median$Shift),2), ")")
+  ) +
+  scale_x_log10() +
+  theme_classic(base_size = 20) +
+  theme(legend.position = "none")
+
 rr_shifts %>% 
   group_by(experiment, association) %>% 
   summarise(Shift = median(abs(Shift)+1)) %>% 
@@ -1361,54 +1093,12 @@ rr_shifts %>%
   # dplyr::mutate(Shift = abs(log2(Shift)))  %>%
   group_by(association) %>% 
   summarise(median = median(Shift))
-## ORA correlations ----
 
-correlation <- ora_all %>% 
-  filter(padj_dexseq < 0.05 | padj_deseq < 0.05,
-         !is.na(padj_dexseq),
-         !is.na(padj_deseq)) %>% 
-  group_by(experiment) %>% 
-  anti_join(count(.) %>% filter(n < 50), by = "experiment") %>%
-  summarise(correlation = cor(enrichment_score_dexseq,
-                              enrichment_score_deseq, method = "spearman")) %>% 
-  filter(!is.na(correlation))
-correlation %>% 
-  ggplot(aes(x = correlation)) +
-  geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
-  labs(x = paste0("Spearman correlation (Median: ", round(median(correlation$correlation),2), ")"),
-       y = "Counts") +
-  theme_classic(base_size = 20)
 
-# Facet
-correlation <- ora_all %>% 
-  filter(!is.na(padj_dexseq),
-         !is.na(padj_deseq)) %>% 
-  mutate(association = case_when(padj_dexseq < 0.05 & padj_deseq < 0.05 ~ "Both",
-                           padj_dexseq < 0.05 ~ "DGS",
-                           padj_deseq < 0.05 ~ "DGE",
-                           TRUE ~ "Neither"),
-         association = factor(association, levels = c("Both", "DGE", "DGS", "Neither"))) %>% 
-  group_by(experiment, association) %>% 
-  anti_join(count(.) %>% filter(n < 50), by = c("experiment", "association")) %>%
-  summarise(correlation = cor(enrichment_score_dexseq,
-                              enrichment_score_deseq, method = "spearman")) %>% 
-  filter(!is.na(correlation), !is.na(association))
+# V7 (in plot_paper)
 
-# Medians
-correlation %>% 
-  group_by(association) %>% 
-  summarise(median = median(correlation, na.rm = TRUE))
 
-correlation %>% 
-  # filter(association != "Neither") %>% 
-  ggplot(aes(x = correlation, fill = association)) +
-  geom_histogram(color = "white") +
-  labs(x = "Spearman correlation",
-       y = "Counts") +
-  facet_grid(~association, space="free_x")  +
-  scale_fill_manual(values = c("gray", "lightblue", "darkred", "black"), na.value = "white") +
-  theme_classic(base_size = 20) +
-  theme(legend.position = "none")
+
   
 # SVA contrasts----
 
@@ -1418,86 +1108,6 @@ concatenated_no_sva_genes <- readRDS("results/concatenated_no_sva_genes.RDS")
 
 concatenated_genes <- readRDS("results/concatenated_genes.RDS")
 concatenated_sva_genes <- concatenated_genes %>% filter(padj_deseq < 0.05)
-
-
-# Similarity
-
-gene_change_sva <- concatenated_sva_genes %>% 
-  mutate(gene_change = paste0(sign(lfc_deseq))) %>% 
-  dplyr::select(gene_change, experiment, gene)
-
-gene_change_no_sva <- concatenated_no_sva_genes %>% 
-  mutate(gene_change = paste0(sign(lfc))) %>% 
-  dplyr::select(gene_change, experiment, gene)
-
-# Number of genes falsely significant when not including SVAs
-
-false_sig <- gene_change_no_sva %>% anti_join(gene_change_sva, by = c("experiment", "gene")) %>% dplyr::count(experiment)
-
-
-false_sig %>% 
-  ggplot(aes(x = n, fill = "gray")) +
-  geom_density(alpha = 0.5) +
-  geom_vline(xintercept = median(false_sig$n, na.rm = TRUE), linetype = "dashed") +
-  # geom_histogram(binwidth = 0.02) +
-  # labs(#title = "Overlap coefficient between DGE and DGS significant genes",
-  #   x = "Overlap coefficient",
-  #   y = "Density") +
-  scale_x_log10() +
-  scale_fill_manual(values = "gray") +
-  # coord_cartesian(xlim = c(0,1)) +
-  theme_classic(base_size = 20) +
-  theme(legend.position = "none")
-
-false_sig %>% 
-  ggplot(aes(y = n, fill = "gray")) +
-  geom_boxplot(alpha = 0.5, width = 0.8) +
-  # geom_vline(xintercept = median(false_sig$n, na.rm = TRUE), linetype = "dashed") +
-  # geom_histogram(binwidth = 0.02) +
-  # labs(#title = "Overlap coefficient between DGE and DGS significant genes",
-  #   x = "Overlap coefficient",
-  #   y = "Density") +
-  scale_fill_manual(values = "gray") +
-  # coord_cartesian(xlim = c(0,1)) +
-  scale_y_log10() +
-  theme_classic(base_size = 20) + 
-  theme(legend.position = "none")
-
-
-# Genes falsely significant as a fraction of # significant when not including SVAs
-
-fdr <- gene_change_no_sva %>% 
-  # anti_join(gene_change_sva, by = c("experiment", "gene")) %>% 
-  dplyr::count(experiment) %>% 
-  left_join(gene_change_no_sva %>% 
-              inner_join(gene_change_sva, by = c("experiment", "gene")) %>% 
-              dplyr::count(experiment), by = "experiment", suffix = c("_no_sva", "_overlap")) %>% 
-  mutate(fdr = (n_no_sva - n_overlap) / n_no_sva + 0.05)
-
-fdr2 <- gene_change_no_sva %>% 
-  anti_join(gene_change_sva, by = c("experiment", "gene")) %>%
-  dplyr::count(experiment) %>% 
-  left_join(dplyr::count(gene_change_sva, experiment), by = "experiment", suffix = c("_no_sva", "_sva")) %>% 
-  mutate(fdr = n_no_sva / n_sva)
-# %>% 
-  # filter(fdr < 100)
-  
-fdr %>% 
-  # filter(fdr < 1.1) %>% 
-  ggplot(aes(x = fdr, fill = "gray")) +
-  geom_histogram(color = "white") +
-  geom_vline(xintercept = median(fdr$fdr, na.rm = TRUE), linetype = "dashed") +
-  # geom_histogram(binwidth = 0.02) +
-  # labs(#title = "Overlap coefficient between DGE and DGS significant genes",
-  #   x = "Overlap coefficient",
-  #   y = "Density") +
-  scale_fill_manual(values = "gray") +
-  coord_cartesian(xlim = c(0,1)) +
-  labs(x = "Expected False Discovery Rate\nWithout Proper Correction for Confounders",
-       y = "Count") +
-  theme_classic(base_size = 20) + 
-  theme(legend.position = "none")
-
 
 
 gene_counts <- concatenated_sva_genes %>% 
@@ -1532,21 +1142,6 @@ gene_change_no_sva <- concatenated_no_sva_genes %>%
   mutate(gene_change = paste0(sign(lfc))) %>% 
   select(gene_change, experiment, gene)
 
-# proxy::simil(gene_change_sva, gene_change_no_sva, by_rows = FALSE, method = "Simpson")
-
-# gene_change_simil <- gene_change_sva %>% 
-#   full_join(gene_change_no_sva, by = c("experiment", "gene"), suffix = c("_sva", "_no_sva")) %>% 
-#   group_by(experiment) %>% 
-#   group_map(.f = function(df, ...){
-#     simpson <- df %>% 
-#       select(starts_with("gene_change")) %>% 
-#       proxy::simil(method = "Simpson")
-#     tibble(`Overlap Coefficient` = simpson[1]
-#     )
-#   }) %>% 
-#   bind_rows() %>% 
-#   mutate(experiment = gene_change_no_sva %>% distinct(experiment) %>% pull()) %>% 
-#   pivot_longer(cols = -experiment, names_to = "Method", values_to = "Similarity")
 
 
 gene_change_sva %>% inner_join(gene_change_no_sva, by = c("experiment", "gene"), suffix = c("_sva", "_no_sva")) %>% 
@@ -1556,20 +1151,6 @@ gene_change_sva %>% inner_join(gene_change_no_sva, by = c("experiment", "gene"),
 gene_change_sva %>% anti_join(gene_change_no_sva, by = c("experiment", "gene")) %>% count(experiment) %>% summarise(median = median(n))
 gene_change_no_sva %>% anti_join(gene_change_sva, by = c("experiment", "gene")) %>% count(experiment) %>% summarise(median = median(n))
 
-gene_change_simil$Similarity %>% table()
-
-gene_change_simil %>% 
-  ggplot(aes(x = Similarity)) +
-  geom_density(alpha = 0.5) +
-  geom_vline(xintercept = median(gene_change_simil$Similarity, na.rm = TRUE), linetype = "dashed") +
-  # geom_histogram(binwidth = 0.02) +
-  labs(#title = "Overlap coefficient between DGE and DGS significant genes",
-    x = "Overlap coefficient",
-    y = "Density") +
-  scale_fill_manual(values = "gray") + 
-  coord_cartesian(xlim = c(0,1)) +
-  theme_classic(base_size = 20) +
-  theme(legend.position = "none")
 
 # Median difference gene to pathway ----
 
@@ -1630,84 +1211,16 @@ ora_all %>%
 
 # Both genes ----
 pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
-source("tmp/run_experiment.R")
-tpm_file = "/home/databases/archs4/v11/human_transcript_v11_tpm.h5"
-gtf <- readRDS("gtfextract.rds")
-gtf <- tibble::tibble(gene = gtf$gene, transcript = gtf$transcript)
-
-extract_tpm <- function(exp, both_genes){
-  print(exp)
-  experiment_title <- str_remove(exp, "\\d+_GSE\\d+_") %>% 
-    str_remove("GSE\\d+_")
-  dataset <- str_remove(exp, fixed(paste0("_", experiment_title)))
-  
-  md <- readxl::read_xlsx(paste0("metadata/", dataset, ".xlsx"))
-  comparison <- md$`comparison (baseline_v_condition)`[which(md$`comparison_title (empty_if_not_okay)` == experiment_title)] %>% str_split("v", simplify = TRUE)
-  
-  md <- md %>% 
-    filter(group_nr %in% comparison)
-  
-  keep_genes <- filter(both_genes, experiment == exp) %>% 
-    pull(gene)
-  
-  
-  tx_tpm <- load_archs4(md$id, tpm_file, gtf = gtf)
-  
-  colnames(tx_tpm) <- paste0(md$id, "_", md$group_nr)
-  
-  tx_tpm <- tx_tpm %>% 
-    as_tibble(rownames = "gene_tx") %>% 
-    separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
-    filter(gene %in% keep_genes) %>%
-    mutate(experiment = exp,
-           tpm_baseline = rowMeans(select(., ends_with(comparison[1]))),
-           tpm_condition = rowMeans(select(., ends_with(comparison[2])))) %>% 
-    select(-starts_with("GSM"))
-  
-  return(tx_tpm)
-}
-
-
-
-concatenated_genes <- readRDS("results/concatenated_genes.RDS")
-both_genes <- concatenated_genes %>% 
-  filter(padj_dexseq < 0.05 & padj_deseq < 0.05,
-         gene != "NA")
-
-
-tpms <- lapply(unique(both_genes$experiment), extract_tpm, both_genes) %>% 
-  bind_rows() %>% 
-  as_tibble()
-
-saveRDS(tpms, file = "results/tpms.RDS")
-
 tpms <- readRDS("results/tpms.RDS")
 
-# 1
-
-dgs_isoforms <- readRDS("results/concatenated_results.RDS") %>% 
-  semi_join(both_genes, by = c("gene", "experiment"))
-
-one <- dgs_isoforms %>% 
-  filter(padj_dexseq < 0.05) %>% 
-  mutate(sign = sign(log2FC_dexseq)) %>% 
-  distinct(sign, gene, experiment) %>% 
-  count(gene, experiment) %>% 
-  filter(n > 1) %>% 
-  count(experiment, name = "events") %>% 
-  left_join(both_genes %>% count(experiment, name = "num_genes"), by = c("experiment")) %>% 
-  mutate(percent = events/num_genes)
-  
-median(one$events)
-median(one$percent)
 
 # 2
 
 tpm_two <- tpms %>% 
   group_by(gene, experiment) %>% 
   # filter(max(tpm_baseline) != 0 & max(tpm_condition) != 0) %>% 
-  summarise(major_baseline = transcript[which(tpm_baseline == max(tpm_baseline))[1]], 
-            major_condition = transcript[which(tpm_condition == max(tpm_condition))[1]])
+  summarise(major_baseline = transcript[which(tpm_baseline == max(tpm_baseline))], 
+            major_condition = transcript[which(tpm_condition == max(tpm_condition))])
 
 tpm_two_change <- tpm_two %>% 
   group_by(experiment) %>% 
@@ -1717,6 +1230,27 @@ tpm_two_change <- tpm_two %>%
 median(tpm_two_change$major_change)
 median(tpm_two_change$change_percent)
 
+
+# maxes
+two_test <- tpms %>% 
+  group_by(gene, experiment) %>% 
+  # filter(max(tpm_baseline) != 0 & max(tpm_condition) != 0) %>% 
+  summarise(major_baseline = length(which(tpm_baseline == max(tpm_baseline))), 
+            major_condition = length(which(tpm_condition == max(tpm_condition))))
+two_test <- tpms %>% 
+  group_by(gene, experiment) %>% 
+  # filter(max(tpm_baseline) != 0 & max(tpm_condition) != 0) %>% 
+  summarise(major_baseline = max(tpm_baseline), 
+            major_condition = max(tpm_condition))
+double_major <- two_test %>% filter(str_detect(major_baseline, " ") | str_detect(major_condition, " "))
+
+one_two %>% 
+  filter(gene %in% double_major$gene & experiment %in% double_major$experiment) %>% 
+  select(tpm_baseline, tpm_condition, gene, experiment, transcript) %>% 
+  arrange(experiment, gene)
+
+
+
 # 3
 
 
@@ -1724,7 +1258,7 @@ dgs_isoforms <- readRDS("results/concatenated_results.RDS") %>%
   semi_join(both_genes, by = c("gene", "experiment"))
   
 
-tpm_threshold <- function(tpms, threshold){
+tpm_threshold <- function(tpms, threshold, plot = FALSE){
   
   tpm_X <- tpms %>% 
     right_join(.GlobalEnv$dgs_isoforms, by = c("gene", "transcript", "experiment")) %>% 
@@ -1736,6 +1270,18 @@ tpm_threshold <- function(tpms, threshold){
     left_join(.GlobalEnv$both_genes %>% count(experiment, name = "num_genes"), by = c("experiment")) %>% 
     mutate(percent = events/num_genes)
   
+  if(plot){
+    
+    plt <- tpm_X %>% 
+      ggplot() +
+      aes(x = percent) +
+      geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
+      geom_vline(xintercept = median(tpm_X$percent), linetype = "dashed") +
+      theme_classic(base_size = 20)
+    return(plt)
+    
+  }
+  
   message("Median Events: ", median(tpm_X$events), "\n",
                "Median Percent: ", median(tpm_X$percent))
   
@@ -1744,7 +1290,7 @@ tpm_threshold <- function(tpms, threshold){
 }
 
 
-tpm_three_10 <- tpm_threshold(tpms, 0.1)
+tpm_three_10 <- tpm_threshold(tpms, 0.1, T)
 tpm_three_25 <- tpm_threshold(tpms, 0.25)
 tpm_three_50 <- tpm_threshold(tpms, 0.5)
 
@@ -1782,6 +1328,14 @@ dIF_10 <- dIF_threshold(tpm_dIF, 0.1)
 dIF_25 <- dIF_threshold(tpm_dIF, 0.25)
 dIF_33 <- dIF_threshold(tpm_dIF, 0.33)
 dIF_50 <- dIF_threshold(tpm_dIF, 0.5)
+
+
+tpm_dIF %>% 
+  ggplot() +
+  aes(x = IF_baseline) +
+  geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
+  geom_vline(xintercept = median(tpm_dIF$IF_baseline), linetype = "dashed") +
+  theme_classic(base_size = 20)
 
 
 experiment_title <- "76_GSE183984_Cetuximab treatment of primary colorectal cancer"

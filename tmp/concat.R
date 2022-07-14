@@ -404,3 +404,32 @@ deseq_no_sva <- function(experiments, archs4db, gtf){
 }
 
 # deseq_genes_no_sva <- deseq_no_sva(experiments, archs4db, gtf)
+
+
+concatenate_sva_correlation <- function(experiments){
+  
+  concatenaded_correlation <- tibble::tibble()
+  
+  for(num in 1:nrow(experiments)){
+    row <- experiments[num, ]
+    ### Load metadata
+    md_file <- row$filename
+    data_name <- basename(md_file) %>% 
+      stringr::str_remove(".xlsx") %>% 
+      stringr::str_remove("csv") 
+    ### Define experiment details
+    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+    ### Check that results exists
+    message("Adding ", experiment_title)
+    dds <- readRDS(paste0("results/", experiment_title, "_dds.RDS"))
+    md <- colData(dds) %>% dplyr::as_tibble()
+    correlation <- apply(select(md, starts_with("sv")), 2, function(x) cor(as.numeric(md$group_nr), x))
+    correlation$experiment <- experiment_title
+    
+    concatenaded_correlation <- concatenaded_correlation %>% 
+      dplyr::bind_rows(correlation)
+  }
+  saveRDS(concatenaded_correlation, "results/concatenate_sva_correlation.RDS")
+  return(concatenaded_correlation)
+}
+# cors <- concatenaded_correlation %>% pivot_longer(cols = starts_with("sv"), names_to = "sv", values_to = "correlation")

@@ -58,8 +58,8 @@ plot_ora <- function(ora, plotly = FALSE, pattern = NULL, cutoff = 0.05, lines =
     ggplot2::geom_point(alpha = 0.3, size = 1.5) +
     # Add correlation text to plot
     ggplot2::annotate("text", label = paste("Spearman's ρ:", correlation), x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.3) +
-    ggplot2::labs(x = "Gene Set Enrichment\nDifferential Splicing (Log2 Scale)",
-                  y = "Gene Set Enrichment\nDifferential Expression (Log2 Scale)",
+    ggplot2::labs(x = "Gene Set Enrichment Score\nDifferential Splicing",
+                  y = "Gene Set Enrichment Score\nDifferential Expression",
                   fill = paste("padj <", cutoff),
                   colour = paste("padj <", cutoff),
                   shape = pattern) +
