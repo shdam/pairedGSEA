@@ -5,6 +5,20 @@ if(FALSE){
   pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
   library(tidyverse)
   theme_set(theme_classic(base_size = 20))
+
+                    # Both  DGE          DGS        Neither
+  color_scheme <- c("gray", "lightblue", "darkred", "black")
+  fill_scale <- function(reorder = NULL) {
+    if(!is.null(reorder)) color_scheme <- color_scheme[reorder]
+    scale_fill_manual(values = color_scheme, 
+                      na.value = "white")}
+  color_scale <- function(reorder = NULL) {
+    if(!is.null(reorder)) color_scheme <- color_scheme[reorder]
+    scale_color_manual(values = color_scheme, 
+                       na.value = "white")}
+  
+  
+  utils::globalVariables(add = TRUE, c("color_scheme"))
 }
 # Figure 1 ----
 
@@ -47,9 +61,9 @@ if(FALSE){
   concatenated_genes <- readRDS("results/concatenated_genes.RDS")
   concatenated_sva_genes <- concatenated_genes %>% filter(padj_deseq < 0.05)
   
-  fig1b <- plot_false_sva(concatenated_no_sva_genes, concatenated_sva_genes)
+  false_sva <- plot_false_sva(concatenated_no_sva_genes, concatenated_sva_genes)
   
-  ggsave("figs/fig1b.png", fig1b)
+  ggsave("figs/false_sva.png", false_sva)
   
 }
 
@@ -107,12 +121,15 @@ plot_gene_counts <- function(concatenated_genes){
                                                   "Differential\nSplicing",
                                                   "Overlap",
                                                   "Only\nDifferential\nSplicing"))) %>% 
-    ggplot(aes(y = Genes, x = Analysis)) +
+    ggplot(aes(y = Genes, x = Analysis, color = Analysis)) +
     scale_y_log10() +
     ggforce::geom_sina() +
     geom_boxplot(width = 0.05) +
+    color_scale(reorder = c(2, 3, 1, 4)) +
     labs(x = "",
-         y = "Significant genes\nper experiment")
+         y = "Significant genes\nper experiment") +
+    theme(legend.position = "none")
+  return(plt_gene_counts)
   
 }
 
@@ -121,8 +138,8 @@ if(FALSE){
   # Load data
   concatenated_genes <- readRDS("results/concatenated_genes.RDS")
   
-  fig2a <- plot_gene_counts(concatenated_genes)
-  ggsave(plot = fig2a, filename = "figs/fig2a.png")
+  plt_gene_counts <- plot_gene_counts(concatenated_genes)
+  ggsave(plot = plt_gene_counts, filename = "figs/gene_counts.png")
   
 }
 
@@ -144,11 +161,13 @@ plot_gene_fraction <- function(concatenated_genes){
   # Sina plot of fraction of found genes
   plt_gene_fractions <-  gene_fractions %>% 
     ggplot() +
-    aes(x = Method, y = Fraction) +
+    aes(x = Method, y = Fraction, color = Method) +
     ggforce::geom_sina() +
     geom_boxplot(width = 0.05) +
+    color_scale(reorder = c(2, 3)) +
     labs(x = "",
-         y = "Fraction of significant genes")
+         y = "Fraction of significant genes") +
+      theme(legend.position = "none")
   
   return(plt_gene_fractions)
   
@@ -158,8 +177,8 @@ if(FALSE){
   # Load data
   concatenated_genes <- readRDS("results/concatenated_genes.RDS")
   
-  fig2b <- plot_gene_fraction(concatenated_genes)
-  ggsave(plot = fig2b, filename = "figs/fig2b.png")
+  plt_gene_fractions <- plot_gene_fraction(concatenated_genes)
+  ggsave(plot = plt_gene_fractions, filename = "figs/gene_fractions.png")
   
   
   # Number and fraction of significant genes
@@ -208,6 +227,7 @@ plot_dgs_affected_dge <- function(gene_similarity){
                  "\n(Median: ", round(median_overlap, 3), ")"),
       y = "Density"
     ) +
+    coord_cartesian(xlim = c(0, 1)) +
     theme(legend.position = "none")
   
   return(plt_affected)
@@ -221,11 +241,11 @@ plot_dgs_signal <- function(gene_similarity){
     ggplot(aes(x = p_signal)) +
     geom_density(alpha = 0.5, fill = "darkgray") +
     geom_vline(xintercept = median_signal, linetype = "dashed") +
-    labs( x = paste0("Signal mediated by differential splicing",
+    labs( x = paste0("Fraction of total signal mediated by differential splicing",
                      "\n(Median: ", round(median_signal, 3), ")"),
           y = "Density"
     ) +
-    theme_classic(base_size = 20) +
+    coord_cartesian(xlim = c(0, 1)) +
     theme(legend.position = "none")
   
   return(plt_dgs_signal)
@@ -305,7 +325,7 @@ if(FALSE){
   
 }
 
-# Repare TPM plots
+# Prepare TPM plots
 
 if(FALSE){
   
@@ -343,7 +363,8 @@ plot_switch_fraction <- function(dgs_isoforms) {
     geom_vline(xintercept = median_switches, linetype = "dashed") +
     labs(x = paste0("Fraction of genes with an isoform switch",
                     "\n(Median: ", round(median_switches, 3), ")"),
-         y = "Density") 
+         y = "Density") +
+    coord_cartesian(xlim = c(0, 1))
   
   return(plt_switches)
 }
@@ -353,6 +374,7 @@ if(FALSE){
   
   
   plt_switches <- plot_switch_fraction(dgs_isoforms)
+  plt_switches
   ggsave("figs/isoform_switches.png", plt_switches)
 }
 
@@ -378,16 +400,18 @@ count_switched_majority <- function(dgs_isoforms, tpms){
 
 plot_switch_majority <- function(switched_majorities){
   
-  median_switched_majority <- median(one_two_switch$change_percent, na.rm = TRUE)
+  median_switched_majority <- median(switched_majorities$change_percent, na.rm = TRUE)
   
-  plt_switched_majorities <- switched_majorities %>% 
+  plt_switched_majorities <- switched_majorities %>%
     ggplot() +
     aes(x = change_percent) +
     geom_density(alpha = 0.5, fill = "darkgray") +
     geom_vline(xintercept = median_switched_majority, linetype = "dashed") +
-    labs(x = paste0("Switch impact on majority transcript",
+    labs(x = paste0("Fraction of isoform switches leading to\nchange in most expressed isoform",
                     "\n(Median: ", round(median_switched_majority, 3), ")"),
-         y = "Density") 
+         y = "Density") +
+    coord_cartesian(xlim = c(0, 1))
+  
   
   return(plt_switched_majorities)
   
@@ -399,6 +423,7 @@ if(FALSE){
   switched_majorities <- count_switched_majority(dgs_isoforms, tpms)
   
   plt_switch_majority <- plot_switch_majority(switched_majorities)
+  plt_switch_majority
   ggsave("figs/switch_majority.png", plt_switch_majority)
 }
 
@@ -426,12 +451,14 @@ plot_pathway_count <- function(ora_all){
                                                   "Only\nDifferential\nSplicing")
     )) %>% 
     ggplot() +
-    aes(y = Pathways, x = Analysis) +
+    aes(y = Pathways, x = Analysis, color = Analysis) +
     ggforce::geom_sina() +
     scale_y_log10() +
     geom_boxplot(width = 0.05) +
+    color_scale(reorder = c(2, 3, 1, 4)) + 
     labs(x = "",
-         y = "Significant pathways\nper experiment")
+         y = "Significant pathways\nper experiment") +
+    theme(legend.position = "none")
   
   return(plt_pathway_counts)
   
@@ -442,13 +469,14 @@ if(FALSE){
   ora_all <- readRDS("results/ora_all.RDS")
   
   plt_pathway_count <- plot_pathway_count(ora_all)
+  plt_pathway_count
   ggsave(plot = plt_pathway_count, filename = "figs/pathway_count.png")
 }
 
-# Figure 3B: Telomere pathways
+# Figure 3B: Telomere pathways ----
 
 if(FALSE){
-  
+  ora_all <- readRDS("results/ora_all.RDS")
   exp <- "77_GSE61220_TNF Treatment 12hrs"
   ora <- ora_all %>% 
     filter(experiment == exp)
@@ -458,10 +486,10 @@ if(FALSE){
   ggsave(plot = telomere_pathways, filename = "figs/telomere_pathways.png")
 }
 
-# Figure 3C: Repair pathways
+# Figure 3C: Repair pathways----
 
 if(FALSE){
-  
+  ora_all <- readRDS("results/ora_all.RDS")
   exp <- "79_GSE139262_SMARCB1 overexpression"
   ora <- ora_all %>% 
     filter(experiment == exp)
@@ -491,7 +519,7 @@ plot_ora_correlation <- function(ora_all, threshold = 0){
     ggplot(aes(x = correlation)) +
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
     geom_vline(xintercept = median_correlation, linetype = "dashed") +
-    labs(x = paste0("Spearman correlation (Median: ", round(median_correlation, 3), ")"),
+    labs(x = paste0("Spearman's ρ between gene-set enrichment scores", "\n(Median: ", round(median_correlation, 3), ")"),
          y = "Counts")
    return(plt_correlation)
 }
@@ -522,11 +550,20 @@ plot_ora_correlation_facet <- function(ora_all, threshold = 50){
     # filter(association != "Neither") %>% 
     ggplot(aes(x = correlation, fill = association)) +
     geom_histogram(color = "white") +
-    labs(x = "Spearman correlation",
+    geom_vline(
+      data = . %>%
+        group_by(association) %>%
+        summarise(line = median(correlation)),
+      mapping = aes(xintercept = line, color = association),
+      linetype = "dashed"
+    ) +
+    labs(x = "Spearman's ρ between gene-set enrichment scores",
          y = "Counts") +
     facet_grid(~association, space="free_x")  +
-    scale_fill_manual(values = c("gray", "lightblue", "darkred", "black"), na.value = "white") +
-    theme(legend.position = "none")
+    fill_scale() +
+    color_scale() +
+    theme(legend.position = "none") +
+    theme(axis.text.x = element_text(angle=-90))
 
   return(plt_correlation)
 }
@@ -536,13 +573,15 @@ if(FALSE){
   ora_all <- readRDS("results/ora_all.RDS")
   
   ora_correlation <- plot_ora_correlation(ora_all)
+  ora_correlation
   ggsave(plot = ora_correlation, filename = "figs/ora_correlation.png")
   ora_correlation_facet <- plot_ora_correlation_facet(ora_all)
+  ora_correlation_facet
   ggsave(plot = ora_correlation_facet, filename = "figs/ora_correlation_facet.png")
 }
 
 
-# Figure 3E: A figure summarizing relative risk changes across all datasets
+# Figure 3E: A figure summarizing relative risk changes across all datasets ----
 
 
 compute_rr_shifts <- function(ora_all){
@@ -562,6 +601,7 @@ compute_rr_shifts <- function(ora_all){
 }
 
 
+
 plot_rr_ridges <- function(rr_shifts){
   
   rr_ridges <- rr_shifts %>%
@@ -578,15 +618,15 @@ plot_rr_ridges <- function(rr_shifts){
   plt_rr_ridges <- rr_ridges %>% 
     ggplot(aes(x = Shift, y = association, color = association, fill = association)) +
     ggridges::geom_density_ridges(scale = 4, alpha = 0.4, quantile_lines = TRUE, quantiles = 2) +
-    scale_color_manual(values = c("gray", "lightblue", "darkred", "black"), na.value = "white") +
-    scale_fill_manual(values = c("gray", "lightblue", "darkred", "black"), na.value = "white") +
-    labs(x = "Relative risk shift",
+    color_scale() +
+    fill_scale() +
+    labs(x = "Shift in gene-set relative risk as a percentage\nof the smaller risk",
          y = ""
     ) +
     scale_x_log10() +
     theme(legend.position = "none")
   
-  return(rr_ridges)
+  return(plt_rr_ridges)
 }
 
 plot_rr_median <- function(rr_shifts){
@@ -596,11 +636,12 @@ plot_rr_median <- function(rr_shifts){
     summarise(Shift = median( abs(Shift) / min( relative_risk_dexseq, relative_risk_deseq) ) * 100) %>% 
     filter(!is.infinite(Shift), !is.na(Shift))
   
+  median_of_median <- median(rr_shift_median$Shift)
   plt_rr_median <- rr_shift_median %>% 
     ggplot(aes(x = Shift)) +
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
-    geom_vline(xintercept = median(rr_shift_median$Shift), linetype = "dashed") +
-    labs(x = paste0("Relative risk shift (Median: ", round(median(rr_shift_median$Shift),2), ")")
+    geom_vline(xintercept = median_of_median, linetype = "dashed") +
+    labs(x = paste0("Shift in gene-set relative risk"," as a percentage\nof the smaller risk", " (Median: ", round(median_of_median, 2), ")")
     ) +
     scale_x_log10() +
     theme(legend.position = "none")
@@ -614,9 +655,12 @@ if(FALSE){
   ora_all <- readRDS("results/ora_all.RDS")
   rr_shifts <- compute_rr_shifts(ora_all)
   
+  
   rr_ridges <- plot_rr_ridges(rr_shifts)
+  rr_ridges
   ggsave(plot = rr_ridges, filename = "figs/rr_ridges.png")
   rr_median <- plot_rr_median(rr_shifts)
+  rr_median
   ggsave(plot = rr_median, filename = "figs/rr_median.png")
 }
 

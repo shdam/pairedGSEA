@@ -2,7 +2,7 @@
 #' 
 #' @noRd
 #' @param row A row from the data.frame of experiments generated with \code{combine_experiments}
-run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE, gtf = NULL){
+run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE, gtf = NULL, deseq_only = FALSE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -50,6 +50,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
     fit_type = "local",
     store_results = TRUE,
     quiet = FALSE,
+    deseq_only = deseq_only,
     parallel = parallel,
     BPPARAM = BiocParallel::bpparam()
   )

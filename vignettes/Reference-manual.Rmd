@@ -2,10 +2,13 @@
 title: "Reference Manual"
 output: 
   # rmarkdown::html_vignette:
-  html_document:
+  BiocStyle::html_document:
     toc: true
-    toc_float: true
-    highlight: kate
+    toc_depth: 2
+  # html_document:
+  #   toc: true
+  #   toc_float: true
+  #   highlight: kate
 author: "Søren Helweg Dam"
 date: "Last updated on May 28, 2022"
 vignette: >

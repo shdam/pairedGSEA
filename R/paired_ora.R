@@ -19,7 +19,8 @@ paired_ora <- function(paired_de_result,
                        cutoff = 0.05,
                        min_size = 25,
                        experiment_title = NULL,
-                       quiet = FALSE){
+                       quiet = FALSE,
+                       universe = NULL){
   
   # Check column names are as expected
   check_colname(paired_de_result, "pvalue_deseq", "paired_de_result")
@@ -40,7 +41,7 @@ paired_ora <- function(paired_de_result,
   
   # fora
   if(!quiet) message("Running over-representation analysis")
-  universe <- unique(paired_de_result$gene)
+  if(is.null(universe)) universe <- unique(paired_de_result$gene)
   ## ORA on DESeq2 results
   ora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$gene, 
                            universe = universe, minSize = min_size) %>% 
@@ -67,7 +68,8 @@ paired_ora <- function(paired_de_result,
     dplyr::mutate(enrichment_score_shift = relative_risk_dexseq - relative_risk_deseq,
                   enrichment_score_shift = log2(abs(enrichment_score_shift)) * sign(enrichment_score_shift),
                   experiment = experiment_title) %>% 
-    dplyr::arrange(enrichment_score_shift)
+    dplyr::arrange(enrichment_score_shift) %>% 
+    tibble::as_tibble()
   
   if(!is.null(experiment_title)){
     if(!quiet) message("Storing fora results")
