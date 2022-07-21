@@ -2,7 +2,7 @@
 #' 
 #' @noRd
 #' @param row A row from the data.frame of experiments generated with \code{combine_experiments}
-run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE, gtf = NULL, deseq_only = FALSE){
+run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE, gtf = NULL, deseq_only = FALSE, store_results = TRUE, run_sva = TRUE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -21,8 +21,11 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
   ### Define experiment details
+  comparison_title <- ifelse(run_sva,
+                             yes = row$`comparison_title (empty_if_not_okay)`,
+                             no = paste0(row$`comparison_title (empty_if_not_okay)`, "_no_sva"))
   baseline_case <- row$`comparison (baseline_v_condition)` %>% stringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
-  experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+  experiment_title <- paste0(data_name, "_", comparison_title)
   
   
   ### Prepare for DE
@@ -45,10 +48,10 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
     baseline = baseline_case[1],
     case = baseline_case[2],
     experiment_title = experiment_title,
-    run_sva = TRUE,
+    run_sva = run_sva,
     prefilter = prefilter,
     fit_type = "local",
-    store_results = TRUE,
+    store_results = store_results,
     quiet = FALSE,
     deseq_only = deseq_only,
     parallel = parallel,
