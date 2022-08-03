@@ -30,7 +30,7 @@ library(pairedGSEA)
 example_data <- example_data
 
 
-results_example <- pairedGSEA::paired_de(#diff
+results_example <- pairedGSEA::paired_diff(
     tx_count = example_data$tx_count,
     metadata = example_data$metadata,
     group_col = "group_nr",
