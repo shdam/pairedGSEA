@@ -52,7 +52,7 @@ check_make_dir <- function(dir_path) {
 #' Check colname
 #' @noRd
 check_colname <- function(df_colnames, col_name, location = "metadata"){
-  if("data.frame" %in% class(df_colnames)) df_colnames <- colnames(df_colnames)
+  if(is(df_colnames, "data.frame")) df_colnames <- colnames(df_colnames)
   if(!is.null(col_name)){
     if(col_name %!in% df_colnames){
       stop("Column \"", col_name, "\" was not found in the ", location)
@@ -63,7 +63,7 @@ check_colname <- function(df_colnames, col_name, location = "metadata"){
 #' @noRd
 check_comparison <- function(comparison){
   
-  if(class(comparison) == "character" & length(comparison) == 1){
+  if(is(comparison, "character") & length(comparison) == 1){
     stopifnot("Comparison must have the format 'baseline_v_case' (e.g., '2v1')." = stringr::str_detect(comparison, "v"))
     stopifnot("Comparison must not contain multiple 'v's, the format should be 'baseline_v_case' (e.g., '2v1')." = stringr::str_count(comparison, "v") == 1)
     comparison <- comparison %>% 
@@ -72,7 +72,7 @@ check_comparison <- function(comparison){
       stringr::str_split(pattern = "v", simplify = TRUE) %>% 
       as.character()
   }
-  stopifnot("Comparison must be a character string (e.g., '2v1') or a list (e.g., c('2', '1')). The format being 'baseline_v_case'." = (class(comparison) == "character") & (length(comparison) == 2))
+  stopifnot("Comparison must be a character string (e.g., '2v1') or a list (e.g., c('2', '1')). The format being 'baseline_v_case'." = is(comparison, "character") & (length(comparison) == 2))
   return(comparison)
 }
 
@@ -95,15 +95,15 @@ store_result <- function(object, file, analysis = "results", quiet = FALSE){
 
 
 #' Pre-filter
-#' @inheritParams paired_de
+#' @inheritParams paired_diff
 #' @noRd
-pre_filter <- function(tx_count, threshold = 10){
-  if(threshold < 1) return(tx_count)
+pre_filter <- function(dds, threshold = 10){
+  if(threshold < 1) return(dds)
   # Remove low counts
-  keep <- rowSums(tx_count) >= threshold
-  tx_count <- tx_count[keep,]
+  keep <- rowSums(dds) >= threshold
+  dds <- dds[keep,]
   
-  return(tx_count)
+  return(dds)
 }
 
 #' Convert character vector into a stats formula

@@ -1102,6 +1102,11 @@ rr_shifts %>%
   
 # SVA contrasts----
 
+# Test
+apply(experiments[1, ], 1, run_experiment, archs4db, deseq_only = T, run_sva = F)
+
+
+
 concatenated_no_sva_genes <- deseq_no_sva(experiments, archs4db, gtf)
 
 concatenated_no_sva_genes <- readRDS("results/concatenated_no_sva_genes.RDS")

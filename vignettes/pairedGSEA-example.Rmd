@@ -1,5 +1,5 @@
 ---
-title: "Reference Manual"
+title: "Example workthrough"
 output: 
   # rmarkdown::html_vignette:
   BiocStyle::html_document:
@@ -30,7 +30,7 @@ library(pairedGSEA)
 example_data <- example_data
 
 
-results <- pairedGSEA::paired_de(
+results_example <- pairedGSEA::paired_de(#diff
     tx_count = example_data$tx_count,
     metadata = example_data$metadata,
     group_col = "group_nr",
@@ -42,21 +42,21 @@ results <- pairedGSEA::paired_de(
     quiet = FALSE
   )
 
+results_ora <- paired_ora(results_example, gene_sets)
+plot_ora(results_ora, pattern = "Telomer")
 
 ```
 
 
 ```{r}
-gene_sets <- pairedGSEA::prepare_msigdb()
-results_ora <- paired_ora(results, gene_sets)#, universe = c(results$gene, 1:14000))
-
+# gene_sets <- pairedGSEA::prepare_msigdb()
+results_ora <- paired_ora(results_example, gene_sets)
 ```
 
 
 ```{r}
-results_ora2 <- results_ora %>% mutate(padj_deseq = pval_deseq,
-                                       padj_dexseq = pval_dexseq)
-plot_ora(results_ora2, pattern = "Telomer")
+
+plot_ora(results_ora, pattern = "Telomer")
 
 ```
 

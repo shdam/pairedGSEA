@@ -72,7 +72,7 @@ plot_ora <- function(ora, plotly = FALSE, pattern = NULL, cutoff = 0.05, lines =
     ggplot2::scale_shape_manual(values = c(4, 23)) +
     ggplot2::scale_colour_manual(values = c("darkgray", "purple", "blue"))
   
-  if(!is.null(pattern)){
+  if(!is.null(pattern) & nrow(matches) > 0){
     # Add matches to plot if a pattern was given
     plt <- plt +
       ggplot2::geom_point(data = matches, size = 2.5, alpha = 0.9, fill = "red", ggplot2::aes(shape = TRUE)) #+ , color = "red"

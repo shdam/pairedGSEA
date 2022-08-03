@@ -6,7 +6,7 @@
 #'   I.e., two runs of fora() are executed and subsequently joined into a single object.
 #'   You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb()}} to create a list of gene_sets.
 #' 
-#' @param paired_de_result The output of \code{\link[pairedGSEA:paired_de]{paired_de()}}
+#' @param paired_diff_result The output of \code{\link[pairedGSEA:paired_diff]{paired_diff()}}
 #' @param gene_sets List of gene sets to analyse
 #' @param cutoff (Default: 0.05) Adjusted p-value cutoff for selecting significant genes
 #' @param min_size (Default: 25) Minimal size of a gene set to test. All pathways below the threshold are excluded.
@@ -14,7 +14,7 @@
 #' @param quiet (Default: FALSE) Whether to print messages
 #' @family paired
 #' @export 
-paired_ora <- function(paired_de_result,
+paired_ora <- function(paired_diff_result,
                        gene_sets,
                        cutoff = 0.05,
                        min_size = 25,
@@ -23,25 +23,25 @@ paired_ora <- function(paired_de_result,
                        universe = NULL){
   
   # Check column names are as expected
-  check_colname(paired_de_result, "pvalue_deseq", "paired_de_result")
-  check_colname(paired_de_result, "pvalue_dexseq", "paired_de_result")
-  check_colname(paired_de_result, "gene", "paired_de_result")
+  check_colname(paired_diff_result, "pvalue_deseq", "paired_diff_result")
+  check_colname(paired_diff_result, "pvalue_dexseq", "paired_diff_result")
+  check_colname(paired_diff_result, "gene", "paired_diff_result")
   
   # Significant genes
   if(!quiet)  message("Identifying differentially expressed genes")
-  genes_deseq <- paired_de_result %>% 
+  genes_deseq <- paired_diff_result %>% 
     dplyr::filter(!is.na(pvalue_deseq) & !is.na(gene),
                   padj_deseq < cutoff) %>%
     dplyr::arrange(padj_deseq)
   
-  genes_dexseq <- paired_de_result %>% 
+  genes_dexseq <- paired_diff_result %>% 
     dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene),
                   padj_dexseq < cutoff) %>%
     dplyr::arrange(padj_dexseq)
   
   # fora
   if(!quiet) message("Running over-representation analysis")
-  if(is.null(universe)) universe <- unique(paired_de_result$gene)
+  if(is.null(universe)) universe <- unique(paired_diff_result$gene)
   ## ORA on DESeq2 results
   ora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$gene, 
                            universe = universe, minSize = min_size) %>% 

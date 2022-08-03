@@ -430,7 +430,7 @@ if(FALSE){
 
 # Figure 3 ----
 
-# Figure 3A: Significant pathways per ekseperiment
+# Figure 3A: Significant pathways per experiment
 
 plot_pathway_count <- function(ora_all){
   
@@ -520,7 +520,7 @@ plot_ora_correlation <- function(ora_all, threshold = 0){
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
     geom_vline(xintercept = median_correlation, linetype = "dashed") +
     labs(x = paste0("Spearman's ρ between gene-set enrichment scores", "\n(Median: ", round(median_correlation, 3), ")"),
-         y = "Counts")
+         y = "Count")
    return(plt_correlation)
 }
 
@@ -558,7 +558,7 @@ plot_ora_correlation_facet <- function(ora_all, threshold = 50){
       linetype = "dashed"
     ) +
     labs(x = "Spearman's ρ between gene-set enrichment scores",
-         y = "Counts") +
+         y = "Count") +
     facet_grid(~association, space="free_x")  +
     fill_scale() +
     color_scale() +
@@ -641,7 +641,8 @@ plot_rr_median <- function(rr_shifts){
     ggplot(aes(x = Shift)) +
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
     geom_vline(xintercept = median_of_median, linetype = "dashed") +
-    labs(x = paste0("Shift in gene-set relative risk"," as a percentage\nof the smaller risk", " (Median: ", round(median_of_median, 2), ")")
+    labs(x = paste0("Shift in gene-set relative risk"," as a percentage\nof the smaller risk", " (Median: ", round(median_of_median, 2), ")"),
+         y = "Count"
     ) +
     scale_x_log10() +
     theme(legend.position = "none")

@@ -27,6 +27,6 @@ aggregate_pvalue(
 \item{type}{(Default: "deseq") Either "deseq" for aggregation of DESeq2 results or "dexseq" for aggregation of DEXSeq results}
 }
 \description{
-This internal function aggregates p-values to gene level using Lancaster agreggation..
+This internal function aggregates p-values to gene level using Lancaster aggregation.
 }
 \keyword{internal}

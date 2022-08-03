@@ -5,16 +5,17 @@
 \title{Paired Over-Representation Analysis}
 \usage{
 paired_ora(
-  paired_de_result,
+  paired_diff_result,
   gene_sets,
   cutoff = 0.05,
   min_size = 25,
   experiment_title = NULL,
-  quiet = FALSE
+  quiet = FALSE,
+  universe = NULL
 )
 }
 \arguments{
-\item{paired_de_result}{The output of \code{\link[pairedGSEA:paired_de]{paired_de()}}}
+\item{paired_diff_result}{The output of \code{\link[pairedGSEA:paired_diff]{paired_diff()}}}
 
 \item{gene_sets}{List of gene sets to analyse}
 
@@ -31,9 +32,10 @@ paired_ora uses \code{\link[fgsea:fora]{fora()}} to run the over-representation 
   First the aggregated pvalues are adjusted using the Benjamini & Hochberg method.
   The analysis is run on all significant genes found by DESeq2 and DEXSeq individually.
   I.e., two runs of fora() are executed and subsequently joined into a single object.
+  You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb()}} to create a list of gene_sets.
 }
 \seealso{
 Other paired: 
-\code{\link{paired_de}()}
+\code{\link{paired_diff}()}
 }
 \concept{paired}

@@ -19,14 +19,16 @@
 #' @param ... Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @family paired
 #' @export
-paired_de <- function(tx_count,
-                      metadata,
+paired_diff <- function(tx_count = NULL,
+                      metadata = NULL,
+                      se = NULL,
+                      dds = NULL,
                       group_col,
                       sample_col,
                       baseline,
                       case,
                       covariates = NULL,
-                      experiment_title = "Experiment Title",
+                      experiment_title = NULL,
                       store_results = TRUE,
                       run_sva = TRUE,
                       prefilter = 10,
@@ -38,41 +40,60 @@ paired_de <- function(tx_count,
                       deseq_only = FALSE,
                       ...){
   
-  # Checking column names
+  stopifnot("Cannot store results if experiment title haven't been given" = store_results & !is.null(experiment_title))
+  
+  # Streamlining data format
+  stopifnot("Please provide a data source" = any(!(is.null(tx_count) & is.null(metadata)), !is.null(se), !is.null(dds)))
+  stopifnot("Please only provide one data source" = sum(c(!(is.null(tx_count) & is.null(metadata)), !is.null(se), !is.null(dds))) == 1)
+  
+  ## Checking column names
   stopifnot("Covariate names must not contain spaces" = stringr::str_detect(covariates, " ", negate = TRUE))
   stopifnot("group_col name must not contain spaces" = stringr::str_detect(group_col, " ", negate = TRUE))
   
   if(!quiet) message("Running ", experiment_title)
   
-  # Load metadata
+  ## Define design formula
+  design <- formularise_vector(c(group_col, covariates))
+  
+  ## Convert se to dds
+  if(!is.null(se)) dds <- DESeq2::DESeqDataSet(se, design); rm(se)
+  
+  ## Load metadata
   if(!quiet) message("Preparing metadata")
+  if(!is.null(dds) & is.null(metadata)) metadata <- SummarizedExperiment::colData(dds)
+  
   metadata <- prepare_metadata(metadata, group_col, paste(c(baseline, case)))
   
-  # Check sample_col is in metadata
+  ## Check sample_col is in metadata
   stopifnot("Sample column not in metadata" = sample_col %in% colnames(metadata))
   
-  # Subsample metadata to only include samples present in the count matrix
-  metadata <- metadata[metadata[[sample_col]] %in% colnames(tx_count), ]
-  stopifnot("Please ensure that the sample IDs in the metadata matches the column names of the count matrix." = nrow(metadata) > 0)
+  if(!is.null(dds)) SummarizedExperiment::colData(dds) <- S4Vectors::DataFrame(metadata[metadata[[sample_col]] %in% SummarizedExperiment::colnames(dds), ])
   
-  # Ensure rows in metadata matches columns in the count matrix
-  tx_count <- tx_count[, metadata[[sample_col]]]
+  ## Convert count matrix to DESeqDataSet
+  if(!is.null(tx_count)){
+    ## Subsample metadata to only include samples present in the count matrix
+    metadata <- metadata[metadata[[sample_col]] %in% colnames(tx_count), ]
+    stopifnot("Please ensure that the sample IDs in the metadata matches the column names of the count matrix." = nrow(metadata) > 0)
+    
+    ## Ensure rows in metadata matches columns in the count matrix
+    tx_count <- tx_count[, metadata[[sample_col]]]
+    
+    ## Create DDS from count matrix
+    if(!quiet) message("Converting count matrix to DESeqDataSet")
+    dds <- convert_matrix_to_dds(tx_count, metadata, design)
+  }
   
-  ### Prefiltering
-  if(prefilter) tx_count <- pre_filter(tx_count, prefilter)
+  # Prefiltering
+  if(prefilter) dds <- pre_filter(dds, prefilter)
   
-  if(!quiet) message("Converting count matrix to DESeqDataSet")
-  # Create DDS from count matrix
-  design <- formularise_vector(c(group_col, covariates))
-  dds <- convert_matrix_to_dds(tx_count, metadata, design)
-  
+  # Detect surrogate variables
   if(run_sva){
     dds <- run_sva(dds, quiet = quiet)
   }
   
 
 
-  ### Run DESeq2
+  # Run DESeq2
   deseq_results <- run_deseq(
     dds,
     group_col = group_col,
@@ -88,17 +109,17 @@ paired_de <- function(tx_count,
     ...
     )
   
-  # Store results
-  if(store_results) store_result(deseq_results, paste0(experiment_title, "_deseqres.RDS"), "DESeq2 results", quiet = quiet)
-  
+  ## If only DGE is requested (used for SVA evaluations in the paper)
   if(deseq_only){
     deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq") %>% 
       dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"),
                     experiment = experiment_title)
+    
+    if(store_results) store_result(deseq_aggregated, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene pvalue aggregation")
     return(deseq_aggregated)
   }
   
-  ### Run DEXSeq
+  # Run DEXSeq
   dexseq_results <- run_dexseq(
     dds,
     group_col = group_col,
@@ -111,12 +132,9 @@ paired_de <- function(tx_count,
     BPPARAM = BPPARAM
     )
   
-  # Store results
-  if(store_results) store_result(dexseq_results, paste0(experiment_title, "_dexseqres.RDS"), "DEXSeq results", quiet = quiet)
   
-  if(!quiet) message(experiment_title, " is analysed.")
-  
-  if(!quiet) message("Aggregating p values")
+  # Aggregate p values
+  if(!quiet) message(experiment_title, " is analysed."); message("Aggregating p values")
   
   dexseq_aggregated <- aggregate_pvalue(dexseq_results, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
   deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
@@ -148,15 +166,15 @@ paired_de <- function(tx_count,
 #'   group_col = "group", comparison = "2v1")
 #' }
 #' 
-#' @inheritParams paired_de
+#' @inheritParams paired_diff
 #' @param baseline_case A character vector with baseline and case values
 #' @keywords internal
 prepare_metadata <- function(metadata, group_col, baseline_case){
   
-  if(typeof(metadata[1]) == "character" & length(metadata) == 1){
+  if(is(metadata, "character")){
     if(stringr::str_ends(metadata, ".xlsx")) metadata <- readxl::read_excel(metadata)
     else if(stringr::str_ends(metadata, ".csv")) metadata <- readr::read_csv(metadata)
-  } else if("data.frame" %!in% class(metadata)){stop("Please provide path to a metadata file or a data.frame object.")}
+  } else if(!is(metadata, "data.frame") & !is(metadata, "DataFrame")){stop("Please provide path to a metadata file or a data.frame / DataFrame object.")}
   
   if(group_col %!in% colnames(metadata)) stop("Could not find column ", group_col, " in metadata.")
 
@@ -177,7 +195,7 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
 #' 
 #' This internal function converts a matrix and metadata object into a DESeqDataSet, using the group_col as the basic design.
 #' 
-#' @inheritParams paired_de
+#' @inheritParams paired_diff
 #' @keywords internal
 convert_matrix_to_dds <- function(tx_count, metadata, design){
   
@@ -192,7 +210,7 @@ convert_matrix_to_dds <- function(tx_count, metadata, design){
 #' This internal function runs a surrogate variable analysis on the count matrix in the DESeqDataSet. 
 #'   The found surrogate variables will then be added to the metadata and the design formula in the DESeqDataSet object to be used in the DGE and DTU analyses.
 #'  
-#' @inheritParams paired_de
+#' @inheritParams paired_diff
 #' @param dds A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} for more information about the object type.
 #' @keywords internal
 run_sva <- function(dds, quiet = FALSE){
@@ -241,7 +259,7 @@ run_sva <- function(dds, quiet = FALSE){
 #' This internal function runs a differential gene expression analysis using DESeq2 (See \code{?DESeq2::DESeq} for more detailed information).
 #'   Here, the surrogate variables found by \code{\link{run_sva}}, if any, will be added to the DESeqDataSet before running the analysis.
 #'   
-#' @inheritParams paired_de
+#' @inheritParams paired_diff
 #' @inheritParams run_sva
 #' @param ... Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @keywords internal
@@ -286,6 +304,10 @@ run_deseq <- function(dds,
                                    parallel = parallel,
                                    BPPARAM = BPPARAM)
   
+  # Store result extraction
+  if(store_results) {
+    if(store_results) store_result(deseq_results, paste0(experiment_title, "_deseqres.RDS"), "DESeq2 results", quiet = quiet)
+  }
   
   # Convert result to tibble
   deseq_results <- deseq_results %>% 
@@ -302,7 +324,7 @@ run_deseq <- function(dds,
 #' This internal function runs a differential transcript usage analysis using DEXSeq (See \code{?DEXSeq::DEXSeq} for more detailed information).
 #'   Here, the surrogate variables found by \code{\link{run_sva}}, if any, will be added to the DEXSeqDataSet before running the analysis.
 #' 
-#' @inheritParams paired_de
+#' @inheritParams paired_diff
 #' @inheritParams run_sva
 #' @keywords internal
 run_dexseq <- function(dds,
@@ -371,6 +393,8 @@ run_dexseq <- function(dds,
                                    BPPARAM = BPPARAM,
                                    quiet = quiet)
   
+  # Store result extraction
+  if(store_results) store_result(dexseq_results, paste0(experiment_title, "_dexseqres.RDS"), "DEXSeq results", quiet = quiet)
   
   # Rename LFC column for consistency and human-readability
   dexseq_results <- dexseq_results %>% 
@@ -385,7 +409,7 @@ run_dexseq <- function(dds,
 
 #' p-value aggregation to gene level
 #' 
-#' This internal function aggregates p-values to gene level using Lancaster agreggation..
+#' This internal function aggregates p-values to gene level using Lancaster aggregation.
 #' 
 #' @param df A data.frame-type object with pvalues to aggregate
 #' @param gene (Default: "gene") The column with gene names
@@ -400,7 +424,7 @@ aggregate_pvalue <- function (df,
                               weights = "baseMean",
                               lfc = "log2FC",
                               type = "deseq"){
-  stopifnot("df is not a data.frame-type object" = "data.frame" %in% class(df))
+  stopifnot("df is not a data.frame-type object" = is(df, "data.frame"))
   stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
   
   type <- tolower(type)

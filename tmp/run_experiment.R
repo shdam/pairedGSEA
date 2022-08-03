@@ -40,7 +40,7 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   }
   
   
-  results <- pairedGSEA::paired_de(
+  results <- pairedGSEA::paired_diff(
     tx_count = tx_count,
     metadata = md_file,
     group_col = group_col,
