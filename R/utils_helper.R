@@ -100,7 +100,7 @@ store_result <- function(object, file, analysis = "results", quiet = FALSE){
 pre_filter <- function(dds, threshold = 10){
   if(threshold < 1) return(dds)
   # Remove low counts
-  keep <- rowSums(dds) >= threshold
+  keep <- rowSums(DESeq2::counts(dds)) >= threshold
   dds <- dds[keep,]
   
   return(dds)

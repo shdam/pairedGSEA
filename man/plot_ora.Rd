@@ -4,7 +4,14 @@
 \alias{plot_ora}
 \title{Scatter plot of Over-Representation Analysis results}
 \usage{
-plot_ora(ora, plotly = FALSE, pattern = NULL, cutoff = 0.05, lines = TRUE)
+plot_ora(
+  ora,
+  plotly = FALSE,
+  pattern = NULL,
+  cutoff = 0.05,
+  lines = TRUE,
+  colors = c("darkgray", "purple", "blue")
+)
 }
 \arguments{
 \item{ora}{Output of \code{\link[pairedGSEA:paired_ora]{paired_ora()}}}
@@ -16,7 +23,15 @@ plot_ora(ora, plotly = FALSE, pattern = NULL, cutoff = 0.05, lines = TRUE)
 \item{cutoff}{(Default: 0.2) Adjusted p-value cutoff for pathways to include}
 
 \item{lines}{(Default: TRUE) Whether to show dashed lines}
+
+\item{colors}{(Default: c("darkgray", "purple", "navy")) Colors to use in plot. The colors are ordered as "Both", "DGS", and "DGE"}
 }
 \description{
 Scatter plot of Over-Representation Analysis results
 }
+\examples{
+data(example_ora_results)
+
+plot_ora(example_ora_results, pattern = "Telomer")
+}
+\concept{plotting}

@@ -39,4 +39,5 @@ utils::globalVariables(c(".data",
                          "relative_risk_dexseq",
                          "enrichment_score_dexseq",
                          "enrichment_score_deseq",
-                         "pattern_match"))
+                         "pattern_match",
+                         "plot_color"))

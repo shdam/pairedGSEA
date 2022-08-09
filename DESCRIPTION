@@ -31,17 +31,19 @@ Imports:
     BiocParallel,
     aggregation,
     purrr,
-    readr,
-    readxl,
     stats,
     stringr,
     SummarizedExperiment,
     sva,
     tibble,
     tidyr,
-    utils
+    utils,
+    S4Vectors,
+    methods
 Suggests: 
     writexl,
+    readxl,
+    readr,
     rhdf5,
     msigdbr,
     spelling,
@@ -49,7 +51,8 @@ Suggests:
     ggplot2,
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    qpdf
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
@@ -67,3 +70,5 @@ biocViews:
     Transcription,
 URL: https://github.com/shdam/pairedGSEA
 BugReports: https://github.com/shdam/pairedGSEA
+Depends:
+    R (>= 4.0)

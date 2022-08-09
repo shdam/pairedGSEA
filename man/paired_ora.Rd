@@ -10,8 +10,7 @@ paired_ora(
   cutoff = 0.05,
   min_size = 25,
   experiment_title = NULL,
-  quiet = FALSE,
-  universe = NULL
+  quiet = FALSE
 )
 }
 \arguments{
@@ -33,6 +32,13 @@ paired_ora uses \code{\link[fgsea:fora]{fora()}} to run the over-representation 
   The analysis is run on all significant genes found by DESeq2 and DEXSeq individually.
   I.e., two runs of fora() are executed and subsequently joined into a single object.
   You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb()}} to create a list of gene_sets.
+}
+\examples{
+data(example_diff_result)
+gene_sets <- pairedGSEA::prepare_msigdb(species = "Homo sapiens", category = "C5", gene_id_type = "ensembl_gene")
+
+paired_ora(example_diff_result, gene_sets)
+
 }
 \seealso{
 Other paired: 

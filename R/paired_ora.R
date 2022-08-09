@@ -14,13 +14,19 @@
 #' @param quiet (Default: FALSE) Whether to print messages
 #' @family paired
 #' @export 
+#' 
+#' @examples 
+#' data(example_diff_result)
+#' gene_sets <- pairedGSEA::prepare_msigdb(species = "Homo sapiens", category = "C5", gene_id_type = "ensembl_gene")
+#' 
+#' paired_ora(example_diff_result, gene_sets)
+#' 
 paired_ora <- function(paired_diff_result,
                        gene_sets,
                        cutoff = 0.05,
                        min_size = 25,
                        experiment_title = NULL,
-                       quiet = FALSE,
-                       universe = NULL){
+                       quiet = FALSE){
   
   # Check column names are as expected
   check_colname(paired_diff_result, "pvalue_deseq", "paired_diff_result")
@@ -41,7 +47,7 @@ paired_ora <- function(paired_diff_result,
   
   # fora
   if(!quiet) message("Running over-representation analysis")
-  if(is.null(universe)) universe <- unique(paired_diff_result$gene)
+  universe <- unique(paired_diff_result$gene)
   ## ORA on DESeq2 results
   ora_deseq <- fgsea::fora(gene_sets, genes = genes_deseq$gene, 
                            universe = universe, minSize = min_size) %>% 

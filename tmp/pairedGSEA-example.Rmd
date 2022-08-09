@@ -1,0 +1,64 @@
+---
+title: "Example workthrough"
+output: 
+  # rmarkdown::html_vignette:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
+  # html_document:
+  #   toc: true
+  #   toc_float: true
+  #   highlight: kate
+author: "Søren Helweg Dam"
+date: "Last updated: `r format(Sys.Date(), '%Y.%m.%d')`"
+vignette: >
+  %\VignetteIndexEntry{Reference Manual}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup}
+library(pairedGSEA)
+ggplot2::theme_set(ggplot2::theme_classic(base_size = 20))
+
+
+set.seed(500)
+results_example <- pairedGSEA::paired_diff(
+    se = pairedGSEA::example_se,
+    # tx_count = pairedGSEA::example_data$tx_count,
+    # metadata = pairedGSEA::example_data$metadata,
+    group_col = "group_nr",
+    sample_col = "id",
+    baseline = 1,
+    case = 2,
+    experiment_title = "TNF Treatment 12hrs",
+    store_results = FALSE,
+    quiet = FALSE
+  )
+
+
+```
+
+```{r}
+
+gene_sets <- pairedGSEA::prepare_msigdb()
+```
+
+```{r}
+results_ora <- pairedGSEA::paired_ora(results_example, gene_sets)
+```
+
+
+
+```{r}
+pairedGSEA::plot_ora(results_ora, pattern = "Telomer")
+```
+

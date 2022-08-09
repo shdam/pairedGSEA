@@ -1,87 +1,127 @@
 #' Run paired DESeq2 and DEXSeq analyses
 #' 
 #' @inheritParams DESeq2::DESeq
-#' @param metadata A metadata file or data frame object
+#' @param object A data object of the types matrix, SummarizedExperiment, or DESeqDataSet. If a matrix is used, please also provide metadata.
+#' @param metadata (Default: NULL) A metadata file or data frame object
 #' @param group_col The metadata column specifying the what group each sample is associated with
 #' @param sample_col The column in the metadata that specifies the sample IDs (should correspond to column names in tx_count)
 #' @param baseline Group value of baseline samples
 #' @param case Group value of case samples
 #' @param covariates Name of column(s) in the metadata that indicate(s) covariates. E.g., c("gender", "tissue_type")
-#' @param tx_count The transcripts count matrix of an RNA-seq analysis
 #' @param experiment_title Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").
 #' @param run_sva (Default: TRUE) A logical stating whether SVA should be run.
 #' @param prefilter (Default: 10) The prefilter threshold, where rowSums lower than the prefilter threshold will be removed from the count matrix. Set to 0 or FALSE to prevent prefiltering
 #' @param fit_type (Default: "local") Either "parametric", "local", "mean", or "glmGamPoi" for the type of fitting of dispersions to the mean intensity.
 #' @param store_results (Default: TRUE) A logical indicating if results should be stored in the folder "results/".
 #' @param quiet (Default: FALSE) Whether to print messages
+#' @param deseq_only (Default: FALSE) A logical that indicates whether to only run DESeq2 analysis. Not generally recommended.
+#'   The setting was implemented to make the SVA impact analysis easier
+#' @param custom_design (Default: FALSE) A logical or formula. Can be used to apply a custom desing formula for the analysis. Generally not recommended, 
+#'   as pairedGSEA will make its own design formula from the group and covariate columns
 #' @param parallel (Default: FALSE) If FALSE, no parallelization. If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.
-#' @param BPPARAM (Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE. If not specified, the parameters last registered with register will be used.
+#' @param BPPARAM (Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE.
+#'   If not specified, the parameters last registered with register will be used.
 #' @param ... Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @family paired
+#' @importFrom methods is
+#' @examples 
+#' 
+#' # Run analysis on included example data
+#' data("example_se")
+#' 
+#' paired_diff(
+#'   object = example_se,
+#'   group_col = "group_nr",
+#'   sample_col = "id",
+#'   baseline = 1,
+#'   case = 2,
+#'   experiment_title = "Example",
+#'   store_results = FALSE 
+#' )
+#' 
 #' @export
-paired_diff <- function(tx_count = NULL,
-                      metadata = NULL,
-                      se = NULL,
-                      dds = NULL,
-                      group_col,
-                      sample_col,
-                      baseline,
-                      case,
-                      covariates = NULL,
-                      experiment_title = NULL,
-                      store_results = TRUE,
-                      run_sva = TRUE,
-                      prefilter = 10,
-                      test = "LRT",
-                      fit_type = "local",
-                      quiet = FALSE,
-                      parallel = FALSE,
-                      BPPARAM = BiocParallel::bpparam(),
-                      deseq_only = FALSE,
-                      ...){
+paired_diff <- function(object,
+                        group_col,
+                        sample_col,
+                        baseline,
+                        case,
+                        metadata = NULL,
+                        covariates = NULL,
+                        experiment_title = NULL,
+                        store_results = TRUE,
+                        run_sva = TRUE,
+                        prefilter = 10,
+                        test = "LRT",
+                        fit_type = "local",
+                        quiet = FALSE,
+                        parallel = FALSE,
+                        BPPARAM = BiocParallel::bpparam(),
+                        deseq_only = FALSE,
+                        custom_design = FALSE,
+                        ...){
   
-  stopifnot("Cannot store results if experiment title haven't been given" = store_results & !is.null(experiment_title))
+  stopifnot("Please provide a valid data type: matrix, SummarizedExperiment, DESeqDataSet" = any(class(object) %in% c("matrix", "SummarizedExperiment", "DESeqDataSet")))
   
-  # Streamlining data format
-  stopifnot("Please provide a data source" = any(!(is.null(tx_count) & is.null(metadata)), !is.null(se), !is.null(dds)))
-  stopifnot("Please only provide one data source" = sum(c(!(is.null(tx_count) & is.null(metadata)), !is.null(se), !is.null(dds))) == 1)
+  stopifnot("Cannot store results if experiment title haven't been given" = (store_results & !is.null(experiment_title)) | !store_results)
+  
+  stopifnot("Please provide metadat with your count matrix" = (is(object, "matrix") & is.null(metadata)) | !is(object, "matri"))
   
   ## Checking column names
   stopifnot("Covariate names must not contain spaces" = stringr::str_detect(covariates, " ", negate = TRUE))
   stopifnot("group_col name must not contain spaces" = stringr::str_detect(group_col, " ", negate = TRUE))
+  stopifnot("sample_col name must not contain spaces" = stringr::str_detect(sample_col, " ", negate = TRUE))
   
   if(!quiet) message("Running ", experiment_title)
   
   ## Define design formula
-  design <- formularise_vector(c(group_col, covariates))
+  if(custom_design == TRUE & is(object, "DESeqDataSet")) {
+    design <- DESeq2::design(object)
+    } else if(is(custom_design, "formula")) {
+      design <- custom_design
+    } else {
+      design <- formularise_vector(c(group_col, covariates))
+      if(is(object, "DESeqDataSet")) warning("OBS: your design will be overwritten to: ", as.character(design))
+      }
   
   ## Convert se to dds
-  if(!is.null(se)) dds <- DESeq2::DESeqDataSet(se, design); rm(se)
+  if(is(object, "SummarizedExperiment")) {
+    SummarizedExperiment::colData(object) <- SummarizedExperiment::colData(object) %>% 
+      tibble::as_tibble() %>% 
+      # Ensure columns are factors
+      dplyr::mutate(dplyr::across(dplyr::all_of(c(group_col, covariates)), factor)) %>% 
+      S4Vectors::DataFrame(row.names = SummarizedExperiment::colnames(object))
+    object <- DESeq2::DESeqDataSet(object, design)
+  }
   
   ## Load metadata
   if(!quiet) message("Preparing metadata")
-  if(!is.null(dds) & is.null(metadata)) metadata <- SummarizedExperiment::colData(dds)
+  if(!(is(object, "matrix")) & is.null(metadata)) metadata <- SummarizedExperiment::colData(object)
   
   metadata <- prepare_metadata(metadata, group_col, paste(c(baseline, case)))
+  
+  ## Subsample metadata to only include samples present in the count matrix
+  metadata <- metadata[metadata[[sample_col]] %in% colnames(object), ]
+  stopifnot("Please ensure that the sample IDs in the metadata matches the column names of the count matrix." = nrow(metadata) > 0)
   
   ## Check sample_col is in metadata
   stopifnot("Sample column not in metadata" = sample_col %in% colnames(metadata))
   
-  if(!is.null(dds)) SummarizedExperiment::colData(dds) <- S4Vectors::DataFrame(metadata[metadata[[sample_col]] %in% SummarizedExperiment::colnames(dds), ])
+  # Add metadata to DESeqDataSet
+  if(!is(object, "DESeqDataSet")) SummarizedExperiment::colData(object) <- S4Vectors::DataFrame(metadata)
   
   ## Convert count matrix to DESeqDataSet
-  if(!is.null(tx_count)){
-    ## Subsample metadata to only include samples present in the count matrix
-    metadata <- metadata[metadata[[sample_col]] %in% colnames(tx_count), ]
-    stopifnot("Please ensure that the sample IDs in the metadata matches the column names of the count matrix." = nrow(metadata) > 0)
+  if(is(object, "matrix")){
     
     ## Ensure rows in metadata matches columns in the count matrix
-    tx_count <- tx_count[, metadata[[sample_col]]]
+    object <- object[, metadata[[sample_col]]]
     
     ## Create DDS from count matrix
     if(!quiet) message("Converting count matrix to DESeqDataSet")
-    dds <- convert_matrix_to_dds(tx_count, metadata, design)
+    object <- convert_matrix_to_dds(object, metadata, design)
   }
+  
+  # Rename object variable to dds
+  dds <- object; rm(object)
   
   # Prefiltering
   if(prefilter) dds <- pre_filter(dds, prefilter)
@@ -91,7 +131,6 @@ paired_diff <- function(tx_count = NULL,
     dds <- run_sva(dds, quiet = quiet)
   }
   
-
 
   # Run DESeq2
   deseq_results <- run_deseq(
@@ -172,8 +211,8 @@ paired_diff <- function(tx_count = NULL,
 prepare_metadata <- function(metadata, group_col, baseline_case){
   
   if(is(metadata, "character")){
-    if(stringr::str_ends(metadata, ".xlsx")) metadata <- readxl::read_excel(metadata)
-    else if(stringr::str_ends(metadata, ".csv")) metadata <- readr::read_csv(metadata)
+    if(stringr::str_ends(metadata, ".xlsx")) {check_missing_package(package = "readxl"); metadata <- readxl::read_excel(metadata)}
+    else if(stringr::str_ends(metadata, ".csv")) {check_missing_package(package = "readr"); metadata <- readr::read_csv(metadata)}
   } else if(!is(metadata, "data.frame") & !is(metadata, "DataFrame")){stop("Please provide path to a metadata file or a data.frame / DataFrame object.")}
   
   if(group_col %!in% colnames(metadata)) stop("Could not find column ", group_col, " in metadata.")
@@ -195,6 +234,7 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
 #' 
 #' This internal function converts a matrix and metadata object into a DESeqDataSet, using the group_col as the basic design.
 #' 
+#' @param tx_count Count matrix to convert to dds
 #' @inheritParams paired_diff
 #' @keywords internal
 convert_matrix_to_dds <- function(tx_count, metadata, design){
@@ -263,6 +303,8 @@ run_sva <- function(dds, quiet = FALSE){
 #' @inheritParams run_sva
 #' @param ... Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @keywords internal
+#' 
+#' 
 run_deseq <- function(dds,
                       group_col,
                       baseline,
@@ -327,6 +369,7 @@ run_deseq <- function(dds,
 #' @inheritParams paired_diff
 #' @inheritParams run_sva
 #' @keywords internal
+#' 
 run_dexseq <- function(dds,
                        group_col,
                        baseline,
@@ -349,6 +392,7 @@ run_dexseq <- function(dds,
   
   # Add surrogate variables and covariates to DEXSeq design formula
   if(svs_covariates[[1]] == "1"){
+    svs_covariates <- NULL
     design_formula <- formularise_vector(c("sample", "exon", "condition:exon"))
     reduced_formula <- formularise_vector(c("sample", "exon"))
   } else{
@@ -362,12 +406,13 @@ run_dexseq <- function(dds,
   
   # Define sample data based on DESeq2 object
   sample_data <- SummarizedExperiment::colData(dds) %>% 
-    as.data.frame(row.names = .$id) %>% 
+    as.data.frame(row.names = SummarizedExperiment::colnames(dds)) %>% 
     dplyr::select(dplyr::all_of(c(group_col, svs_covariates))) %>% 
     dplyr::rename(condition = dplyr::all_of(group_col)) %>% 
     dplyr::mutate(condition = dplyr::case_when(condition == baseline ~ "B", 
                                                condition == case ~ "C") %>% 
                     factor(levels = c("B", "C")))
+    
   
   
   # Convert to DEXSeqDataSet

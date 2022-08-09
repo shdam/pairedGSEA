@@ -8,6 +8,7 @@ $run_dev.*
 ^tmp$
 ^results$
 ^metadata$
+^meetadata$
 ^figs$
 ^doc$
 ^LICENSE\.md$

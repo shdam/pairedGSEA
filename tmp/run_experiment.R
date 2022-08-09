@@ -143,8 +143,9 @@ add_tpm <- function(deseq_results, samples, archs4db_tpm, gtf = NULL){
 #' @param archs4db The path to an ARCHS4 database file
 #' @param gtf Optional: Adds GTF gene and transcript labels to the ARCHS4 data extract
 #' @param samples The column in the metadata that specifies the samples
-#' @inheritParams paired_gsea
+#' @inheritParams paired_diff
 #' @inheritParams prepare_metadata
+#' @noRd
 prepare_tx_count <- function(metadata,
                              group_col,
                              baseline_case,

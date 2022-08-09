@@ -1218,6 +1218,13 @@ ora_all %>%
 pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
 tpms <- readRDS("results/tpms.RDS")
 
+concatenated_genes <- readRDS("results/concatenated_genes.RDS")
+both_genes <- concatenated_genes %>% 
+  filter(padj_dexseq < 0.05 & padj_deseq < 0.05,
+         gene != "NA")
+
+dgs_isoforms <- readRDS("results/concatenated_results.RDS") %>% 
+  semi_join(both_genes, by = c("gene", "experiment"))
 
 # 2
 
@@ -1343,6 +1350,48 @@ tpm_dIF %>%
   theme_classic(base_size = 20)
 
 
+# 6
+
+tpm_IF <- tpms %>% 
+  right_join(dgs_isoforms, by = c("transcript", "gene", "experiment")) %>% 
+  semi_join(both_genes, by = "gene") %>% 
+  group_by(experiment, gene) %>% 
+  mutate(IF_baseline = tpm_baseline / sum(tpm_baseline),
+         IF_condition = tpm_condition / sum(tpm_condition),
+         dIF = IF_condition - IF_baseline)
+
+tpm_changing_IF <- tpm_IF %>% 
+  filter(padj_dexseq < 0.05) %>% 
+  summarise(changing_IF_baseline = sum(IF_baseline, na.rm = TRUE),
+            changing_IF_condition = sum(IF_condition, na.rm = TRUE),
+            changing_IF_mean = mean(c(changing_IF_baseline, changing_IF_condition))) %>% 
+  group_by(experiment) %>% 
+  summarise(median_IF_baseline = median(changing_IF_baseline),
+            mean_baseline = mean(changing_IF_baseline),
+            median_condition = median(changing_IF_condition),
+            mean_condition = mean(changing_IF_condition),
+            median_mean = median(changing_IF_mean))
+
+tpm_medians <- tpm_changing_IF %>% 
+  summarise(median_IF_baseline = median(median_IF_baseline),
+            mean_baseline = mean(mean_baseline),
+            median_condition = median(median_condition),
+            mean_condition = mean(mean_condition),
+            median_mean = median(median_mean))
+
+plt_IF <- tpm_changing_IF %>% 
+  ggplot() +
+  aes(x = median_mean) +
+  geom_density(alpha = 0.5, fill = "darkgray") +
+  geom_vline(xintercept = tpm_medians$median_mean, linetype = "dashed") +
+  labs(y = paste0("Fraction of gene expression\nmediated by differential splicing",
+                  "\n(Median: ", round(tpm_medians$median_mean, 3), ")"),
+       x = "") +
+  coord_cartesian(xlim = c(0, 1)) +
+  theme(legend.position = "none",
+        axis.title.y = element_text(angle = 0))
+
+
 experiment_title <- "76_GSE183984_Cetuximab treatment of primary colorectal cancer"
 # experiment_title <- "79_GSE139262_SMARCB1 overexpression"
 
@@ -1351,6 +1400,34 @@ deseqres <- readRDS(paste0("results/", experiment_title, "_deseq2res.RDS"))
 ora_dexseq <- readRDS(paste0("results/", experiment_title, "_ora_dexseq.RDS"))
 ora_deseq <- readRDS(paste0("results/", experiment_title, "_ora_deseq.RDS"))
 aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
+
+
+## SVA Issue ----
+
+dds <- readRDS("~/Dropbox/dds.RDS")
+SummarizedExperiment::colData(dds)
+
+normalized_counts <- DESeq2::normTransform(dds) %>% 
+  SummarizedExperiment::assay()
+
+
+colSums(normalized_counts) / 1e6
+
+mod1 <- stats::model.matrix(~group_nr, data = metadata)
+
+mod0 <- stats::model.matrix(~1, data = metadata)
+
+svs <- sva::sva(normalized_counts, mod = mod1, mod0 = mod0)
+
+svs$sv
+
+cor(svs$sv[,1], mod1[,2])
+
+DESeq2::plotPCA(DESeq2::normTransform(dds), intgroup = c("group_nr"))
+
+
+RUVSeq::RUVg(normalized_counts, )
+
 
 # PhD budget----
 # Already planned + plane to Boston + Hotel in Whistler + Plane home + Hotel in Boston + Teaching Lab + Visualize your science + edx online course
