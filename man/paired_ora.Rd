@@ -35,7 +35,7 @@ paired_ora uses \code{\link[fgsea:fora]{fora()}} to run the over-representation 
 }
 \examples{
 data(example_diff_result)
-gene_sets <- pairedGSEA::prepare_msigdb(species = "Homo sapiens", category = "C5", gene_id_type = "ensembl_gene")
+gene_sets <- pairedGSEA::prepare_msigdb()
 
 paired_ora(example_diff_result, gene_sets)
 

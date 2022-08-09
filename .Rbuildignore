@@ -13,3 +13,5 @@ $run_dev.*
 ^doc$
 ^LICENSE\.md$
 ^Meta$
+^codecov\.yml$
+^materials
