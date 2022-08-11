@@ -1,8 +1,8 @@
 ## Collection of plots for paper
 
-initialize <- FALSE
-fig1 <- FALSE
-fig1_init <- FALSE
+initialize <- TRUE
+fig1 <- TRUE
+fig1_init <- TRUE
 fig2 <- FALSE
 fig2_init <- FALSE
 fig3 <- FALSE
@@ -116,27 +116,18 @@ if(fig1){
   ## Full figure ----
   
   
-  
-  # png
-  img <- png::readPNG("figs/overview.png", native = TRUE)
-  
-  g <- rasterGrob(img, interpolate=TRUE)
-  
-  img_g <- qplot(1:10, 1:10, geom="blank") +
-    annotation_custom(g, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
-    theme_void()
-  
+  theme_set(theme_classic(base_size = 8))
   # magick
   library(cowplot)
   library(magick)
   
   img_g <- ggdraw() +
     draw_image("figs/overview.png") +
-    draw_plot(ggplot() + theme_void()) +
-    coord_cartesian(ylim=c(10,20))
+    draw_plot(ggplot() + theme_void())
   
   
   layout <- "
+  AAAA
   AAAA
   BBCC
   "
@@ -145,10 +136,10 @@ if(fig1){
     plot_annotation(tag_levels = 'A') & 
     full_figure_theme()
   
-  Figure1
+  # Figure1
   
   ggsave("figs/Figure1.png", Figure1, width = 6, height = 2)
-    
+  theme_set(theme_classic(base_size = 19))
 }
 
 
@@ -485,7 +476,7 @@ if(fig2){
   
   
   plt_switches <- plot_switch_fraction(dgs_isoforms)
-  plt_switches
+  # plt_switches
   ggsave("figs/isoform_switches.png", plt_switches)
   
   
@@ -542,7 +533,7 @@ if(fig2){
   switched_majorities <- count_switched_majority(dgs_isoforms, tpms)
   
   plt_switch_majority <- plot_switch_majority(switched_majorities)
-  plt_switch_majority
+  # plt_switch_majority
   ggsave("figs/switch_majority.png", plt_switch_majority)
 }
 
@@ -562,11 +553,11 @@ EEFF
     plot_layout(design = layout) +
     plot_annotation(tag_levels = 'A') & 
     full_figure_theme()
-  Figure2
+  # Figure2
   
   ggsave("figs/Figure2.png", Figure2)
   
-  
+  theme_set(theme_classic(base_size = 19))
 }
 
 
@@ -617,7 +608,7 @@ if(fig3){
   ora_all <- readRDS("results/ora_all.RDS")
   
   plt_pathway_count <- plot_pathway_count(ora_all)
-  plt_pathway_count
+  # plt_pathway_count
   ggsave(plot = plt_pathway_count, filename = "figs/pathway_count.png")
 }
 
@@ -630,7 +621,7 @@ if(fig3){
     filter(experiment == exp)
   
   
-  telomere_pathways <- plot_ora(ora, pattern = "Telomer")
+  telomere_pathways <- plot_ora(ora, pattern = "Telomer", colors = c("darkgray", "purple", "lightblue"))
   ggsave(plot = telomere_pathways, filename = "figs/telomere_pathways.png")
 }
 
@@ -643,7 +634,7 @@ if(fig3){
     filter(experiment == exp)
   
   
-  repair_pathways <- plot_ora(ora, pattern = "Repair")
+  repair_pathways <- plot_ora(ora, pattern = "Repair", colors = c("darkgray", "purple", "lightblue"))
   ggsave(plot = repair_pathways, filename = "figs/repair_pathways.png")
 }
 
@@ -721,10 +712,10 @@ if(fig3){
   # ora_all <- readRDS("results/ora_all.RDS")
   
   ora_correlation <- plot_ora_correlation(ora_all)
-  ora_correlation
+  # ora_correlation
   ggsave(plot = ora_correlation, filename = "figs/ora_correlation.png")
   ora_correlation_facet <- plot_ora_correlation_facet(ora_all)
-  ora_correlation_facet
+  # ora_correlation_facet
   ggsave(plot = ora_correlation_facet, filename = "figs/ora_correlation_facet.png")
 }
 
@@ -806,10 +797,10 @@ if(fig3){
   
   
   rr_ridges <- plot_rr_ridges(rr_shifts)
-  rr_ridges
+  # rr_ridges
   ggsave(plot = rr_ridges, filename = "figs/rr_ridges.png")
   rr_median <- plot_rr_median(rr_shifts)
-  rr_median
+  # rr_median
   ggsave(plot = rr_median, filename = "figs/rr_median.png")
 }
 
@@ -820,13 +811,7 @@ if(fig3){
 if(fig3){
   
   # Overview
-  
-  library(cowplot)
-  library(magick)
-  
-  img_g <- ggdraw() +
-    draw_image("https://i.stack.imgur.com/WDOo4.jpg?s=328&g=1") +
-    draw_plot(ggplot() + theme_void())
+  theme_set(theme_classic(base_size = 8))
   
   
   layout <- "
@@ -839,9 +824,9 @@ if(fig3){
     plot_layout(design = layout) +
     plot_annotation(tag_levels = 'A') &
     full_figure_theme()
-  Figure3
+  # Figure3
   
   ggsave("figs/Figure3.png", Figure3, width = 8, height = 7)
   
-  
+  theme_set(theme_classic(base_size = 19))
 }

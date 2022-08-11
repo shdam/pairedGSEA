@@ -284,6 +284,12 @@ run_sva <- function(dds, quiet = FALSE){
   svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
   colnames(svs) <- paste0("sv", 1:svseq$n.sv)
   
+  # Remove svs that confound with mod1
+  cors <- as.matrix(cor(svs, mod1[,2:ncol(mod1)]))
+  cors[abs(cors) > 0.8] <- NA
+  cors <- na.omit(cors)
+  svs <- svs[, rownames(cors)]
+  
   if(!quiet) message("Redefining DESeq design formula\n")
   # Add svs to dds colData
   SummarizedExperiment::colData(dds) <- cbind(metadata, svs)

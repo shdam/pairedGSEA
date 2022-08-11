@@ -17,7 +17,7 @@ plot_ora <- function(ora,
                      pattern = NULL,
                      cutoff = 0.05,
                      lines = TRUE,
-                     colors = c("darkgray", "purple", "blue")){
+                     colors = c("darkgray", "purple", "lightblue")){
   
   check_missing_package(package = "ggplot2")
   if(plotly) check_missing_package(package = "plotly")
@@ -96,18 +96,8 @@ plot_ora <- function(ora,
     plt <- plt +
       ggplot2::geom_point(data = matches, size = 2.5, alpha = 0.9, fill = "red", ggplot2::aes(shape = TRUE)) #+ , color = "red"
       # ggplot2::geom_point(data = matches, size = 2.5, alpha = 0.9, ggplot2::aes(shape = FALSE))
-      # ggplot2::labs(shape = pattern)
   }
   
-  # plt <- plt +
-  #   # Make legend a bit prettier
-  #   ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 3,
-  #                                                                      alpha = 1,
-  #                                                                      shape = c(4, 4, 4)[1:length(colors)],
-  #                                                                      color = colors))) +
-  #   ggplot2::scale_fill_manual(values = colors) +
-  #   ggplot2::scale_shape_manual(values = c(4, 23)) +
-  #   ggplot2::scale_colour_manual(values = colors)
   
   if(lines){
     # Plot guide lines 

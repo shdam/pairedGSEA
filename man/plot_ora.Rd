@@ -10,7 +10,7 @@ plot_ora(
   pattern = NULL,
   cutoff = 0.05,
   lines = TRUE,
-  colors = c("darkgray", "purple", "blue")
+  colors = c("darkgray", "purple", "lightblue")
 )
 }
 \arguments{
