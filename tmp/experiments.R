@@ -37,7 +37,7 @@ gene_sets <- pairedGSEA::prepare_msigdb()
 # apply(row, 1, run_experiment, archs4db)
 # apply(row, 1, analyse_experiment)
 
-apply(experiments[100:199, ], 1, run_experiment, archs4db)
+apply(experiments[151:199, ], 1, run_experiment, archs4db)
 apply(experiments[100:199, ], 1, run_analysis, gene_sets)
 apply(experiments, 1, getDDS, archs4db)
 

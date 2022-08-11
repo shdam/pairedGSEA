@@ -107,7 +107,7 @@ paired_diff <- function(object,
   stopifnot("Sample column not in metadata" = sample_col %in% colnames(metadata))
   
   # Add metadata to DESeqDataSet
-  if(!is(object, "DESeqDataSet")) SummarizedExperiment::colData(object) <- S4Vectors::DataFrame(metadata)
+  if(is(object, "DESeqDataSet")) SummarizedExperiment::colData(object) <- S4Vectors::DataFrame(metadata)
   
   ## Convert count matrix to DESeqDataSet
   if(is(object, "matrix")){
