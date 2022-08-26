@@ -1,5 +1,5 @@
 ### Load package
-pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
+pkgload::load_all(path = "/home/projects/shd/pairedGSEA")
 # pkgload::load_all()
 library(tidyverse)
 
@@ -38,7 +38,8 @@ gene_sets <- pairedGSEA::prepare_msigdb()
 # apply(row, 1, analyse_experiment)
 
 apply(experiments[151:199, ], 1, run_experiment, archs4db)
-apply(experiments[100:199, ], 1, run_analysis, gene_sets)
+apply(experiments, 1, run_experiment, archs4db, run_sva = FALSE, deseq_only = TRUE)
+apply(experiments[151:199, ], 1, run_analysis, gene_sets)
 apply(experiments, 1, getDDS, archs4db)
 
 #4_GSE156101_TP53 and TNKS1-2T Knockout  
@@ -378,33 +379,6 @@ readr::read_csv("~/Downloads/ora_dge_v_dtu_top50.csv") %>%
 
 ### Plotting ----
 
-#' Hvad betyder det, at man kan finde flere go-termer med DTU og er de relevante?
-#' Man skal OGSÅ kigger på DTU - ikke kun.
-#' Et eller to grundige eksempel hvor vi ved hvad vi leder efter
-#' Lav et par stykker til supplementary
-#' Fig 1A: Præsentation af data - et diverst rum (UMAP)
-#' Hierachical clustering viser hvad der er meget ens.
-#' Gene-level analyse:
-#'  (hvor mange er signifikante, overlap og forskelle) -
-#'  Number DE/DU
-#'  distribution af simpson coefficienter
-#' Det samme på gensæt
-#'  Number of genesets
-#'  overlap
-#'  Syngeri:
-#'   Hvad er ændring i pværdier / onrichment score
-#'   Slå op hvordan man beregner enrichment score / odds ratio
-#'   Shift i pværdi / enrichment score
-#' Cases:
-#'  Træk gensæt skift i rank ud
-#'  Hvilke gensæt nævner artiklen
-#'  Find mening ud fra gensætnavne
-#'  Kig primært på rank og rank shift
-#'  Gensæt der kun er signifikante ved synergi
-#'  
-#' En reviewer kan måske spørge om man får noget ud af DTU alene - hav med i tabel  
-
-
 concatResults <- concatRes(experiments)
 
 concatResults <- readRDS("results/concatResults.RDS")
@@ -589,7 +563,7 @@ exclude <- transcript_fractions %>%
 #             frac = graphics::hist(fraction, breaks = seq(-0.06, 1.06, by = 0.12),
 #                                   plot = FALSE)$mids)
 
-# This one!!
+
 densities <- transcript_fractions %>% 
   anti_join(exclude, by = c("experiment", "association")) %>%
   group_by(experiment, association) %>%
@@ -823,7 +797,7 @@ transcript_fractions %>%
   facet_wrap(~n_c) +
   theme_classic(base_size = 20)
   
-# not this!
+
 if(FALSE){
   transcript_fractions %>% 
     anti_join(exclude, by = "experiment") %>%
@@ -857,7 +831,7 @@ if(FALSE){
   ggsave(plot = fig1d, filename = "figs/fig1d.png")
   
   
-  # This one!
+  
   fig1d <- transcript_fractions %>% 
     anti_join(exclude, by = "experiment") %>%
     ggplot() +
@@ -1106,8 +1080,7 @@ rr_shifts %>%
 apply(experiments[1, ], 1, run_experiment, archs4db, deseq_only = T, run_sva = F)
 
 
-
-concatenated_no_sva_genes <- deseq_no_sva(experiments, archs4db, gtf)
+concatenated_no_sva_genes <- concatenate_no_sva_genes(experiments)
 
 concatenated_no_sva_genes <- readRDS("results/concatenated_no_sva_genes.RDS")
 
@@ -1402,33 +1375,8 @@ ora_deseq <- readRDS(paste0("results/", experiment_title, "_ora_deseq.RDS"))
 aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
 
 
-## SVA Issue ----
-
-dds <- readRDS("~/Dropbox/dds.RDS")
-SummarizedExperiment::colData(dds)
-
-normalized_counts <- DESeq2::normTransform(dds) %>% 
-  SummarizedExperiment::assay()
 
 
-colSums(normalized_counts) / 1e6
-
-mod1 <- stats::model.matrix(~group_nr, data = metadata)
-
-mod0 <- stats::model.matrix(~1, data = metadata)
-
-svs <- sva::sva(normalized_counts, mod = mod1, mod0 = mod0)
-
-svs$sv
-
-cor(svs$sv[,1], mod1[,2])
-
-DESeq2::plotPCA(DESeq2::normTransform(dds), intgroup = c("group_nr"))
 
 
-RUVSeq::RUVg(normalized_counts, )
 
-
-# PhD budget----
-# Already planned + plane to Boston + Hotel in Whistler + Plane home + Hotel in Boston + Teaching Lab + Visualize your science + edx online course
-25000+3000+14000+8000+7000+5500+5000+3000

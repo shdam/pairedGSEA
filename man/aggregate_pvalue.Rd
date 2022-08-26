@@ -9,7 +9,7 @@ aggregate_pvalue(
   gene = "gene",
   p = "pvalue",
   weights = "baseMean",
-  lfc = "log2FC",
+  lfc = "lfc",
   type = "deseq"
 )
 }
@@ -22,7 +22,7 @@ aggregate_pvalue(
 
 \item{weights}{(Default: "baseMean") The column to use for weighting the aggregation}
 
-\item{lfc}{(Default: "log2FC") The column with log2-foldchanges}
+\item{lfc}{(Default: "lfc") The column with log2-foldchanges}
 
 \item{type}{(Default: "deseq") Either "deseq" for aggregation of DESeq2 results or "dexseq" for aggregation of DEXSeq results}
 }

@@ -3,13 +3,14 @@
 initialize <- TRUE
 fig1 <- TRUE
 fig1_init <- TRUE
-fig2 <- FALSE
-fig2_init <- FALSE
-fig3 <- FALSE
+fig2 <- TRUE
+fig2_init <- TRUE
+fig3 <- TRUE
+fig_format <- "png"
 
-# Initiatlize  ----
+# Initialize  ----
 if(initialize){
-  pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
+  pkgload::load_all(path = "/home/projects/shd/pairedGSEA")
   library(tidyverse)
   library(patchwork)
   theme_set(theme_classic(base_size = 19))
@@ -32,7 +33,15 @@ if(initialize){
   
   utils::globalVariables(add = TRUE, c("color_scheme"))
   
+  
+  # Save metadata overview
+  
+  source("tmp/run_experiment.R")
+  experiments <- combine_experiments()
+  experiments %>% select(-c("final_description", "group_nr", "id", "filename")) %>% 
+    writexl::write_xlsx("figs/Experiments.xlsx")
 
+  
 }
 # Figure 1 ----
 
@@ -45,7 +54,7 @@ plot_false_sva <- function(gene_change_no_sva, gene_change_sva){
   
   # Number of genes falsely significant when not including SVAs
   false_sig <- gene_change_no_sva %>% 
-    anti_join(gene_change_sva, by = c("experiment", "gene")) %>% 
+    anti_join(gene_change_sva, by = c("experiment", "gene")) %>%
     dplyr::count(experiment)
   
   
@@ -80,7 +89,7 @@ plot_fdr <- function(gene_change_no_sva, gene_change_sva){
     ggplot(aes(x = fdr)) +
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
     geom_vline(xintercept = median(fdr$fdr, na.rm = TRUE), linetype = "dashed") +
-    labs(x = paste0("Expected False Discovery Rate\nWithout Proper Correction for Confounders", "\n(Median: ", round(median(fdr$fdr, na.rm = TRUE), 3), ")"),
+    labs(x = paste0("Expected false discovery rate\nwithout proper correction for confounders", "\n(Median: ", round(median(fdr$fdr, na.rm = TRUE), 3), ")"),
          y = "Count") +
     theme(legend.position = "none")
   
@@ -94,11 +103,16 @@ if(fig1_init){
   concatenated_genes <- readRDS("results/concatenated_genes.RDS")
   concatenated_sva_genes <- concatenated_genes %>% filter(padj_deseq < 0.05)
   
+  concatenated_no_sva_genes <- concatenated_no_sva_genes %>% 
+    dplyr::mutate(experiment = stringr::str_remove(experiment, "_no_sva"))
+  
   # Distinguish up and dowm-regulation
   gene_change_sva <- concatenated_sva_genes %>% 
+    dplyr::filter(padj_deseq < 0.05) %>% 
     mutate(gene_change = paste0(sign(lfc_deseq))) %>% 
     dplyr::select(gene_change, experiment, gene)
   gene_change_no_sva <- concatenated_no_sva_genes %>% 
+    dplyr::filter(padj < 0.05) %>% 
     mutate(gene_change = paste0(sign(lfc))) %>% 
     dplyr::select(gene_change, experiment, gene)
   
@@ -108,10 +122,10 @@ if(fig1){
   
   false_sva <- plot_false_sva(gene_change_no_sva, gene_change_sva)
   
-  ggsave("figs/false_sva.png", false_sva)
+  ggsave(paste0("figs/false_sva.", fig_format), false_sva)
   
   fig1c <- plot_fdr(gene_change_no_sva, gene_change_sva)
-  ggsave("figs/fig1c.png", fig1c)
+  ggsave(paste0("figs/fig1c.", fig_format), fig1c)
   
   ## Full figure ----
   
@@ -138,7 +152,7 @@ if(fig1){
   
   # Figure1
   
-  ggsave("figs/Figure1.png", Figure1, width = 6, height = 2)
+  ggsave(paste0("figs/Figure1.", fig_format), Figure1, width = 6, height = 2)
   theme_set(theme_classic(base_size = 19))
 }
 
@@ -178,7 +192,7 @@ plot_gene_counts <- function(concatenated_genes){
     geom_boxplot(width = 0.05) +
     color_scale(reorder = c(2, 3, 1, 4)) +
     labs(x = "",
-         y = "Significant genes\nper experiment") +
+         y = "Significant genes\nper comparison") +
     theme(legend.position = "none")
   return(plt_gene_counts)
   
@@ -187,10 +201,10 @@ plot_gene_counts <- function(concatenated_genes){
 
 if(fig2){
   # Load data
-  concatenated_genes <- readRDS("results/concatenated_genes.RDS")
+  concatenated_genes <- readRDS(paste0("results/concatenated_genes.", fig_format))
   
   plt_gene_counts <- plot_gene_counts(concatenated_genes)
-  ggsave(plot = plt_gene_counts, filename = "figs/gene_counts.png")
+  ggsave(plot = plt_gene_counts, filename = paste0("figs/gene_counts.", fig_format))
   
 }
 
@@ -234,7 +248,7 @@ if(fig2){
   # concatenated_genes <- readRDS("results/concatenated_genes.RDS")
   
   plt_gene_fractions <- plot_gene_fraction(concatenated_genes)
-  ggsave(plot = plt_gene_fractions, filename = "figs/gene_fractions.png")
+  ggsave(plot = plt_gene_fractions, filename = paste0("figs/gene_fractions.", fig_format))
   
   
   # Number and fraction of significant genes
@@ -323,8 +337,8 @@ if(fig2){
   
   # ggsave("figs/dgs_affected_signal.png", dgs_affected/dgs_signal)
   
-  ggsave("figs/dgs_affected.png", dgs_affected)
-  ggsave("figs/dgs_signal.png", dgs_signal)
+  ggsave(paste0("figs/dgs_affected.", fig_format), dgs_affected)
+  ggsave(paste0("figs/dgs_signal.", fig_format), dgs_signal)
   
 }
 
@@ -394,7 +408,9 @@ if(fig2_init){
            gene != "NA")
   
   dgs_isoforms <- readRDS("results/concatenated_results.RDS") %>% 
-    semi_join(both_genes, by = c("gene", "experiment"))
+    semi_join(both_genes, by = c("gene", "experiment")) %>% 
+    dplyr::rename(log2FC_dexseq = log2fold_C_B,
+                  log2FC_deseq = log2FoldChange)
   
 }
 
@@ -463,7 +479,7 @@ plot_IF <- function(tpm_changing_IF){
     aes(x = median_mean) +
     geom_density(alpha = 0.5, fill = "darkgray") +
     geom_vline(xintercept = tpm_medians$median_mean, linetype = "dashed") +
-    labs(x = paste0("Fraction of \"Both\" gene's expression\nmediated by differential splicing",
+    labs(x = paste0("Fraction of \"Both\" genes' expression\nmediated by differential splicing",
                     "\n(Median: ", round(tpm_medians$median_mean, 3), ")"),
          y = "Density") +
     coord_cartesian(xlim = c(0, 1)) +
@@ -477,14 +493,14 @@ if(fig2){
   
   plt_switches <- plot_switch_fraction(dgs_isoforms)
   # plt_switches
-  ggsave("figs/isoform_switches.png", plt_switches)
+  ggsave(paste0("figs/isoform_switches.", fig_format), plt_switches)
   
   
   tpm_changing_IF <- compute_IF(tpms, dgs_isoforms, both_genes)
   
   plt_IF <- plot_IF(tpm_changing_IF)
   
-  ggsave("figs/isoform_switches_IF.png", plt_switches/plt_IF)
+  ggsave(paste0("figs/isoform_switches_IF.", fig_format), plt_switches/plt_IF)
   
 }
 
@@ -534,7 +550,7 @@ if(fig2){
   
   plt_switch_majority <- plot_switch_majority(switched_majorities)
   # plt_switch_majority
-  ggsave("figs/switch_majority.png", plt_switch_majority)
+  ggsave(paste0("figs/switch_majority.", fig_format), plt_switch_majority)
 }
 
 
@@ -555,7 +571,7 @@ EEFF
     full_figure_theme()
   # Figure2
   
-  ggsave("figs/Figure2.png", Figure2)
+  ggsave(paste0("figs/Figure2.", fig_format), Figure2)
   
   theme_set(theme_classic(base_size = 19))
 }
@@ -596,7 +612,7 @@ plot_pathway_count <- function(ora_all){
     geom_boxplot(width = 0.05) +
     color_scale(reorder = c(2, 3, 1, 4)) + 
     labs(x = "",
-         y = "Significant pathways\nper experiment") +
+         y = "Significant pathways\nper comparison") +
     theme(legend.position = "none")
   
   return(plt_pathway_counts)
@@ -609,7 +625,7 @@ if(fig3){
   
   plt_pathway_count <- plot_pathway_count(ora_all)
   # plt_pathway_count
-  ggsave(plot = plt_pathway_count, filename = "figs/pathway_count.png")
+  ggsave(plot = plt_pathway_count, filename = paste("figs/pathway_count.", fig_format))
 }
 
 ## Figure 3B: Telomere pathways ----
@@ -622,7 +638,7 @@ if(fig3){
   
   
   telomere_pathways <- plot_ora(ora, pattern = "Telomer", colors = c("darkgray", "purple", "lightblue"))
-  ggsave(plot = telomere_pathways, filename = "figs/telomere_pathways.png")
+  ggsave(plot = telomere_pathways, filename = paste("figs/telomere_pathways.", fig_format))
 }
 
 ## Figure 3C: Repair pathways----
@@ -634,7 +650,7 @@ if(fig3){
     filter(experiment == exp)
   
   
-  repair_pathways <- plot_ora(ora, pattern = "Repair", colors = c("darkgray", "purple", "lightblue"))
+  repair_pathways <- plot_ora(ora, pattern = "Repair", colors = c("darkgray", "purple", "lightblue"), plotly=T)
   ggsave(plot = repair_pathways, filename = "figs/repair_pathways.png")
 }
 
@@ -658,7 +674,7 @@ plot_ora_correlation <- function(ora_all, threshold = 0){
     ggplot(aes(x = correlation)) +
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
     geom_vline(xintercept = median_correlation, linetype = "dashed") +
-    labs(x = paste0("Spearman's ρ between gene-set enrichment scores", "\n(Median: ", round(median_correlation, 3), ")"),
+    labs(x = paste0("Spearman's \u03C1 between gene-set \n enrichment scores", "\n(Median: ", round(median_correlation, 3), ")"),
          y = "Count")
    return(plt_correlation)
 }
@@ -696,7 +712,7 @@ plot_ora_correlation_facet <- function(ora_all, threshold = 50){
       mapping = aes(xintercept = line, color = association),
       linetype = "dashed"
     ) +
-    labs(x = "Spearman's ρ between gene-set enrichment scores",
+    labs(x = "Spearman's \u03C1 between gene-set\nenrichment scores",
          y = "Count") +
     facet_grid(~association, space="free_x")  +
     fill_scale() +
@@ -713,10 +729,10 @@ if(fig3){
   
   ora_correlation <- plot_ora_correlation(ora_all)
   # ora_correlation
-  ggsave(plot = ora_correlation, filename = "figs/ora_correlation.png")
-  ora_correlation_facet <- plot_ora_correlation_facet(ora_all)
+  ggsave(plot = ora_correlation, filename = paste0("figs/ora_correlation.", fig_format))
+  ora_correlation_facet <- plot_ora_correlation_facet(ora_all, threshold = 0)
   # ora_correlation_facet
-  ggsave(plot = ora_correlation_facet, filename = "figs/ora_correlation_facet.png")
+  ggsave(plot = ora_correlation_facet, filename = paste0("figs/ora_correlation_facet.", fig_format), width = 6, height = 4)
 }
 
 
@@ -798,10 +814,10 @@ if(fig3){
   
   rr_ridges <- plot_rr_ridges(rr_shifts)
   # rr_ridges
-  ggsave(plot = rr_ridges, filename = "figs/rr_ridges.png")
+  ggsave(plot = rr_ridges, filename = paste0("figs/rr_ridges.", fig_format))
   rr_median <- plot_rr_median(rr_shifts)
   # rr_median
-  ggsave(plot = rr_median, filename = "figs/rr_median.png")
+  ggsave(plot = rr_median, filename = paste0("figs/rr_median.", fig_format))
 }
 
 
@@ -814,19 +830,25 @@ if(fig3){
   theme_set(theme_classic(base_size = 8))
   
   
+  # layout <- "
+  # #AAAA#
+  # BBBCCC
+  # DDDEEE
+  # "
   layout <- "
   #AAAA#
-  BBBCCC
+  #BBBB#
   DDDEEE
   "
  
-  Figure3 <- plt_pathway_count + telomere_pathways + repair_pathways + ora_correlation + rr_median +
+  Figure3 <- plt_pathway_count + telomere_pathways + #repair_pathways + 
+    ora_correlation + rr_median +
     plot_layout(design = layout) +
     plot_annotation(tag_levels = 'A') &
     full_figure_theme()
   # Figure3
   
-  ggsave("figs/Figure3.png", Figure3, width = 8, height = 7)
+  ggsave(paste0("figs/Figure3.", fig_format), Figure3, width = 8, height = 7)
   
   theme_set(theme_classic(base_size = 19))
 }

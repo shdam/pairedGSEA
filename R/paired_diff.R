@@ -89,7 +89,7 @@ paired_diff <- function(object,
       tibble::as_tibble() %>% 
       # Ensure columns are factors
       dplyr::mutate(dplyr::across(dplyr::all_of(c(group_col, covariates)), factor)) %>% 
-      S4Vectors::DataFrame(row.names = SummarizedExperiment::colnames(object))
+      S4Vectors::DataFrame(row.names = colnames(object))
     object <- DESeq2::DESeqDataSet(object, design)
   }
   
@@ -151,8 +151,7 @@ paired_diff <- function(object,
   ## If only DGE is requested (used for SVA evaluations in the paper)
   if(deseq_only){
     deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq") %>% 
-      dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"),
-                    experiment = experiment_title)
+      dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"))
     
     if(store_results) store_result(deseq_aggregated, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene pvalue aggregation")
     return(deseq_aggregated)
@@ -175,15 +174,13 @@ paired_diff <- function(object,
   # Aggregate p values
   if(!quiet) message(experiment_title, " is analysed."); message("Aggregating p values")
   
-  dexseq_aggregated <- aggregate_pvalue(dexseq_results, gene = "groupID", weights = "exonBaseMean", lfc = "log2FC_dexseq", type = "dexseq")
-  deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
+  dexseq_aggregated <- aggregate_pvalue(dexseq_results, gene = "groupID", weights = "exonBaseMean", type = "dexseq")
+  deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", type = "deseq")
   
   aggregated_pvals <- dplyr::full_join(deseq_aggregated,
                                        dexseq_aggregated,
                                        by = "gene",
-                                       suffix = c("_deseq", "_dexseq")) %>% 
-    dplyr::mutate(padj_deseq = stats::p.adjust(pvalue_deseq, "fdr"),
-                  padj_dexseq = stats::p.adjust(pvalue_dexseq, "fdr"))
+                                       suffix = c("_deseq", "_dexseq"))
   
   
   
@@ -285,16 +282,17 @@ run_sva <- function(dds, quiet = FALSE){
   colnames(svs) <- paste0("sv", 1:svseq$n.sv)
   
   # Remove svs that confound with mod1
-  cors <- as.matrix(cor(svs, mod1[,2:ncol(mod1)]))
+  cors <- as.matrix(stats::cor(svs, mod1[,2:ncol(mod1)]))
   cors[abs(cors) > 0.8] <- NA
-  cors <- na.omit(cors)
+  if(any(is.na(cors)) & !quiet) message("Removing surrogate variables confounding with design model.")
+  cors <- stats::na.omit(cors)
   svs <- svs[, rownames(cors)]
   
   if(!quiet) message("Redefining DESeq design formula\n")
   # Add svs to dds colData
   SummarizedExperiment::colData(dds) <- cbind(metadata, svs)
   # Redefine design formula to include svs
-  DESeq2::design(dds) <- formularise_vector(c(as.character(design)[2], colnames(svs)))
+  DESeq2::design(dds) <- formularise_vector(c(as.character(design)[2] %>% stringr::str_split(" \\+ ", simplify = TRUE), colnames(svs)))
   
   return(dds)
 }
@@ -361,7 +359,7 @@ run_deseq <- function(dds,
   deseq_results <- deseq_results %>% 
     tibble::as_tibble(rownames = "gene_tx") %>% 
     tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
-    dplyr::rename(log2FC_deseq = log2FoldChange)
+    dplyr::rename(lfc = log2FoldChange)
   
   return(deseq_results)
 }
@@ -450,7 +448,7 @@ run_dexseq <- function(dds,
   # Rename LFC column for consistency and human-readability
   dexseq_results <- dexseq_results %>% 
     tibble::as_tibble() %>% 
-    dplyr::rename(log2FC_dexseq = log2fold_C_B)
+    dplyr::rename(lfc = log2fold_C_B)
   
   return(dexseq_results)
 }
@@ -465,7 +463,7 @@ run_dexseq <- function(dds,
 #' @param df A data.frame-type object with pvalues to aggregate
 #' @param gene (Default: "gene") The column with gene names
 #' @param p (Default: "pvalue") The column with p-values
-#' @param lfc (Default: "log2FC") The column with log2-foldchanges
+#' @param lfc (Default: "lfc") The column with log2-foldchanges
 #' @param type (Default: "deseq") Either "deseq" for aggregation of DESeq2 results or "dexseq" for aggregation of DEXSeq results
 #' @param weights (Default: "baseMean") The column to use for weighting the aggregation
 #' @keywords internal
@@ -473,7 +471,7 @@ aggregate_pvalue <- function (df,
                               gene = "gene",
                               p = "pvalue",
                               weights = "baseMean",
-                              lfc = "log2FC",
+                              lfc = "lfc",
                               type = "deseq"){
   stopifnot("df is not a data.frame-type object" = is(df, "data.frame"))
   stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
@@ -499,8 +497,9 @@ aggregate_pvalue <- function (df,
                   dplyr::summarise(.,
                                    lfc = weighted.mean(lfc, weights),
                                    pvalue = aggregation::lancaster(pvalue, weights))) %>% 
-    # Remove zeros to prevent downstream issues
-    dplyr::mutate(pvalue = dplyr::case_when(pvalue < 10e-320 ~ 10e-320,
+    # Adjust p values and remove zeros to prevent downstream issues
+    dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"),
+                  pvalue = dplyr::case_when(pvalue < 10e-320 ~ 10e-320,
                                             TRUE ~ pvalue)) 
   return(res)
 }

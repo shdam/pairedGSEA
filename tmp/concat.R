@@ -150,7 +150,7 @@ concatenate_ora <- function(experiments){
   saveRDS(ora_all, "results/ora_all.RDS")
   return(ora_all)
 }
-
+# concatenated_ora <- concatenate_ora(experiments)
 
 # deseq2 + dexseq ----
 concatenate_results <- function(experiments){
@@ -171,12 +171,23 @@ concatenate_results <- function(experiments){
     results_deseq <- readRDS(paste0("results/", experiment_title, "_deseqres.RDS"))
     results_dexseq <- readRDS(paste0("results/", experiment_title, "_dexseqres.RDS"))
     
-    genes_to_keep_dexseq <- results_dexseq %>% 
+    results_dexseq <- results_dexseq %>% 
+      tibble::as_tibble() %>% 
+      dplyr::rename(lfc_dexseq = log2fold_C_B) %>% 
+    results_deseq <- results_deseq %>%
+      tibble::as_tibble(rownames = "gene_tx") %>% 
+      dplyr::rename(lfc_deseq = log2FoldChange) %>% 
+      tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") 
+    
+    genes_to_keep_dexseq <- results_dexseq %>%
       dplyr::group_by(groupID) %>% 
       dplyr::summarise(n_significant = sum(padj < 0.05, na.rm = TRUE)) %>% 
       dplyr::filter(n_significant > 1) %>% 
       dplyr::pull(groupID)
-    genes_to_keep_deseq <- results_deseq %>% 
+    genes_to_keep_deseq <- results_deseq %>%
+      # tibble::as_tibble(rownames = "gene_tx") %>% 
+      # tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
+      # dplyr::rename(log2FC_deseq = log2FoldChange) %>% 
       dplyr::group_by(gene) %>% 
       dplyr::summarise(n_significant = sum(padj < 0.05, na.rm = TRUE)) %>% 
       dplyr::filter(n_significant > 1) %>% 
@@ -197,7 +208,7 @@ concatenate_results <- function(experiments){
   saveRDS(concatenated_results, "results/concatenated_results.RDS")
   return(concatenated_results)
 }
-
+# concatenated_results <- concatenate_results(experiments)
 
 # Concat gene level ----
 concatenate_genes <- function(experiments){
@@ -230,11 +241,39 @@ concatenate_genes <- function(experiments){
   return(concatenated_genes)
 }
 
+concatenate_no_sva_genes <- function(experiments){
+  
+  concatenated_no_sva_genes <- tibble::tibble()
+  
+  for(num in 1:nrow(experiments)){
+    row <- experiments[num, ]
+    ### Load metadata
+    md_file <- row$filename
+    data_name <- basename(md_file) %>% 
+      stringr::str_remove(".xlsx") %>% 
+      stringr::str_remove("csv") 
+    ### Define experiment details
+    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`, "_no_sva")
+    ### Loading results
+    message("Adding ", experiment_title)
+    aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
+    aggregated_pvals <- aggregated_pvals %>% 
+      dplyr::mutate(experiment = stringr::str_remove(experiment_title, "_no_sva"))
+    
+    
+    concatenated_no_sva_genes <- concatenated_no_sva_genes %>% 
+      dplyr::bind_rows(aggregated_pvals)
+  }
+  
+  saveRDS(concatenated_no_sva_genes, "results/concatenated_no_sva_genes.RDS")
+  return(concatenated_no_sva_genes)
+}
+# concatenated_no_sva_genes <- concatenate_no_sva_genes(experiments)
 
 # Concat SVA level ----
 concatenate_design <- function(experiments){
   
-  concatenaded_design <- tibble::tibble()
+  concatenated_design <- tibble::tibble()
   
   for(num in 1:nrow(experiments)){
     row <- experiments[num, ]
@@ -252,163 +291,20 @@ concatenate_design <- function(experiments){
                            experiment_title, DESeq2::design(dds))
     
     
-    concatenaded_design <- concatenaded_design %>% 
+    concatenated_design <- concatenated_design %>% 
       dplyr::bind_rows(des)
   }
-  saveRDS(concatenaded_design, "results/concatenaded_design.RDS")
-  return(concatenaded_design)
+  saveRDS(concatenated_design, "results/concatenated_design.RDS")
+  return(concatenated_design)
 }
-
-concatenate_sva_genes <- function(experiments){
-  
-  concatenated_sva_genes <- tibble::tibble()
-  
-  for(num in 1:nrow(experiments)){
-    row <- experiments[num, ]
-    ### Load metadata
-    md_file <- row$filename
-    data_name <- basename(md_file) %>% 
-      stringr::str_remove(".xlsx") %>% 
-      stringr::str_remove("csv") 
-    ### Define experiment details
-    baseline_case <- row$`comparison (baseline_v_condition)` %>% stringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
-    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
-    ### Check that results exists
-    message("Adding ", experiment_title)
-    dds <- readRDS(paste0("results/", experiment_title, "_dds.RDS"))
-    
-    svs <- as.character(DESeq2::design(dds))[2] %>% 
-      stringr::str_count("sv")
-    
-    found_genes <- c()
-    
-    for(sv in 1:length(svs)){
-      
-      deseq_results <- DESeq2::results(dds,
-                                       name = paste0("sv", sv),
-                                       parallel = FALSE)
-      
-      # Convert result to tibble
-      deseq_results <- deseq_results %>% 
-        tibble::as_tibble(rownames = "gene_tx") %>% 
-        tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
-        dplyr::rename(log2FC_deseq = log2FoldChange)
-      
-      # Aggregate to gene level
-      deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq")
-      
-      # Extract found genes
-      found_genes <- found_genes %>% 
-        union(
-          deseq_aggregated %>% 
-          dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr")) %>% 
-          dplyr::filter(padj < 0.05) %>% 
-          dplyr::pull(gene)
-        )
-      
-    }
-    
-    
-    concatenated_sva_genes <- concatenated_sva_genes %>% 
-      dplyr::bind_rows(tibble("gene" = found_genes, "experiment" = experiment_title))
-  }
-  saveRDS(concatenated_sva_genes, "results/concatenated_sva_genes.RDS")
-  return(concatenated_sva_genes)
-}
-
-
-run_experiment_no_sva <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr",
-                                  tpm = TRUE, prefilter = 10, parallel = TRUE, gtf = NULL, quiet = FALSE){
-  
-  if(typeof(row) == "character"){ # Convert apply-made row to tibble
-    row <- tibble::as_tibble(row, rownames = "names") %>% 
-      tidyr::pivot_wider(values_from = value, names_from = names)
-  }
-  
-  
-  message("Running on ", row$study)
-  
-  ### Load metadata
-  md_file <- row$filename
-  data_name <- basename(md_file) %>% 
-    stringr::str_remove(".xlsx") %>% 
-    stringr::str_remove(".csv") 
-  
-  ### Define tpm file
-  if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
-  ### Define experiment details
-  baseline_case <- row$`comparison (baseline_v_condition)` %>% stringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
-  experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
-  
-  
-  ### Prepare for DE
-  if(is.null(tx_count)){
-    tx_count <- prepare_tx_count(
-      metadata = md_file,
-      gtf = gtf,
-      archs4db = archs4db,
-      group_col = group_col,
-      baseline_case = baseline_case
-    )
-  }
-  
-  baseline <- baseline_case[1]
-  case <- baseline_case[2]
-  sample_col <- "id"
-  
-  metadata <- prepare_metadata(md_file, group_col, paste(c(baseline, case)))
-  metadata <- metadata[metadata[[sample_col]] %in% colnames(tx_count), ]
-  
-  tx_count <- tx_count[, metadata[[sample_col]]]
-  
-  ### Prefiltering
-  if(prefilter) tx_count <- pre_filter(tx_count, prefilter)
-  
-  if(!quiet) message("Converting count matrix to DESeqDataSet")
-  # Create DDS from count matrix
-  design <- formularise_vector(c(group_col))
-  dds <- convert_matrix_to_dds(tx_count, metadata, design)
-  
-  
-  deseq_results <- run_deseq(
-    dds,
-    group_col = group_col,
-    baseline = baseline,
-    case = case,
-    experiment_title = experiment_title
-  )
-  
-  deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq") %>% 
-    dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"),
-                  experiment = experiment_title) %>% 
-    dplyr::filter(padj < 0.05)
-  
-  
-  
-  return(deseq_aggregated)
-  
-}
-
-deseq_no_sva <- function(experiments, archs4db, gtf){
-  
-  concatenated_no_sva_genes <- tibble::tibble()
-  
-  for(num in 1:nrow(experiments)){
-    deseq_genes <- run_experiment_no_sva(experiments[num, ], archs4db, gtf = gtf)
-    
-    concatenated_no_sva_genes <- concatenated_no_sva_genes %>% 
-      bind_rows(deseq_genes)
-  }
-  saveRDS(concatenated_no_sva_genes, "results/concatenated_no_sva_genes.RDS")
-  return(concatenated_no_sva_genes)
-}
+# concatenated_design <- concatenate_design(experiments)
 
 # deseq_genes_no_sva <- deseq_no_sva(experiments, archs4db, gtf)
 
 
 concatenate_sva_correlation <- function(experiments){
   
-  concatenaded_correlation <- tibble::tibble()
+  concatenated_correlation <- tibble::tibble()
   
   for(num in 1:nrow(experiments)){
     row <- experiments[num, ]
@@ -426,10 +322,41 @@ concatenate_sva_correlation <- function(experiments){
     correlation <- apply(select(md, starts_with("sv")), 2, function(x) cor(as.numeric(md$group_nr), x))
     correlation$experiment <- experiment_title
     
-    concatenaded_correlation <- concatenaded_correlation %>% 
+    concatenated_correlation <- concatenated_correlation %>% 
       dplyr::bind_rows(correlation)
   }
-  saveRDS(concatenaded_correlation, "results/concatenate_sva_correlation.RDS")
-  return(concatenaded_correlation)
+  saveRDS(concatenated_correlation, "results/concatenated_sva_correlation.RDS")
+  return(concatenated_correlation)
 }
 # cors <- concatenaded_correlation %>% pivot_longer(cols = starts_with("sv"), names_to = "sv", values_to = "correlation")
+
+
+
+# Store results for paper ----
+store_experiment_results <- function(experiments){
+  check_make_dir("results/paper")
+  for(num in 1:nrow(experiments)){
+    row <- experiments[num, ]
+    ### Load metadata
+    md_file <- row$filename
+    data_name <- basename(md_file) %>% 
+      stringr::str_remove(".xlsx") %>% 
+      stringr::str_remove("csv") 
+    ### Define experiment details
+    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+    
+    message("Storing ", experiment_title)
+    metadata <- readxl::read_xlsx(md_file)
+    
+    aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
+    ora <- readRDS(paste0("results/", experiment_title, "_ora.RDS"))
+    
+    store_result(list("metadata" = metadata,
+                      "genes" = aggregated_pvals,
+                      "gene_sets" = ora),
+                 file = paste0("paper/", experiment_title, ".RDS"),
+                 analysis = experiment_title)
+  }
+  message("Done!\n")
+}
+# store_experiment_results(experiments)
