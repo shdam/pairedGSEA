@@ -1,12 +1,12 @@
 ## Collection of plots for paper
 
 initialize <- TRUE
-fig1 <- TRUE
-fig1_init <- TRUE
+fig1 <- FALSE
+fig1_init <- FALSE
 fig2 <- TRUE
 fig2_init <- TRUE
-fig3 <- TRUE
-fig_format <- "png"
+fig3 <- FALSE
+fig_format <- "pdf"
 
 # Initialize  ----
 if(initialize){
@@ -143,6 +143,7 @@ if(fig1){
   layout <- "
   AAAA
   AAAA
+  AAAA
   BBCC
   "
   Figure1 <- img_g + false_sva + fig1c +
@@ -201,7 +202,7 @@ plot_gene_counts <- function(concatenated_genes){
 
 if(fig2){
   # Load data
-  concatenated_genes <- readRDS(paste0("results/concatenated_genes.", fig_format))
+  concatenated_genes <- readRDS("results/concatenated_genes.RDS")
   
   plt_gene_counts <- plot_gene_counts(concatenated_genes)
   ggsave(plot = plt_gene_counts, filename = paste0("figs/gene_counts.", fig_format))
@@ -218,23 +219,26 @@ plot_gene_fraction <- function(concatenated_genes){
     group_by(experiment) %>% 
     summarise(deseq = sum(padj_deseq < 0.05, na.rm = TRUE),
               num_genes = n(),
-              dexseq = sum(padj_dexseq < 0.05, na.rm = TRUE)) %>% 
-    mutate(`DGE` = deseq/num_genes,
-            `DGS` = dexseq/num_genes) 
+              dexseq = sum(padj_dexseq < 0.05, na.rm = TRUE),
+              both = sum(padj_dexseq < 0.05 & padj_deseq < 0.05, na.rm = TRUE)) %>% 
+    mutate(DGE = deseq/num_genes,
+           DGS = dexseq/num_genes,
+           Both = both/num_genes) 
     
   
   # Sina plot of fraction of found genes
   plt_gene_fractions <-  gene_fractions %>% 
-    pivot_longer(cols = starts_with("DG"), names_to = "Method", values_to = "Fraction") %>% 
-    mutate(Method = recode(factor(Method), 
+    pivot_longer(cols = c("DGE", "DGS", "Both"), names_to = "Method", values_to = "Fraction") %>% 
+    mutate(Method = recode(factor(Method, levels = c("DGE", "DGS", "Both")), 
                            DGE = paste0("Differential\nExpression\n", "(Median: ", round(median(gene_fractions$DGE), 3), ")"),
-                           DGS = paste0("Differential\nSplicing\n", "(Median: ", round(median(gene_fractions$DGS), 3), ")"))
+                           DGS = paste0("Differential\nSplicing\n", "(Median: ", round(median(gene_fractions$DGS), 3), ")"),
+                           Both = paste0("Both\n", "(Median: ", round(median(gene_fractions$Both), 3), ")"))
            ) %>% 
     ggplot() +
     aes(x = Method, y = Fraction, color = Method) +
     ggforce::geom_sina() +
     geom_boxplot(width = 0.05) +
-    color_scale(reorder = c(2, 3)) +
+    color_scale(reorder = c(2, 3, 1)) +
     labs(x = "",
          y = "Fraction of significant genes\nof genes tested") +
       theme(legend.position = "none")
@@ -311,7 +315,7 @@ plot_dgs_signal <- function(gene_similarity){
     ggplot(aes(x = p_signal)) +
     geom_density(alpha = 0.5, fill = "darkgray") +
     geom_vline(xintercept = median_signal, linetype = "dashed") +
-    labs( x = paste0("Fraction of total signal\nmediated by differential splicing",
+    labs( x = paste0("Fraction of total transcriptional signal\nmediated by differential splicing",
                      "\n(Median: ", round(median_signal, 3), ")"),
           y = "Density"
     ) +
@@ -479,7 +483,7 @@ plot_IF <- function(tpm_changing_IF){
     aes(x = median_mean) +
     geom_density(alpha = 0.5, fill = "darkgray") +
     geom_vline(xintercept = tpm_medians$median_mean, linetype = "dashed") +
-    labs(x = paste0("Fraction of \"Both\" genes' expression\nmediated by differential splicing",
+    labs(x = paste0("Fraction of differential splicing-mediated\nexpression of genes that are both\ndifferentially expressed and spliced",
                     "\n(Median: ", round(tpm_medians$median_mean, 3), ")"),
          y = "Density") +
     coord_cartesian(xlim = c(0, 1)) +
@@ -558,14 +562,23 @@ if(fig2){
 
 if(fig2){
   
+#   layout <- "
+# AABB
+# AABB
+# CCDD
+# EE##
+# "
   layout <- "
-AABB
-AABB
-CCDD
-EEFF
+AAA#CC
+AAA#CC
+AAA#DD
+BBB#DD
+BBB#EE
+BBB#EE
 "
   theme_set(theme_classic(base_size = 8))
-  Figure2 <- plt_gene_counts + plt_gene_fractions + dgs_affected+plt_switches+plt_IF+dgs_signal +
+  Figure2 <- plt_gene_counts + plt_gene_fractions + dgs_affected+#plt_switches+
+    plt_IF+dgs_signal +
     plot_layout(design = layout) +
     plot_annotation(tag_levels = 'A') & 
     full_figure_theme()
@@ -674,7 +687,7 @@ plot_ora_correlation <- function(ora_all, threshold = 0){
     ggplot(aes(x = correlation)) +
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
     geom_vline(xintercept = median_correlation, linetype = "dashed") +
-    labs(x = paste0("Spearman's \u03C1 between gene-set \n enrichment scores", "\n(Median: ", round(median_correlation, 3), ")"),
+    labs(x = paste0("Spearman's \u03C1 between differential\nsplicing and expression gene-set\nenrichment scores", "\n(Median: ", round(median_correlation, 3), ")"),
          y = "Count")
    return(plt_correlation)
 }
@@ -775,7 +788,7 @@ plot_rr_ridges <- function(rr_shifts){
     ggridges::geom_density_ridges(scale = 4, alpha = 0.4, quantile_lines = TRUE, quantiles = 2) +
     color_scale() +
     fill_scale() +
-    labs(x = "Shift in gene-set relative risk as a percentage\nof the smaller risk",
+    labs(x = "Shift between differential splicing and\nexpression gene-set relative risk as a percentage\nof the smaller risk",
          y = ""
     ) +
     scale_x_log10() +
@@ -796,7 +809,7 @@ plot_rr_median <- function(rr_shifts){
     ggplot(aes(x = Shift)) +
     geom_histogram(fill = "darkgray", color = "white", alpha = 0.8) +
     geom_vline(xintercept = median_of_median, linetype = "dashed") +
-    labs(x = paste0("Shift in gene-set relative risk"," as a percentage\nof the smaller risk", " (Median: ", round(median_of_median, 2), ")"),
+    labs(x = paste0("Shift between differential splicing\nand expression gene-set relative risks","\nas a percentage of the smaller risk", "\n(Median: ", round(median_of_median, 2), ")"),
          y = "Count"
     ) +
     scale_x_log10() +
@@ -835,10 +848,14 @@ if(fig3){
   # BBBCCC
   # DDDEEE
   # "
+  # layout <- "
+  # #AAAA#
+  # #BBBB#
+  # DDDEEE
+  # "
   layout <- "
-  #AAAA#
-  #BBBB#
-  DDDEEE
+  AAACC
+  BBBDD
   "
  
   Figure3 <- plt_pathway_count + telomere_pathways + #repair_pathways + 

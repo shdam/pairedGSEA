@@ -11,12 +11,17 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 coverage](https://codecov.io/gh/shdam/pairedGSEA/branch/master/graph/badge.svg)](https://app.codecov.io/gh/shdam/pairedGSEA?branch=master)
 <!-- badges: end -->
 
-`pariedGSEA` is an R package that helps you to run a paired differential
+`pairedGSEA` is an R package that helps you to run a paired differential
 gene expression (DGE) and splicing (DGS) analysis. Providing a count
-matrix, `pariedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq`
+matrix, `pairedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq`
 (DGS), aggregates the p-values to gene level, and allows you to run a
 subsequent gene set over-representation analysis using its
 implementation of the `fgsea::fora` function.
+
+## Article
+
+A preprint on pairedGSEA is available
+[here](https://doi.org/10.1101/2022.08.29.505720).
 
 ## Installation
 
@@ -101,7 +106,6 @@ diff_results
 #> 10 ENSG00000007174   0.463    0.551          -1.05      8.09e- 1 6.76e-1 9.13e-1
 #> # … with 944 more rows, and abbreviated variable names ¹​pvalue_dexseq,
 #> #   ²​padj_deseq, ³​padj_dexseq
-#> # ℹ Use `print(n = ...)` to see more rows
 ```
 
 Over-representation analysis of results
@@ -138,7 +142,6 @@ ora
 #> #   enrichment_score_shift <dbl>, and abbreviated variable names ¹​pval_deseq,
 #> #   ²​padj_deseq, ³​overlap_deseq, ⁴​size_geneset, ⁵​overlapGenes_deseq,
 #> #   ⁶​size_genes_deseq, ⁷​size_universe, ⁸​relative_risk_deseq
-#> # ℹ Use `print(n = ...)` to see more rows, and `colnames()` to see all variable names
 ```
 
 You can now plot the enrichment scores against each other and identify

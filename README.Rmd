@@ -22,8 +22,14 @@ knitr::opts_chunk$set(
 
 
 
-`pariedGSEA` is an R package that helps you to run a paired differential gene expression (DGE) and splicing (DGS) analysis.
-Providing a count matrix, `pariedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq` (DGS), aggregates the p-values to gene level, and allows you to run a subsequent gene set over-representation analysis using its implementation of the `fgsea::fora` function. 
+`pairedGSEA` is an R package that helps you to run a paired differential gene expression (DGE) and splicing (DGS) analysis.
+Providing a count matrix, `pairedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq` (DGS), aggregates the p-values to gene level, and allows you to run a subsequent gene set over-representation analysis using its implementation of the `fgsea::fora` function. 
+
+
+## Article
+
+A preprint on pairedGSEA is available [here](https://doi.org/10.1101/2022.08.29.505720).
+
 
 ## Installation
 
@@ -37,7 +43,6 @@ devtools::install_github("shdam/pairedGSEA")
 
 ```
 
-<!-- ## Article -->
 
 
 ## Documentation

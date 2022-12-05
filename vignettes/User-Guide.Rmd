@@ -89,23 +89,32 @@ To see an example of what such data could look like, please see `?pairedGSEA::ex
 # Installation
 
 To install this package, start R (version "4.2") and enter:
-
+<!--
 ```{r installation, eval=FALSE, include = FALSE}
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
 BiocManager::install("pairedGSEA")
 ```
-
+-->
 <!-- For older versions of R, please refer to the appropriate [Bioconductor release](https://bioconductor.org/about/release-announcements/). -->
-
+<!-- 
 ```{r installation_github, eval=FALSE}
 if (!require("devtools", quietly = TRUE))
     install.packages("devtools")
 
 devtools::install_github("biosurf/pairedGSEA")
 ```
+-->
 
+``` {r install, eval=FALSE}
+# Install Bioconductor packages with:
+# devtools::install_bioc(c("DESeq2", "DEXSeq", "fgsea", "SummarizedExperiment", "S4Vectors", "sva", "BiocParallel"))
+
+# Install pairedGSEA
+devtools::install_github("shdam/pairedGSEA")
+
+```
 
 # Paired differential expression and splicing
 
@@ -237,7 +246,7 @@ gene_sets <- pairedGSEA::prepare_msigdb(species = "Homo sapiens", category = "C5
 ora <- paired_ora(
   paired_diff_result = diff_results,
   gene_sets = gene_sets,
-  experiment_title = experiment_title
+  experiment_title = NULL # experiment_title - if not NULL, the results will be stored in an RDS object in the 'results' folder
   )
 
 ora

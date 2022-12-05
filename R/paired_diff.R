@@ -64,7 +64,7 @@ paired_diff <- function(object,
   
   stopifnot("Cannot store results if experiment title haven't been given" = (store_results & !is.null(experiment_title)) | !store_results)
   
-  stopifnot("Please provide metadat with your count matrix" = (is(object, "matrix") & is.null(metadata)) | !is(object, "matri"))
+  stopifnot("Please provide metadata with your count matrix" = (is(object, "matrix") & !is.null(metadata)) | !is(object, "matrix"))
   
   ## Checking column names
   stopifnot("Covariate names must not contain spaces" = stringr::str_detect(covariates, " ", negate = TRUE))
@@ -119,6 +119,8 @@ paired_diff <- function(object,
     if(!quiet) message("Converting count matrix to DESeqDataSet")
     object <- convert_matrix_to_dds(object, metadata, design)
   }
+  
+  stopifnot("Please ensure the rownames have the format 'gene:transcript'" = (deseq_only | (!deseq_only & stringr::str_detect(rownames(object)[1], ":"))))
   
   # Rename object variable to dds
   dds <- object; rm(object)
@@ -385,6 +387,8 @@ run_dexseq <- function(dds,
                        BPPARAM = BiocParallel::bpparam()){
   
   if(!quiet) message("Initiating DEXSeq")
+  
+  stopifnot("Please ensure the rownames have the format 'gene:transcript'" = stringr::str_detect(rownames(dds)[1], ":"))
   
   # Extract group and feature from rownames of DESeq2 object
   group_feat <- rownames(dds) %>% 

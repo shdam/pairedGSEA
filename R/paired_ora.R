@@ -12,6 +12,7 @@
 #' @param min_size (Default: 25) Minimal size of a gene set to test. All pathways below the threshold are excluded.
 #' @param experiment_title Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_fora.RDS").
 #' @param quiet (Default: FALSE) Whether to print messages
+#' @param deseq_only (Default: FALSE) A logical that indicates whether to only run DESeq2 analysis. Not generally recommended.
 #' @family paired
 #' @export 
 #' 
@@ -26,11 +27,12 @@ paired_ora <- function(paired_diff_result,
                        cutoff = 0.05,
                        min_size = 25,
                        experiment_title = NULL,
+                       deseq_only = FALSE,
                        quiet = FALSE){
   
   # Check column names are as expected
   check_colname(paired_diff_result, "pvalue_deseq", "paired_diff_result")
-  check_colname(paired_diff_result, "pvalue_dexseq", "paired_diff_result")
+  if(!deseq_only) check_colname(paired_diff_result, "pvalue_dexseq", "paired_diff_result")
   check_colname(paired_diff_result, "gene", "paired_diff_result")
   
   # Significant genes
@@ -40,10 +42,12 @@ paired_ora <- function(paired_diff_result,
                   padj_deseq < cutoff) %>%
     dplyr::arrange(padj_deseq)
   
-  genes_dexseq <- paired_diff_result %>% 
-    dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene),
-                  padj_dexseq < cutoff) %>%
-    dplyr::arrange(padj_dexseq)
+  if(!deseq_only){
+    genes_dexseq <- paired_diff_result %>% 
+      dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene),
+                    padj_dexseq < cutoff) %>%
+      dplyr::arrange(padj_dexseq)
+  }
   
   # fora
   if(!quiet) message("Running over-representation analysis")
@@ -55,7 +59,13 @@ paired_ora <- function(paired_diff_result,
     dplyr::mutate(size_genes = nrow(genes_deseq),
                   size_universe = length(universe),
                   relative_risk = (overlap / size_geneset) / (size_genes / size_universe),
-                  enrichment_score = log2(relative_risk + 0.06)) 
+                  enrichment_score = log2(relative_risk + 0.06))
+  if(deseq_only){
+    if(!is.null(experiment_title)){
+      if(!quiet) message("Storing fora results")
+      store_result(ora_deseq, paste0(experiment_title, "_ora.RDS"), "ORA on only DESeq2 results", quiet = quiet)
+    }
+  }
   
   ## ORA on DEXSeq results
   ora_dexseq <- fgsea::fora(gene_sets, genes = genes_dexseq$gene,

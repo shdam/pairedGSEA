@@ -43,11 +43,11 @@ plot_ora <- function(ora,
     dplyr::mutate( # Color dots based on which analysis found the pathway enriched
       plot_color = dplyr::case_when(
         padj_dexseq < 0.05 & padj_deseq < 0.05 ~ "Both",
-        padj_dexseq < 0.05 ~ "DGS",
-        padj_deseq < 0.05 ~ "DGE",
+        padj_dexseq < 0.05 ~ "Only Splicing",
+        padj_deseq < 0.05 ~ "Only Expression",
         TRUE ~ "NA"
         ),
-      plot_color = factor(plot_color, levels = c("Both", "DGS", "DGE"))
+      plot_color = factor(plot_color, levels = c("Both", "Only Splicing", "Only Expression"))
     ) %>% 
     dplyr::filter(plot_color != "NA")
   
@@ -61,7 +61,7 @@ plot_ora <- function(ora,
   if(is.null(pattern)) pattern <- "No pattern"
   
   # Subset colors if not all are needed
-  colors <- colors[c("Both", "DGS", "DGE") %in% plt_data$plot_color]
+  colors <- colors[c("Both", "Only Splicing", "Only Expression") %in% plt_data$plot_color]
   
   # Create plot
   plt <- plt_data %>% 
@@ -77,8 +77,8 @@ plot_ora <- function(ora,
     ggplot2::geom_point(alpha = 0.3, size = 1.5) +
     # Add correlation text to plot
     ggplot2::annotate("text", label = paste("Spearman's \u03C1:", correlation), x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.3) +
-    ggplot2::labs(x = "Gene Set Enrichment Score\nDifferential Splicing",
-                  y = "Gene Set Enrichment Score\nDifferential Expression",
+    ggplot2::labs(x = "Gene-Set Enrichment Score\nDifferential Splicing",
+                  y = "Gene-Set Enrichment Score\nDifferential Expression",
                   fill = paste("padj <", cutoff),
                   colour = paste("padj <", cutoff),
                   shape = pattern) +
