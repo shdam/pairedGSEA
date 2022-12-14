@@ -152,7 +152,7 @@ paired_diff <- function(object,
   
   ## If only DGE is requested (used for SVA evaluations in the paper)
   if(deseq_only){
-    deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "log2FC_deseq", type = "deseq") %>% 
+    deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", lfc = "lfc", type = "deseq") %>% 
       dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"))
     
     if(store_results) store_result(deseq_aggregated, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene pvalue aggregation")
@@ -174,7 +174,10 @@ paired_diff <- function(object,
   
   
   # Aggregate p values
-  if(!quiet) message(experiment_title, " is analysed."); message("Aggregating p values")
+  if(!quiet) {
+    if(!is(experiment_title, "NULL")) message(experiment_title, " is analysed.")
+    message("Aggregating p values")
+  }
   
   dexseq_aggregated <- aggregate_pvalue(dexseq_results, gene = "groupID", weights = "exonBaseMean", type = "dexseq")
   deseq_aggregated <- aggregate_pvalue(deseq_results, gene = "gene", weights = "baseMean", type = "deseq")
@@ -187,6 +190,8 @@ paired_diff <- function(object,
   
   
   if(store_results) store_result(aggregated_pvals, paste0(experiment_title, "_aggregated_pvals.RDS"), "gene pvalue aggregation")
+  
+  if(!quiet) message("Done.")
   
   
   return(aggregated_pvals)
@@ -275,7 +280,7 @@ run_sva <- function(dds, quiet = FALSE){
   
   # Run SVA
   svseq <- sva::sva(normalized_counts, mod = mod1, mod0 = mod0)
-  if(!quiet) message("Found ", svseq$n.sv, " surrogate variables")
+  if(!quiet) message("\nFound ", svseq$n.sv, " surrogate variables")
   
   if(svseq$n.sv == 0) return(dds)
   
@@ -439,7 +444,7 @@ run_dexseq <- function(dds,
   }
   
   ### Run DEXSeq
-  if(!quiet) message("Running DEXSeq")
+  if(!quiet) message("\nRunning DEXSeq -- This might take a while")
   if(!parallel) BiocParallel::register(BiocParallel::SerialParam())
   dexseq_results <- DEXSeq::DEXSeq(dxd,
                                    reducedModel = reduced_formula,

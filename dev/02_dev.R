@@ -51,6 +51,7 @@ devtools::build_vignettes()
 ## Code Coverage----
 ## Set the code coverage service ("codecov" or "coveralls")
 usethis::use_coverage()
+covr::codecov(token = "84e52bd5-6f19-4a5d-aad8-6241008c3944")
 
 # Create a summary readme for the testthat subdirectory
 covrpage::covrpage()

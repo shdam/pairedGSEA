@@ -31,6 +31,9 @@ paired_ora <- function(paired_diff_result,
                        quiet = FALSE){
   
   # Check column names are as expected
+  if(deseq_only) paired_diff_result <- paired_diff_result %>% 
+      dplyr::rename(pvalue_deseq = pvalue,
+                    padj_deseq = padj)
   check_colname(paired_diff_result, "pvalue_deseq", "paired_diff_result")
   if(!deseq_only) check_colname(paired_diff_result, "pvalue_dexseq", "paired_diff_result")
   check_colname(paired_diff_result, "gene", "paired_diff_result")
@@ -65,6 +68,7 @@ paired_ora <- function(paired_diff_result,
       if(!quiet) message("Storing fora results")
       store_result(ora_deseq, paste0(experiment_title, "_ora.RDS"), "ORA on only DESeq2 results", quiet = quiet)
     }
+    return(ora_deseq)
   }
   
   ## ORA on DEXSeq results

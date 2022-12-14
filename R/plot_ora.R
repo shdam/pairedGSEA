@@ -19,6 +19,8 @@ plot_ora <- function(ora,
                      lines = TRUE,
                      colors = c("darkgray", "purple", "lightblue")){
   
+  stopifnot("plot_ora currently only works when Differential Splicing has been run" = any(stringr::str_detect(colnames(ora), "_dexseq")))
+  
   check_missing_package(package = "ggplot2")
   if(plotly) check_missing_package(package = "plotly")
   
@@ -71,31 +73,38 @@ plot_ora <- function(ora,
     ggplot2::aes(x = enrichment_score_dexseq,
                  y = enrichment_score_deseq,
                  fill = plot_color,
-                 colour = plot_color,
-                 shape = pattern_match,
-                 text = paste0(pathway, "\nMatch: ", pattern_match)) +
-    ggplot2::geom_point(alpha = 0.3, size = 1.5) +
+                 color = plot_color,
+                 text = pathway) +
+    # ggplot2::geom_point(alpha = 0.3, size = 1.5) +
     # Add correlation text to plot
     ggplot2::annotate("text", label = paste("Spearman's \u03C1:", correlation), x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.3) +
     ggplot2::labs(x = "Gene-Set Enrichment Score\nDifferential Splicing",
                   y = "Gene-Set Enrichment Score\nDifferential Expression",
                   fill = paste("padj <", cutoff),
-                  colour = paste("padj <", cutoff),
-                  shape = pattern) +
+                  colour = paste("padj <", cutoff)) +
     # Make legend a bit prettier
-    ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 3,
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 3,
                                                                        alpha = 1,
                                                                        shape = c(4, 4, 4)[1:length(colors)],
                                                                        color = colors))) +
     ggplot2::scale_fill_manual(values = colors) +
-    ggplot2::scale_shape_manual(values = c(4, 23)) +
+    # ggplot2::scale_shape_manual(values = 4) +
     ggplot2::scale_colour_manual(values = colors)
   
-  if(!is.null(pattern) & nrow(matches) > 0){
+  if(!(pattern == "No pattern") & nrow(matches) > 0){
     # Add matches to plot if a pattern was given
     plt <- plt +
-      ggplot2::geom_point(data = matches, size = 2.5, alpha = 0.9, fill = "red", ggplot2::aes(shape = TRUE)) #+ , color = "red"
+      ggplot2::geom_point(alpha = 0.3, size = 1.5) +
+      ggplot2::aes(text = paste0(pathway, "\nMatch: ", pattern_match),
+                   shape = pattern_match) + 
+      ggplot2::geom_point(data = matches, size = 2.5, alpha = 0.9, fill = "red", ggplot2::aes(shape = TRUE)) +
+      ggplot2::labs(shape = pattern) +
+      ggplot2::scale_shape_manual(values = c(4, 23))
+    #+ , color = "red"
       # ggplot2::geom_point(data = matches, size = 2.5, alpha = 0.9, ggplot2::aes(shape = FALSE))
+  } else{
+    plt <- plt +
+      ggplot2::geom_point(alpha = 0.3, size = 1.5, shape = 4)
   }
   
   

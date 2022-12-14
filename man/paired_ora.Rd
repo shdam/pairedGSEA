@@ -10,6 +10,7 @@ paired_ora(
   cutoff = 0.05,
   min_size = 25,
   experiment_title = NULL,
+  deseq_only = FALSE,
   quiet = FALSE
 )
 }
@@ -23,6 +24,8 @@ paired_ora(
 \item{min_size}{(Default: 25) Minimal size of a gene set to test. All pathways below the threshold are excluded.}
 
 \item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_fora.RDS").}
+
+\item{deseq_only}{(Default: FALSE) A logical that indicates whether to only run DESeq2 analysis. Not generally recommended.}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 }
