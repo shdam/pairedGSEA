@@ -100,8 +100,16 @@ store_result <- function(object, file, analysis = "results", quiet = FALSE){
 pre_filter <- function(dds, threshold = 10){
   if(threshold < 1) return(dds)
   # Remove low counts
-  keep <- rowSums(DESeq2::counts(dds)) >= threshold
-  dds <- dds[keep,]
+  remove_low <- rowSums(DESeq2::counts(dds)) < threshold
+  dds <- dds[!remove_low,]
+  
+  # Remove rows with counts in only one sample
+  remove_singles <- rowSums(DESeq2::counts(dds) > 0) < 2
+  
+  dds <- dds[!remove_singles,]
+  
+  if(sum(remove_low) > 0 | sum(remove_singles) > 0) warning("\nRemoving ", sum(remove_low), " rows with a summed count lower than ", threshold,
+                                                            "\nRemoving ", sum(remove_singles), " rows with counts in less than 2 samples.\n")
   
   return(dds)
 }
