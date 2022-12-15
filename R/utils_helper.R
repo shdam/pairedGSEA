@@ -1,7 +1,7 @@
 #' Inverted versions of in
 #' @noRd
 #' @examples
-#' 1 %!in% 1:10
+#' 1 %!in% seq_len(10)
 `%!in%` <- Negate(`%in%`)
 
 #' Pipe operator
@@ -17,6 +17,8 @@
 #' @param lhs A value or the magrittr placeholder.
 #' @param rhs A function call using the magrittr semantics.
 #' @return The result of calling `rhs(lhs)`.
+#' @examples 
+#' 1:2 %>% min()
 NULL
 
 

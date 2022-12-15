@@ -2,7 +2,7 @@
 .Rhistory
 .Rdata
 .httr-oauth
-.DS_Store
+*.DS_Store
 results
 inst/doc
 materials

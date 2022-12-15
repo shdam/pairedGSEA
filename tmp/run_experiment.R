@@ -83,7 +83,7 @@ load_archs4 <- function(samples, archs4db, gtf = NULL){
   
   # Check that archsdb exists
   if(!file.exists(archs4db) | stringr::str_ends(archs4db, ".h5", negate = TRUE)){
-    stop(paste("No ARCHS4 database was found at", archs4db))
+    stop("No ARCHS4 database was found at", archs4db)
   }
   
   ### Extract count data of interest

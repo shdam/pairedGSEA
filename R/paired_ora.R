@@ -110,6 +110,8 @@ paired_ora <- function(paired_diff_result,
 #'   
 #' @param gene_id_type (Default: "ensemble_gene") The gene ID type to extract. The IDs should match the gene IDs from your DE analysis.
 #' @inheritParams msigdbr::msigdbr
+#' @examples 
+#' gene_sets <- prepare_msigdb(species = "Homo sapiens")
 #' @export
 prepare_msigdb <- function(gene_id_type = "ensembl_gene",
                            species = "Homo sapiens", 

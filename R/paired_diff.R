@@ -286,7 +286,7 @@ run_sva <- function(dds, quiet = FALSE){
   
   # Store surrogate variables and rename for ease of reference
   svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
-  colnames(svs) <- paste0("sv", 1:svseq$n.sv)
+  colnames(svs) <- paste0("sv", seq_len(svseq$n.sv))
   
   # Remove svs that confound with mod1
   cors <- as.matrix(stats::cor(svs, mod1[,2:ncol(mod1)]))

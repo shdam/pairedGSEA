@@ -16,3 +16,4 @@ $run_dev.*
 ^materials
 ^codecov
 ^doc$
+^.git

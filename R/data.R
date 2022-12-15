@@ -1,8 +1,9 @@
 #' A small subset of the GEO:GSE61220 data set.
 #'
 #' The subset is used in the vignettes and function man pages.
-#'   The subset was created by extracting genes belonging to Telomere-related gene sets
-#'   and randomly selecting 900 other genes from the original dataset.
+#'   The subset was created by extracting genes belonging to
+#'   Telomere-related gene sets and randomly selecting
+#'   900 other genes from the original dataset.
 #'
 #' @format A SummarizedExperiment
 #' \describe{
@@ -14,10 +15,13 @@
 
 #' Output of running paired_diff on example_se.
 #' 
-#' This example result is used primarily to do package tests and for function man pages
+#' This example result is used primarily to do package tests
+#'   and for function man pages
 "example_diff_result"
 
-#' Output of running paired_ora on example_diff_result and gene sets extracted from MSigDB
+#' Output of running paired_ora on example_diff_result
+#'   and gene sets extracted from MSigDB
 #' 
-#' This example result is used primarily to do package tests and for function man pages.
+#' This example result is used primarily to do package tests
+#'   and for function man pages.
 "example_ora_results"

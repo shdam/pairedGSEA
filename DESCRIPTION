@@ -1,6 +1,6 @@
 Package: pairedGSEA
 Title: Paired DGE and DGS analysis for gene set enrichment analysis
-Version: 0.0.1
+Version: 0.99.0
 Authors@R: c(
   person(given = "Søren Helweg",
     family = "Dam",
@@ -23,32 +23,23 @@ Description: pairedGSEA makes it simple to run a paired Differential Gene Expres
   pairedGSEA comes with a wrapper function for running an Over-Representation Analysis (ORA) and functionalities for plotting the results.
 License: MIT + file LICENSE
 Imports: 
-    DESeq2,
-    DEXSeq,
-    dplyr,
-    magrittr,
+    DESeq2, DEXSeq,
     fgsea,
-    BiocParallel,
-    aggregation,
-    purrr,
-    stats,
-    stringr,
-    SummarizedExperiment,
     sva,
-    tibble,
-    tidyr,
-    utils,
+    BiocParallel,
+    SummarizedExperiment,
     S4Vectors,
+    dplyr, magrittr, purrr, stringr, tibble, tidyr,
+    aggregation,
+    stats,
+    utils,
     methods
 Suggests: 
-    writexl,
-    readxl,
-    readr,
+    writexl, readxl, readr,
     rhdf5,
     msigdbr,
     spelling,
-    plotly,
-    ggplot2,
+    plotly, ggplot2,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,
@@ -57,12 +48,13 @@ Suggests:
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr
 biocViews:
     DifferentialExpression,
     AlternativeSplicing,
     DifferentialSplicing,
+    GeneExpression,
     ImmunoOncology,
     GeneSetEnrichment,
     Pathways,
@@ -72,5 +64,4 @@ biocViews:
 URL: https://github.com/shdam/pairedGSEA
 BugReports: https://github.com/shdam/pairedGSEA
 Depends:
-    R (>= 4.0)
-LazyData: true
+    R (>= 4.2.0)

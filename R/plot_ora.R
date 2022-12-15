@@ -85,7 +85,7 @@ plot_ora <- function(ora,
     # Make legend a bit prettier
     ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 3,
                                                                        alpha = 1,
-                                                                       shape = c(4, 4, 4)[1:length(colors)],
+                                                                       shape = c(4, 4, 4)[seq_len(length(colors))],
                                                                        color = colors))) +
     ggplot2::scale_fill_manual(values = colors) +
     # ggplot2::scale_shape_manual(values = 4) +
