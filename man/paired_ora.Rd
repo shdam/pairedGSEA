@@ -5,36 +5,49 @@
 \title{Paired Over-Representation Analysis}
 \usage{
 paired_ora(
-  paired_diff_result,
-  gene_sets,
-  cutoff = 0.05,
-  min_size = 25,
-  experiment_title = NULL,
-  deseq_only = FALSE,
-  quiet = FALSE
-)
+    paired_diff_result,
+    gene_sets,
+    cutoff = 0.05,
+    min_size = 25,
+    experiment_title = NULL,
+    deseq_only = FALSE,
+    quiet = FALSE
+    )
 }
 \arguments{
-\item{paired_diff_result}{The output of \code{\link[pairedGSEA:paired_diff]{paired_diff()}}}
+\item{paired_diff_result}{The output of 
+\code{\link[pairedGSEA:paired_diff]{paired_diff()}}}
 
 \item{gene_sets}{List of gene sets to analyse}
 
-\item{cutoff}{(Default: 0.05) Adjusted p-value cutoff for selecting significant genes}
+\item{cutoff}{(Default: 0.05) Adjusted p-value cutoff for
+selecting significant genes}
 
-\item{min_size}{(Default: 25) Minimal size of a gene set to test. All pathways below the threshold are excluded.}
+\item{min_size}{(Default: 25) Minimal size of a gene set to test.
+All pathways below the threshold are excluded.}
 
-\item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_fora.RDS").}
+\item{experiment_title}{Title of your experiment. Your results will be
+stored in paste0("results/", experiment_title, "_fora.RDS").}
 
-\item{deseq_only}{(Default: FALSE) A logical that indicates whether to only run DESeq2 analysis. Not generally recommended.}
+\item{deseq_only}{(Default: FALSE) A logical that indicates whether
+to only run DESeq2 analysis. Not generally recommended.}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 }
+\value{
+A data.frame
+}
 \description{
-paired_ora uses \code{\link[fgsea:fora]{fora()}} to run the over-representation analysis.
-  First the aggregated pvalues are adjusted using the Benjamini & Hochberg method.
-  The analysis is run on all significant genes found by DESeq2 and DEXSeq individually.
-  I.e., two runs of fora() are executed and subsequently joined into a single object.
-  You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb()}} to create a list of gene_sets.
+paired_ora uses \code{\link[fgsea:fora]{fora()}} to run the
+over-representation analysis.
+First the aggregated pvalues are adjusted using the
+Benjamini & Hochberg method.
+The analysis is run on all significant genes found by
+DESeq2 and DEXSeq individually.
+I.e., two runs of fora() are executed and subsequently
+joined into a single object.
+You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb()}}
+to create a list of gene_sets.
 }
 \examples{
 data(example_diff_result)

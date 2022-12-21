@@ -5,33 +5,36 @@
 \title{Run paired DESeq2 and DEXSeq analyses}
 \usage{
 paired_diff(
-  object,
-  group_col,
-  sample_col,
-  baseline,
-  case,
-  metadata = NULL,
-  covariates = NULL,
-  experiment_title = NULL,
-  store_results = TRUE,
-  run_sva = TRUE,
-  prefilter = 10,
-  test = "LRT",
-  fit_type = "local",
-  quiet = FALSE,
-  parallel = FALSE,
-  BPPARAM = BiocParallel::bpparam(),
-  deseq_only = FALSE,
-  custom_design = FALSE,
-  ...
-)
+    object,
+    group_col,
+    sample_col,
+    baseline,
+    case,
+    metadata = NULL,
+    covariates = NULL,
+    experiment_title = NULL,
+    store_results = TRUE,
+    run_sva = TRUE,
+    prefilter = 10,
+    test = "LRT",
+    fit_type = "local",
+    quiet = FALSE,
+    parallel = FALSE,
+    BPPARAM = BiocParallel::bpparam(),
+    deseq_only = FALSE,
+    custom_design = FALSE,
+    ...
+    )
 }
 \arguments{
-\item{object}{A data object of the types matrix, SummarizedExperiment, or DESeqDataSet. If a matrix is used, please also provide metadata.}
+\item{object}{A data object of the types matrix, SummarizedExperiment,
+or DESeqDataSet. If a matrix is used, please also provide metadata.}
 
-\item{group_col}{The metadata column specifying the what group each sample is associated with}
+\item{group_col}{The metadata column specifying the what group each
+sample is associated with}
 
-\item{sample_col}{The column in the metadata that specifies the sample IDs (should correspond to column names in tx_count)}
+\item{sample_col}{The column in the metadata that specifies the sample IDs
+(should correspond to column names in tx_count)}
 
 \item{baseline}{Group value of baseline samples}
 
@@ -39,37 +42,52 @@ paired_diff(
 
 \item{metadata}{(Default: NULL) A metadata file or data frame object}
 
-\item{covariates}{Name of column(s) in the metadata that indicate(s) covariates. E.g., c("gender", "tissue_type")}
+\item{covariates}{Name of column(s) in the metadata that indicate(s)
+covariates. E.g., c("gender", "tissue_type")}
 
-\item{experiment_title}{Title of your experiment. Your results will be stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
+\item{experiment_title}{Title of your experiment. Your results will be
+stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
 
-\item{store_results}{(Default: TRUE) A logical indicating if results should be stored in the folder "results/".}
+\item{store_results}{(Default: TRUE) A logical indicating if results should
+be stored in the folder "results/".}
 
 \item{run_sva}{(Default: TRUE) A logical stating whether SVA should be run.}
 
-\item{prefilter}{(Default: 10) The prefilter threshold, where rowSums lower than the prefilter threshold will be removed from the count matrix. Set to 0 or FALSE to prevent prefiltering}
+\item{prefilter}{(Default: 10) The prefilter threshold, where rowSums lower
+than the prefilter threshold will be removed from the count matrix.
+Set to 0 or FALSE to prevent prefiltering}
 
 \item{test}{either "Wald" or "LRT", which will then use either 
 Wald significance tests (defined by \code{\link[DESeq2]{nbinomWaldTest}}),
 or the likelihood ratio test on the difference in deviance between a
 full and reduced model formula (defined by \code{\link[DESeq2]{nbinomLRT}})}
 
-\item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or "glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
+\item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or
+"glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 
-\item{parallel}{(Default: FALSE) If FALSE, no parallelization. If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.}
+\item{parallel}{(Default: FALSE) If FALSE, no parallelization.
+If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.}
 
-\item{BPPARAM}{(Default: \code{BiocParallel::bpparam()}) An optional parameter object passed internally to bplapply when parallel = TRUE.
-If not specified, the parameters last registered with register will be used.}
+\item{BPPARAM}{(Default: \code{BiocParallel::bpparam()}) An optional
+parameter object passed internally to bplapply when parallel = TRUE.
+If not specified, the parameters last registered with registerwill be used.}
 
-\item{deseq_only}{(Default: FALSE) A logical that indicates whether to only run DESeq2 analysis. Not generally recommended.
+\item{deseq_only}{(Default: FALSE) A logical that indicates whether to only
+run DESeq2 analysis. Not generally recommended.
 The setting was implemented to make the SVA impact analysis easier}
 
-\item{custom_design}{(Default: FALSE) A logical or formula. Can be used to apply a custom desing formula for the analysis. Generally not recommended, 
-as pairedGSEA will make its own design formula from the group and covariate columns}
+\item{custom_design}{(Default: FALSE) A logical or formula. Can be used to
+apply a custom desing formula for the analysis. Generally not recommended, 
+as pairedGSEA will make its own design formula
+from the group and covariate columns}
 
-\item{...}{Additional parameters passed to \code{\link[DESeq2:DESeq]{DESeq()}}}
+\item{...}{Additional parameters passed to
+\code{\link[DESeq2:DESeq]{DESeq()}}}
+}
+\value{
+A data.frame of aggregated pvalues
 }
 \description{
 Run paired DESeq2 and DEXSeq analyses
@@ -80,13 +98,13 @@ Run paired DESeq2 and DEXSeq analyses
 data("example_se")
 
 paired_diff(
-  object = example_se,
-  group_col = "group_nr",
-  sample_col = "id",
-  baseline = 1,
-  case = 2,
-  experiment_title = "Example",
-  store_results = FALSE 
+    object = example_se,
+    group_col = "group_nr",
+    sample_col = "id",
+    baseline = 1,
+    case = 2,
+    experiment_title = "Example",
+    store_results = FALSE 
 )
 
 }

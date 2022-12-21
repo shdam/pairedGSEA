@@ -5,18 +5,19 @@
 \title{Scatter plot of Over-Representation Analysis results}
 \usage{
 plot_ora(
-  ora,
-  plotly = FALSE,
-  pattern = NULL,
-  cutoff = 0.05,
-  lines = TRUE,
-  colors = c("darkgray", "purple", "lightblue")
-)
+    ora,
+    plotly = FALSE,
+    pattern = NULL,
+    cutoff = 0.05,
+    lines = TRUE,
+    colors = c("darkgray", "purple", "lightblue")
+    )
 }
 \arguments{
 \item{ora}{Output of \code{\link[pairedGSEA:paired_ora]{paired_ora()}}}
 
-\item{plotly}{(Default: FALSE) Logical on whether to return plot as an interactive plotly plot or a simple ggplot.}
+\item{plotly}{(Default: FALSE) Logical on whether to return plot as an
+interactive plotly plot or a simple ggplot.}
 
 \item{pattern}{Highlight pathways containing a specific regex pattern}
 
@@ -24,7 +25,11 @@ plot_ora(
 
 \item{lines}{(Default: TRUE) Whether to show dashed lines}
 
-\item{colors}{(Default: c("darkgray", "purple", "navy")) Colors to use in plot. The colors are ordered as "Both", "DGS", and "DGE"}
+\item{colors}{(Default: c("darkgray", "purple", "navy"))
+Colors to use in plot. The colors are ordered as "Both", "DGS", and "DGE"}
+}
+\value{
+A ggplot
 }
 \description{
 Scatter plot of Over-Representation Analysis results

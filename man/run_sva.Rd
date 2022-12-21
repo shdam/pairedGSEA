@@ -7,12 +7,19 @@
 run_sva(dds, quiet = FALSE)
 }
 \arguments{
-\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} for more information about the object type.}
+\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} 
+for more information about the object type.}
 
 \item{quiet}{(Default: FALSE) Whether to print messages}
 }
+\value{
+A DESeqDataSet
+}
 \description{
-This internal function runs a surrogate variable analysis on the count matrix in the DESeqDataSet. 
-  The found surrogate variables will then be added to the metadata and the design formula in the DESeqDataSet object to be used in the DGE and DTU analyses.
+This internal function runs a surrogate variable analysis on the
+count matrix in the DESeqDataSet. 
+The found surrogate variables will then be added to the metadata
+and the design formula in the DESeqDataSet object to be used in
+the DGE and DTU analyses.
 }
 \keyword{internal}

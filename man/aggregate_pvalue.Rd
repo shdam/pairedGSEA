@@ -5,13 +5,13 @@
 \title{p-value aggregation to gene level}
 \usage{
 aggregate_pvalue(
-  df,
-  gene = "gene",
-  p = "pvalue",
-  weights = "baseMean",
-  lfc = "lfc",
-  type = "deseq"
-)
+    df,
+    gene = "gene",
+    p = "pvalue",
+    weights = "baseMean",
+    lfc = "lfc",
+    type = "deseq"
+    )
 }
 \arguments{
 \item{df}{A data.frame-type object with pvalues to aggregate}
@@ -20,13 +20,19 @@ aggregate_pvalue(
 
 \item{p}{(Default: "pvalue") The column with p-values}
 
-\item{weights}{(Default: "baseMean") The column to use for weighting the aggregation}
+\item{weights}{(Default: "baseMean") The column to use
+for weighting the aggregation}
 
 \item{lfc}{(Default: "lfc") The column with log2-foldchanges}
 
-\item{type}{(Default: "deseq") Either "deseq" for aggregation of DESeq2 results or "dexseq" for aggregation of DEXSeq results}
+\item{type}{(Default: "deseq") Either "deseq" for aggregation of DESeq2
+results or "dexseq" for aggregation of DEXSeq results}
+}
+\value{
+A data.frame
 }
 \description{
-This internal function aggregates p-values to gene level using Lancaster aggregation.
+This internal function aggregates p-values to gene level using
+Lancaster aggregation.
 }
 \keyword{internal}

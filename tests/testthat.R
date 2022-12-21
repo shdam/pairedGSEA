@@ -8,5 +8,5 @@
 
 library(testthat)
 library(pairedGSEA)
-
+data("example_se", "example_ora_results", "example_diff_result", package = "pairedGSEA")
 test_check("pairedGSEA")

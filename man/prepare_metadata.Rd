@@ -9,18 +9,24 @@ prepare_metadata(metadata, group_col, baseline_case)
 \arguments{
 \item{metadata}{(Default: NULL) A metadata file or data frame object}
 
-\item{group_col}{The metadata column specifying the what group each sample is associated with}
+\item{group_col}{The metadata column specifying the what group each
+sample is associated with}
 
 \item{baseline_case}{A character vector with baseline and case values}
 }
+\value{
+A data.frame
+}
 \description{
-This internal function reads a filepath for a metadata file (or a data.frame object), loads it, 
-  and filters out the rows that do not contain data from the relevant patient group, as defined in the \code{comparison} argument.
+This internal function reads a filepath for a metadata file
+(or a data.frame object), loads it, 
+and filters out the rows that do not contain data from the
+relevant patient group, as defined in the \code{comparison} argument.
 }
 \examples{
 \dontrun{
 metadata <- prepare_metadata(metadata = "path/to/metadata.xlsx",
-  group_col = "group", comparison = "2v1")
+    group_col = "group", comparison = "2v1")
 }
 
 }

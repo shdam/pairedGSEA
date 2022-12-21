@@ -21,8 +21,8 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+    collapse = TRUE,
+    comment = "#>"
 )
 ```
 
@@ -108,7 +108,9 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("pairedGSEA")
 ```
 -->
-<!-- For older versions of R, please refer to the appropriate [Bioconductor release](https://bioconductor.org/about/release-announcements/). -->
+<!-- For older versions of R, please refer to the appropriate
+[Bioconductor release](https://bioconductor.org/about/release-announcements/). 
+-->
 <!-- 
 ```{r installation_github, eval=FALSE}
 if (!require("devtools", quietly = TRUE))
@@ -149,18 +151,18 @@ ggplot2::theme_set(ggplot2::theme_classic(base_size = 20))
 ## Load data
 # In this vignette we will use the included example Summarized Experiment.
 # See ?example_se for more information about the data.
-data(example_se) 
+data("example_se") 
 
 if(FALSE){ # Examples of other data imports
-  # Example of count matrix
-  tx_count <- read.csv("path/to/counts.csv") # Or other load function
-  md_file <- "path/to/metadata.xlsx" # Can also be a .csv file or a data.frame
-  
-  # Example of locally stored DESeqDataSet
-  dds <- readRDS("path/to/dds.RDS")
-  
-  # Example of locally stored SummarizedExperiment
-  se <- readRDS("path/to/se.RDS")
+    # Example of count matrix
+    tx_count <- read.csv("path/to/counts.csv") # Or other load function
+    md_file <- "path/to/metadata.xlsx" # Can also be a .csv file or a data.frame
+    
+    # Example of locally stored DESeqDataSet
+    dds <- readRDS("path/to/dds.RDS")
+    
+    # Example of locally stored SummarizedExperiment
+    se <- readRDS("path/to/se.RDS")
 }
 
 ## Experiment parameters
@@ -187,7 +189,7 @@ SummarizedExperiment::colData(example_se)
 ```{r sample_check}
 # Check that all data samples are in the metadata
 all(colnames(example_se) %in%
-      SummarizedExperiment::colData(example_se)[[sample_col]])
+        SummarizedExperiment::colData(example_se)[[sample_col]])
 
 ```
 
@@ -206,17 +208,17 @@ for further information.
 set.seed(500) # For reproducible results
 
 diff_results <- paired_diff(
-  object = example_se,
-  metadata = NULL, # Use with count matrix or if you want to change it in
-  # the input object
-  group_col = group_col,
-  sample_col = sample_col,
-  baseline = baseline,
-  case = case,
-  experiment_title = experiment_title,
-  store_results = FALSE # Set to TRUE (recommended)  if you want
-  # to store intermediate results, such as the results on transcript level 
-  )
+    object = example_se,
+    metadata = NULL, # Use with count matrix or if you want to change it in
+    # the input object
+    group_col = group_col,
+    sample_col = sample_col,
+    baseline = baseline,
+    case = case,
+    experiment_title = experiment_title,
+    store_results = FALSE # Set to TRUE (recommended)  if you want
+    # to store intermediate results, such as the results on transcript level 
+    )
 
 diff_results
 ```
@@ -246,15 +248,15 @@ the experience. Here, the default settings are showed.
 See `?pairedGSEA::paired_diff` for further details.
 
 ```{r extra_settings, eval=FALSE}
-  covariates = NULL,
-  run_sva = TRUE,
-  prefilter = 10,
-  fit_type = "local",
-  test = "LRT",
-  quiet = FALSE,
-  parallel = TRUE,
-  BPPARAM = BiocParallel::bpparam(),
-  ...
+covariates = NULL,
+run_sva = TRUE,
+prefilter = 10,
+fit_type = "local",
+test = "LRT",
+quiet = FALSE,
+parallel = TRUE,
+BPPARAM = BiocParallel::bpparam(),
+...
 ```
 
 To highlight some examples of use:
@@ -299,17 +301,17 @@ The inbuilt ORA function is called `paired_ora` and is run as follows
 ```{r paied_ora}
 # Define gene sets in your preferred way
 gene_sets <- pairedGSEA::prepare_msigdb(
-  species = "Homo sapiens", 
-  category = "C5", 
-  gene_id_type = "ensembl_gene"
-  )
+    species = "Homo sapiens", 
+    category = "C5", 
+    gene_id_type = "ensembl_gene"
+    )
 
 ora <- paired_ora(
-  paired_diff_result = diff_results,
-  gene_sets = gene_sets,
-  experiment_title = NULL # experiment_title - if not NULL,
-  # the results will be stored in an RDS object in the 'results' folder
-  )
+    paired_diff_result = diff_results,
+    gene_sets = gene_sets,
+    experiment_title = NULL # experiment_title - if not NULL,
+    # the results will be stored in an RDS object in the 'results' folder
+    )
 
 ora
 ```
@@ -318,9 +320,9 @@ ora
 ## Additional parameters
 
 ```{r ora_settings, eval=FALSE}
-  cutoff = 0.05,
-  min_size = 25,
-  quiet = FALSE
+cutoff = 0.05,
+min_size = 25,
+quiet = FALSE
 ```
 
 Please investigate the returned object to see the column names and what
@@ -344,12 +346,12 @@ based on a regular expression for gene sets of interest.
 ```{r scatter}
 # Scatter plot function with default settings
 plot_ora(
-  ora,
-  plotly = FALSE,
-  pattern = "Telomer", # Identify all gene sets about telomeres
-  cutoff = 0.05, # Only include significant gene sets
-  lines = TRUE # Guide lines
-  )
+    ora,
+    plotly = FALSE,
+    pattern = "Telomer", # Identify all gene sets about telomeres
+    cutoff = 0.05, # Only include significant gene sets
+    lines = TRUE # Guide lines
+    )
 
 ```
 

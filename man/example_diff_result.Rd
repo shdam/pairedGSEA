@@ -5,12 +5,13 @@
 \alias{example_diff_result}
 \title{Output of running paired_diff on example_se.}
 \format{
-An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 954 rows and 7 columns.
+A data.frame with 954 rows and 7 columns.
 }
 \usage{
-example_diff_result
+data(example_diff_result)
 }
 \description{
-This example result is used primarily to do package tests and for function man pages
+This example result is used primarily to do package tests
+and for function man pages
 }
 \keyword{datasets}

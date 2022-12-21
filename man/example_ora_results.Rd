@@ -3,14 +3,16 @@
 \docType{data}
 \name{example_ora_results}
 \alias{example_ora_results}
-\title{Output of running paired_ora on example_diff_result and gene sets extracted from MSigDB}
+\title{Output of running paired_ora on example_diff_result
+and gene sets extracted from MSigDB}
 \format{
-An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 559 rows and 18 columns.
+A data.frame with 559 rows and 18 columns.
 }
 \usage{
-example_ora_results
+data(example_ora_results)
 }
 \description{
-This example result is used primarily to do package tests and for function man pages.
+This example result is used primarily to do package tests
+and for function man pages.
 }
 \keyword{datasets}

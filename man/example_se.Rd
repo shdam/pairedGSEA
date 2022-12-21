@@ -7,19 +7,20 @@
 \format{
 A SummarizedExperiment
 \describe{
-  \item{assay}{Count matrix with 5611 transcripts and 6 samples}
-  \item{colData}{The metadata associated with the count matrix}
+    \item{assay}{Count matrix with 5611 transcripts and 6 samples}
+    \item{colData}{The metadata associated with the count matrix}
 }
 }
 \source{
 \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE61220}
 }
 \usage{
-example_se
+data(example_se)
 }
 \description{
 The subset is used in the vignettes and function man pages.
-  The subset was created by extracting genes belonging to Telomere-related gene sets
-  and randomly selecting 900 other genes from the original dataset.
+The subset was created by extracting genes belonging to
+Telomere-related gene sets and randomly selecting
+900 other genes from the original dataset.
 }
 \keyword{datasets}

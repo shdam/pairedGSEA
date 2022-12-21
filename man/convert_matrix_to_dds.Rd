@@ -11,7 +11,11 @@ convert_matrix_to_dds(tx_count, metadata, design)
 
 \item{metadata}{(Default: NULL) A metadata file or data frame object}
 }
+\value{
+A DESeqDataSet
+}
 \description{
-This internal function converts a matrix and metadata object into a DESeqDataSet, using the group_col as the basic design.
+This internal function converts a matrix and metadata object into a
+DESeqDataSet, using the group_col as the basic design.
 }
 \keyword{internal}
