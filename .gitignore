@@ -3,14 +3,5 @@
 .Rdata
 .httr-oauth
 *.DS_Store
-results
-inst/doc
-materials
-Meta
-metadata
-doc
 codecov
-dev
 figs
-/doc/
-/Meta/

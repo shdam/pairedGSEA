@@ -1,5 +1,21 @@
 #' Run paired DESeq2 and DEXSeq analyses
 #' 
+#' With paired_diff you can run a paired differential gene expression and
+#' splicing analysis. The function expects a counts matrix or a
+#' SummarizedExperiment or DESeqDataSet object as input.
+#' A preliminary prefiltering step is performed to remove genes with a summed 
+#' count lower than the provided threshold. Likewise, genes with counts in 
+#' only one sample are removed. This step is mostly to speed up differential 
+#' analyses, as DESeq2 will do a stricter filtering.
+#' Surrogate Variable Analysis is recommended to allow the analyses to take
+#' batch effects etc. into account.
+#' After the two differential analyses, the transcript-level p-values will be
+#' aggregated to gene-level to allow subsequent Gene-Set Enrichment Analysis.
+#' Transcript-level results can be extracted by setting
+#' \code{store_results = TRUE}.
+#' 
+#' 
+#' 
 #' @inheritParams DESeq2::DESeq
 #' @param object A data object of the types matrix, SummarizedExperiment,
 #' or DESeqDataSet. If a matrix is used, please also provide metadata.
@@ -161,6 +177,11 @@ paired_diff <- function(
     stopifnot(
         "Please ensure that the sample IDs in the metadata matches the
         column names of the count matrix." = nrow(metadata) > 0)
+    
+    ## Check for presence of undesired characters
+    if(any(stringr::str_detect(metadata[[sample_col]], "[- ]")))
+        message("OBS! Some or all sample names contain a '-' or ' ', ",
+                "which will cause downstream methods to throw warnings.")
 
     ## Check sample_col is in metadata
     stopifnot(

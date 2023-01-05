@@ -161,10 +161,11 @@ paired_ora <- function(
 prepare_msigdb <- function(
         gene_id_type = "ensembl_gene",
         species = "Homo sapiens", 
-        category = "C5"){
+        category = "C5",
+        subcategory = NULL){
     check_missing_package("msigdbr")
 
-    gene_sets <- msigdbr::msigdbr(species = species, category = category)
+    gene_sets <- msigdbr::msigdbr(species = species, category = category, subcategory = subcategory)
     # Split dataframe based on gene set names
     gene_sets <- gene_sets %>% 
         base::split(x = .[[gene_id_type]], f = .$gs_name)
