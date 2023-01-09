@@ -64,9 +64,9 @@ plot_ora <- function(
     dplyr::mutate( 
         # Color dots based on which analysis found the pathway enriched
         plot_color = dplyr::case_when(
-            padj_dexseq < 0.05 & padj_deseq < 0.05 ~ "Both",
-            padj_dexseq < 0.05 ~ "Only Splicing",
-            padj_deseq < 0.05 ~ "Only Expression",
+            padj_dexseq < cutoff & padj_deseq < cutoff ~ "Both",
+            padj_dexseq < cutoff ~ "Only Splicing",
+            padj_deseq < cutoff ~ "Only Expression",
             TRUE ~ "NA"
             ),
         plot_color = factor(
