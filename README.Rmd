@@ -39,7 +39,7 @@ A preprint on pairedGSEA is available [here](https://doi.org/10.1101/2022.08.29.
 # devtools::install_bioc(c("DESeq2", "DEXSeq", "fgsea", "SummarizedExperiment", "S4Vectors", "sva", "BiocParallel"))
 
 # Install pairedGSEA
-devtools::install_github("shdam/pairedGSEA")
+devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
 
 ```
 
@@ -66,8 +66,8 @@ Here is a quick runthrough of the functions:
 <br>
 Load example data.
 ```{r data}
-library("pairedGSEA")
 suppressPackageStartupMessages(library("SummarizedExperiment"))
+library("pairedGSEA")
 
 data("example_se")
 example_se
@@ -94,7 +94,11 @@ Over-representation analysis of results
 
 ```{r ora}
 # Define gene sets in your preferred way
-gene_sets <- pairedGSEA::prepare_msigdb(species = "Homo sapiens", category = "C5", gene_id_type = "ensembl_gene")
+gene_sets <- pairedGSEA::prepare_msigdb(
+    species = "Homo sapiens",
+    category = "C5",
+    gene_id_type = "ensembl_gene"
+    )
 
 ora <- paired_ora(
   paired_diff_result = diff_results,

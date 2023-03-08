@@ -13,7 +13,7 @@ test_that("paired_diff works", {
   expect_s3_class(
     diff_results , "data.frame")
   expect_true(
-    all(c("padj_dexseq", "padj_deseq") %in% colnames(diff_results)))
+    all(c("padj_splicing", "padj_expression") %in% colnames(diff_results)))
   expect_gt(
     nrow(diff_results), 0)
 })
@@ -28,6 +28,14 @@ test_that("Error checks in paired_diff",{
                 experiment_title = "Example",
                 store_results = FALSE)
   )
+    expect_error(
+        paired_diff(example_se,
+                    group_col = "group_nr",
+                    sample_col = "id",
+                    baseline = 1,
+                    case = 4,
+                    store_results = FALSE)
+    )
   expect_error(
     paired_diff(example_se,
                 group_col = "group_nr",

@@ -21,7 +21,7 @@
 #' @param experiment_title Title of your experiment. Your results will be
 #' stored in paste0("results/", experiment_title, "_fora.RDS").
 #' @param quiet (Default: FALSE) Whether to print messages
-#' @param deseq_only (Default: FALSE) A logical that indicates whether
+#' @param expression_only (Default: FALSE) A logical that indicates whether
 #' to only run DESeq2 analysis. Not generally recommended.
 #' @family paired
 #' @export 
@@ -33,7 +33,7 @@
 #'     cutoff = 0.05,
 #'     min_size = 25,
 #'     experiment_title = NULL,
-#'     deseq_only = FALSE,
+#'     expression_only = FALSE,
 #'     quiet = FALSE
 #'     )
 #' @examples 
@@ -48,75 +48,78 @@ paired_ora <- function(
         cutoff = 0.05,
         min_size = 25,
         experiment_title = NULL,
-        deseq_only = FALSE,
+        expression_only = FALSE,
         quiet = FALSE){
-
+    
     # Check column names are as expected
-    if(deseq_only) paired_diff_result <- paired_diff_result %>% 
-            dplyr::rename(pvalue_deseq = pvalue, padj_deseq = padj)
-    check_colname(paired_diff_result, "pvalue_deseq", "paired_diff_result")
-    if(!deseq_only) check_colname(
-        paired_diff_result, "pvalue_dexseq", "paired_diff_result")
+    if(expression_only) paired_diff_result <- paired_diff_result %>% 
+            dplyr::rename(pvalue_expression = pvalue, padj_expression = padj)
+    check_colname(paired_diff_result, "pvalue_expression", "paired_diff_result")
+    if(!expression_only) check_colname(
+        paired_diff_result, "pvalue_splicing", "paired_diff_result")
     check_colname(paired_diff_result, "gene", "paired_diff_result")
 
     # Significant genes
     if(!quiet)  message("Identifying differentially expressed genes")
-    genes_deseq <- paired_diff_result %>% 
+    genes_expression <- paired_diff_result %>% 
         dplyr::filter(
-            !is.na(pvalue_deseq) & !is.na(gene), padj_deseq < cutoff) %>%
-        dplyr::arrange(padj_deseq)
+            !is.na(pvalue_expression) & !is.na(gene),
+            padj_expression < cutoff) %>%
+        dplyr::arrange(padj_expression)
 
-    if(!deseq_only){
-        genes_dexseq <- paired_diff_result %>% 
+    if(!expression_only){
+        genes_splicing <- paired_diff_result %>% 
             dplyr::filter(
-                !is.na(pvalue_dexseq) & !is.na(gene), padj_dexseq < cutoff) %>%
-            dplyr::arrange(padj_dexseq)
+                !is.na(pvalue_splicing) & !is.na(gene),
+                padj_splicing < cutoff) %>%
+            dplyr::arrange(padj_splicing)
     }
 
     # fora
     if(!quiet) message("Running over-representation analysis")
     universe <- unique(paired_diff_result$gene)
     ## ORA on DESeq2 results
-    ora_deseq <- fgsea::fora(
-        gene_sets, genes = genes_deseq$gene, 
+    ora_expression <- fgsea::fora(
+        gene_sets, genes = genes_expression$gene, 
         universe = universe, minSize = min_size) %>% 
         dplyr::rename(size_geneset = size) %>% 
         dplyr::mutate(
-            size_genes = nrow(genes_deseq),
+            size_genes = nrow(genes_expression),
             size_universe = length(universe),
             relative_risk =
                 (overlap / size_geneset) / (size_genes / size_universe),
             enrichment_score = log2(relative_risk + 0.06))
-    if(deseq_only){
+    if(expression_only){
         if(!is.null(experiment_title)){
             if(!quiet) message("Storing fora results")
             store_result(
-                ora_deseq, paste0(experiment_title, "_ora.RDS"),
+                ora_expression, paste0(experiment_title, "_ora.RDS"),
                 "ORA on only DESeq2 results", quiet = quiet)
             }
-        return(ora_deseq)
+        return(ora_expression)
         }
 
     ## ORA on DEXSeq results
-    ora_dexseq <- fgsea::fora(
-        gene_sets, genes = genes_dexseq$gene,
+    ora_splicing <- fgsea::fora(
+        gene_sets, genes = genes_splicing$gene,
         universe = universe, minSize = min_size) %>% 
         dplyr::rename(size_geneset = size) %>% 
         dplyr::mutate(
-            size_genes = nrow(genes_dexseq),
+            size_genes = nrow(genes_splicing),
             size_universe = length(universe),
             relative_risk =
                 (overlap / size_geneset) / (size_genes / size_universe),
             enrichment_score = log2(relative_risk + 0.06))
 
     if(!quiet) message("Joining result")
-    ora_joined <- ora_deseq %>% 
+    ora_joined <- ora_expression %>% 
         dplyr::full_join(
-            ora_dexseq,
+            ora_splicing,
             by = c("pathway", "size_geneset", "size_universe"),
-            suffix = c("_deseq", "_dexseq")) %>% 
+            suffix = c("_expression", "_splicing")) %>% 
         dplyr::mutate(
-            enrichment_score_shift = relative_risk_dexseq - relative_risk_deseq,
+            enrichment_score_shift = 
+                relative_risk_splicing - relative_risk_expression,
             enrichment_score_shift = 
                 log2(abs(enrichment_score_shift))*sign(enrichment_score_shift),
             experiment = experiment_title) %>% 
@@ -156,16 +159,22 @@ paired_ora <- function(
 #' prepare_msigdb(
 #'     gene_id_type = "ensembl_gene",
 #'     species = "Homo sapiens",
-#'     category = "C5"
+#'     category = "C5",
+#'     subcategory = NULL
 #'     )
 prepare_msigdb <- function(
         gene_id_type = "ensembl_gene",
         species = "Homo sapiens", 
         category = "C5",
-        subcategory = NULL){
+        subcategory = NULL
+        ){
     check_missing_package("msigdbr")
 
-    gene_sets <- msigdbr::msigdbr(species = species, category = category, subcategory = subcategory)
+    gene_sets <- msigdbr::msigdbr(
+        species = species,
+        category = category,
+        subcategory = subcategory
+        )
     # Split dataframe based on gene set names
     gene_sets <- gene_sets %>% 
         base::split(x = .[[gene_id_type]], f = .$gs_name)

@@ -2,25 +2,29 @@ Package: pairedGSEA
 Title: Paired DGE and DGS analysis for gene set enrichment analysis
 Version: 0.1.0
 Authors@R: c(
-  person(given = "Søren Helweg",
-    family = "Dam",
-    email = "sohdam@dtu.dk",
-    role = c("cre", "aut"),
-    comment = c(ORCID = "0000-0002-9895-0930")),
-  person(given = "Lars Rønn",
-    family = "Olsen",
-    email = "lronn@dtu.dk",
-    role = "aut",
-    comment = c(ORCID = "0000-0002-6725-7850")),
-  person(given = "Kristoffer",
-    family = "Vitting-Seerup",
-    email = "krivi@dtu.dk",
-    role = "aut",
-    comment = c(ORCID = "0000-0002-6450-0608"))
-    )
-Description: pairedGSEA makes it simple to run a paired Differential Gene Expression (DGE) and Differencital Gene Splicing (DGS) analysis.
-  The package allows you to store intermediate results for further investiation, if desired.
-  pairedGSEA comes with a wrapper function for running an Over-Representation Analysis (ORA) and functionalities for plotting the results.
+    person(given = "Søren Helweg",
+        family = "Dam",
+        email = "sohdam@dtu.dk",
+        role = c("cre", "aut"),
+        comment = c(ORCID = "0000-0002-9895-0930")),
+    person(given = "Lars Rønn",
+        family = "Olsen",
+        email = "lronn@dtu.dk",
+        role = "aut",
+        comment = c(ORCID = "0000-0002-6725-7850")),
+    person(given = "Kristoffer",
+        family = "Vitting-Seerup",
+        email = "krivi@dtu.dk",
+        role = "aut",
+        comment = c(ORCID = "0000-0002-6450-0608"))
+        )
+Description: pairedGSEA makes it simple to run a paired Differential
+    Gene Expression (DGE) and Differencital Gene Splicing (DGS) analysis.
+    The package allows you to store intermediate results for further
+    investiation, if desired.
+    pairedGSEA comes with a wrapper function for running an
+    Over-Representation Analysis (ORA) and functionalities for
+    plotting the results.
 License: MIT + file LICENSE
 Imports: 
     DESeq2, DEXSeq,

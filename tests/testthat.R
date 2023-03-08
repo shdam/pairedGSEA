@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
 library(testthat)
-library(pairedGSEA)
+suppressPackageStartupMessages(library("pairedGSEA"))
 data("example_se", "example_ora_results", "example_diff_result", package = "pairedGSEA")
 test_check("pairedGSEA")

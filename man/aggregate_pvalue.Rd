@@ -10,7 +10,7 @@ aggregate_pvalue(
     p = "pvalue",
     weights = "baseMean",
     lfc = "lfc",
-    type = "deseq"
+    type = "expression"
     )
 }
 \arguments{
@@ -25,8 +25,9 @@ for weighting the aggregation}
 
 \item{lfc}{(Default: "lfc") The column with log2-foldchanges}
 
-\item{type}{(Default: "deseq") Either "deseq" for aggregation of DESeq2
-results or "dexseq" for aggregation of DEXSeq results}
+\item{type}{(Default: "expression") 
+Either "expression" for aggregation of
+DESeq2 results or "splicing" for aggregation of DEXSeq results}
 }
 \value{
 A data.frame

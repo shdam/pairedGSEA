@@ -39,7 +39,8 @@
 #' @param store_results (Default: TRUE) A logical indicating if results should
 #' be stored in the folder "results/".
 #' @param quiet (Default: FALSE) Whether to print messages
-#' @param deseq_only (Default: FALSE) A logical that indicates whether to only
+#' @param expression_only (Default: FALSE) 
+#' A logical that indicates whether to only
 #' run DESeq2 analysis. Not generally recommended.
 #' The setting was implemented to make the SVA impact analysis easier
 #' @param custom_design (Default: FALSE) A logical or formula. Can be used to
@@ -74,7 +75,7 @@
 #'     quiet = FALSE,
 #'     parallel = FALSE,
 #'     BPPARAM = BiocParallel::bpparam(),
-#'     deseq_only = FALSE,
+#'     expression_only = FALSE,
 #'     custom_design = FALSE,
 #'     ...
 #'     )
@@ -111,10 +112,11 @@ paired_diff <- function(
         quiet = FALSE,
         parallel = FALSE,
         BPPARAM = BiocParallel::bpparam(),
-        deseq_only = FALSE,
+        expression_only = FALSE,
         custom_design = FALSE,
         ...){
 
+    ## Initial error checks
     stopifnot(
         "Please provide a valid data type: matrix, SummarizedExperiment,
         DESeqDataSet" = any(class(object) %in% c(
@@ -203,7 +205,7 @@ paired_diff <- function(
 
     stopifnot(
         "Please ensure the rownames have the format 'gene:transcript'" =
-            (deseq_only | (!deseq_only & stringr::str_detect(
+            (expression_only | (!expression_only & stringr::str_detect(
                 rownames(object)[1], ":"))))
 
     # Rename object variable to dds
@@ -218,7 +220,7 @@ paired_diff <- function(
     }
 
     # Run DESeq2
-    deseq_results <- run_deseq(
+    expression_results <- run_deseq(
         dds,
         group_col = group_col,
         baseline = baseline,
@@ -234,20 +236,21 @@ paired_diff <- function(
         )
 
     ## If only DGE is requested (used for SVA evaluations in the paper)
-    if(deseq_only){
-        deseq_aggregated <- aggregate_pvalue(
-            deseq_results, gene = "gene", weights = "baseMean",
-            lfc = "lfc", type = "deseq") %>% 
+    if(expression_only){
+        expression_aggregated <- aggregate_pvalue(
+            expression_results, gene = "gene", weights = "baseMean",
+            lfc = "lfc", type = "expression") %>% 
             dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"))
 
     if(store_results) store_result(
-        deseq_aggregated, paste0(experiment_title, "_aggregated_pvals.RDS"),
+        expression_aggregated, paste0(experiment_title,
+                                      "_aggregated_pvals.RDS"),
         "gene pvalue aggregation")
-    return(deseq_aggregated)
+    return(expression_aggregated)
     }
 
     # Run DEXSeq
-    dexseq_results <- run_dexseq(
+    splicing_results <- run_dexseq(
         dds,
         group_col = group_col,
         baseline = baseline,
@@ -267,18 +270,18 @@ paired_diff <- function(
         message("Aggregating p values")
     }
 
-    dexseq_aggregated <- aggregate_pvalue(
-        dexseq_results, gene = "groupID", weights = "exonBaseMean",
-        type = "dexseq")
-    deseq_aggregated <- aggregate_pvalue(
-        deseq_results, gene = "gene", weights = "baseMean",
-        type = "deseq")
+    splicing_aggregated <- aggregate_pvalue(
+        splicing_results, gene = "groupID", weights = "exonBaseMean",
+        type = "splicing")
+    expression_aggregated <- aggregate_pvalue(
+        expression_results, gene = "gene", weights = "baseMean",
+        type = "expression")
 
     aggregated_pvals <- dplyr::full_join(
-        deseq_aggregated,
-        dexseq_aggregated,
+        expression_aggregated,
+        splicing_aggregated,
         by = "gene",
-        suffix = c("_deseq", "_dexseq"))
+        suffix = c("_expression", "_splicing"))
 
 
     if(store_results) store_result(
@@ -329,6 +332,10 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
     # Remove irrelevant groups
     metadata <- metadata[
         as.character(metadata[[group_col]]) %in% baseline_case,]
+    
+    # Check both baseline and case is in metadata
+    stopifnot("Check for misspellings in baseline or case IDs." = 
+                  all(baseline_case %in% metadata[[group_col]]))
 
     # Check metadata content
     if(nrow(metadata) == 0) stop(
@@ -412,7 +419,7 @@ run_sva <- function(dds, quiet = FALSE){
     cors <- stats::na.omit(cors)
     svs <- svs[, rownames(cors)]
 
-    if(!quiet) message("Redefining DESeq design formula\n")
+    if(!quiet) message("Redefining DESeq2 design formula\n")
     # Add svs to dds colData
     SummarizedExperiment::colData(dds) <- cbind(metadata, svs)
     # Redefine design formula to include svs
@@ -493,7 +500,7 @@ run_deseq <- function(
 
 
     if(!quiet) message("Extracting results")
-    deseq_results <- DESeq2::results(
+    expression_results <- DESeq2::results(
         dds,
         contrast = c(group_col, paste(c(case, baseline))),
         parallel = parallel,
@@ -502,17 +509,18 @@ run_deseq <- function(
     # Store result extraction
     if(store_results) {
         if(store_results) store_result(
-            deseq_results, paste0(experiment_title, "_deseqres.RDS"),
-            "DESeq2 results", quiet = quiet)
+            expression_results,
+            paste0(experiment_title, "_expression_results.RDS"),
+            "differential expression results", quiet = quiet)
     }
 
     # Convert result to tibble
-    deseq_results <- deseq_results %>% 
+    expression_results <- expression_results %>% 
         tibble::as_tibble(rownames = "gene_tx") %>% 
         tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
         dplyr::rename(lfc = log2FoldChange)
 
-    return(deseq_results)
+    return(expression_results)
 }
 
 
@@ -612,7 +620,7 @@ run_dexseq <- function(
     ### Run DEXSeq
     if(!quiet) message("\nRunning DEXSeq -- This might take a while")
     if(!parallel) BiocParallel::register(BiocParallel::SerialParam())
-    dexseq_results <- DEXSeq::DEXSeq(
+    splicing_results <- DEXSeq::DEXSeq(
         dxd,
         reducedModel = reduced_formula,
         BPPARAM = BPPARAM,
@@ -620,15 +628,15 @@ run_dexseq <- function(
 
     # Store result extraction
     if(store_results) store_result(
-        dexseq_results, paste0(experiment_title, "_dexseqres.RDS"),
-        "DEXSeq results", quiet = quiet)
+        splicing_results, paste0(experiment_title, "_splicing_results.RDS"),
+        "differnetial splicing results", quiet = quiet)
 
     # Rename LFC column for consistency and human-readability
-    dexseq_results <- dexseq_results %>% 
+    splicing_results <- splicing_results %>% 
         tibble::as_tibble() %>% 
         dplyr::rename(lfc = log2fold_C_B)
 
-    return(dexseq_results)
+    return(splicing_results)
 }
 
 
@@ -643,8 +651,9 @@ run_dexseq <- function(
 #' @param gene (Default: "gene") The column with gene names
 #' @param p (Default: "pvalue") The column with p-values
 #' @param lfc (Default: "lfc") The column with log2-foldchanges
-#' @param type (Default: "deseq") Either "deseq" for aggregation of DESeq2
-#' results or "dexseq" for aggregation of DEXSeq results
+#' @param type (Default: "expression") 
+#' Either "expression" for aggregation of
+#' DESeq2 results or "splicing" for aggregation of DEXSeq results
 #' @param weights (Default: "baseMean") The column to use
 #' for weighting the aggregation
 #' @keywords internal
@@ -655,7 +664,7 @@ run_dexseq <- function(
 #'     p = "pvalue",
 #'     weights = "baseMean",
 #'     lfc = "lfc",
-#'     type = "deseq"
+#'     type = "expression"
 #'     )
 #' @return A data.frame
 aggregate_pvalue <- function (
@@ -664,7 +673,7 @@ aggregate_pvalue <- function (
         p = "pvalue",
         weights = "baseMean",
         lfc = "lfc",
-        type = "deseq"){
+        type = "expression"){
     stopifnot("df is not a data.frame-type object" = is(df, "data.frame"))
     stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
 
@@ -684,11 +693,11 @@ aggregate_pvalue <- function (
         dplyr::group_by(gene) %>% 
         # p value aggregation
         purrr::when(
-            type == "dexseq" ~ 
+            type == "splicing" ~ 
                 dplyr::summarise(
                     ., lfc = lfc[which(pvalue == min(pvalue))][[1]],
                     pvalue = aggregation::lancaster(pvalue, weights)),
-            type == "deseq" ~ dplyr::summarise(
+            type == "expression" ~ dplyr::summarise(
                 ., lfc = weighted.mean(lfc, weights),
                 pvalue = aggregation::lancaster(pvalue, weights))) %>% 
         # Adjust p values and remove zeros to prevent downstream issues

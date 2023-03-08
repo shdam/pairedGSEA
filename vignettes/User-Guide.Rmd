@@ -235,8 +235,9 @@ Use the latter with a grain of salt.
 From here, feel free to analyse the gene-level results using your
 preferred method.
 If you set `store_results = TRUE`, you could extract the transcript
-level results found in the `results` folder under the names "\*_deseqres.RDS"
-and "\*_dexseqres.RDS" for the DGE and DGS analysis, respectively
+level results found in the `results` folder under the names
+"\*_expression_results.RDS"
+and "\*_splicing_results.RDS" for the DGE and DGS analysis, respectively
 (The \* corresponds to the provided experiment title).
 
 

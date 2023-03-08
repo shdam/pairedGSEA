@@ -7,7 +7,8 @@
 prepare_msigdb(
     gene_id_type = "ensembl_gene",
     species = "Homo sapiens",
-    category = "C5"
+    category = "C5",
+    subcategory = NULL
     )
 }
 \arguments{
@@ -17,6 +18,8 @@ The IDs should match the gene IDs from your DE analysis.}
 \item{species}{Species name, such as Homo sapiens or Mus musculus.}
 
 \item{category}{MSigDB collection abbreviation, such as H or C1.}
+
+\item{subcategory}{MSigDB sub-collection abbreviation, such as CGP or BP.}
 }
 \value{
 A data.frame

@@ -1,6 +1,6 @@
 ## code to prepare `example_diff_result` dataset goes here
 
-library(pairedGSEA)
+library("pairedGSEA")
 set.seed(500) # For reproducible results
 data("example_se", package = "pairedGSEA")
 example_diff_result <- diff_results <- paired_diff(

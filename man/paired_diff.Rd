@@ -21,7 +21,7 @@ paired_diff(
     quiet = FALSE,
     parallel = FALSE,
     BPPARAM = BiocParallel::bpparam(),
-    deseq_only = FALSE,
+    expression_only = FALSE,
     custom_design = FALSE,
     ...
     )
@@ -74,7 +74,8 @@ If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.}
 parameter object passed internally to bplapply when parallel = TRUE.
 If not specified, the parameters last registered with registerwill be used.}
 
-\item{deseq_only}{(Default: FALSE) A logical that indicates whether to only
+\item{expression_only}{(Default: FALSE) 
+A logical that indicates whether to only
 run DESeq2 analysis. Not generally recommended.
 The setting was implemented to make the SVA impact analysis easier}
 
@@ -90,7 +91,19 @@ from the group and covariate columns}
 A data.frame of aggregated pvalues
 }
 \description{
-Run paired DESeq2 and DEXSeq analyses
+With paired_diff you can run a paired differential gene expression and
+splicing analysis. The function expects a counts matrix or a
+SummarizedExperiment or DESeqDataSet object as input.
+A preliminary prefiltering step is performed to remove genes with a summed 
+count lower than the provided threshold. Likewise, genes with counts in 
+only one sample are removed. This step is mostly to speed up differential 
+analyses, as DESeq2 will do a stricter filtering.
+Surrogate Variable Analysis is recommended to allow the analyses to take
+batch effects etc. into account.
+After the two differential analyses, the transcript-level p-values will be
+aggregated to gene-level to allow subsequent Gene-Set Enrichment Analysis.
+Transcript-level results can be extracted by setting
+\code{store_results = TRUE}.
 }
 \examples{
 

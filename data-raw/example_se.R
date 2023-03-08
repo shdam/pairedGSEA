@@ -1,9 +1,9 @@
 ## code to prepare `example_se` dataset goes here
 pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
 source("tmp/run_experiment.R")
-library(magrittr)
-library(dplyr)
-library(stringr)
+library("magrittr")
+library("dplyr")
+library("stringr")
 
 example_experiment <- "77_GSE61220_TNF Treatment 12hrs"
 
