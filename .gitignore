@@ -2,7 +2,11 @@
 .Rhistory
 .Rdata
 .httr-oauth
-*.DS_Store
+.DS_Store
+.git/objects/.DS_Store
+doc/.DS_Store
+vignettes/.DS_Store
+pairedGSEA.Rproj
 codecov
 figs
 /doc/
