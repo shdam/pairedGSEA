@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 #  # "S4Vectors", "sva", "BiocParallel"))
 #  
 #  # Install pairedGSEA
-#  devtools::install_github("shdam/pairedGSEA")
+#  devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
 #  
 
 ## ----setup--------------------------------------------------------------------

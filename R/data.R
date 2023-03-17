@@ -4,7 +4,7 @@
 #' The subset was created by extracting genes belonging to
 #' Telomere-related gene sets and randomly selecting
 #' 900 other genes from the original dataset.
-#' @usage data(example_se)
+#' @usage data("example_se")
 #' @format A SummarizedExperiment
 #' \describe{
 #'     \item{assay}{Count matrix with 5611 transcripts and 6 samples}
@@ -18,7 +18,7 @@
 #' This example result is used primarily to do package tests
 #' and for function man pages
 #' @format A data.frame with 954 rows and 7 columns.
-#' @usage data(example_diff_result)
+#' @usage data("example_diff_result")
 "example_diff_result"
 
 #' Output of running paired_ora on example_diff_result
@@ -27,5 +27,13 @@
 #' This example result is used primarily to do package tests
 #' and for function man pages.
 #' @format A data.frame with 559 rows and 18 columns.
-#' @usage data(example_ora_results)
+#' @usage data("example_ora_results")
 "example_ora_results"
+
+#' MSigDB gene sets from humans, category C5 with ensemble gene IDs
+#' 
+#' This example gene set list is used primarily to do package tests
+#' and for function man pages.
+#' @format A list of 77 human gene sets
+#' @usage data("example_gene_sets")
+"example_gene_sets"

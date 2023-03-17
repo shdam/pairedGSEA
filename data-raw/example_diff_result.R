@@ -4,7 +4,7 @@ library("pairedGSEA")
 set.seed(500) # For reproducible results
 data("example_se", package = "pairedGSEA")
 example_diff_result <- diff_results <- paired_diff(
-  object = pairedGSEA::example_se,
+  object = example_se,
   group_col = "group_nr",
   sample_col = "id",
   baseline = 1,

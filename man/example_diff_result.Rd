@@ -8,7 +8,7 @@
 A data.frame with 954 rows and 7 columns.
 }
 \usage{
-data(example_diff_result)
+data("example_diff_result")
 }
 \description{
 This example result is used primarily to do package tests

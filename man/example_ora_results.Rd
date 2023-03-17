@@ -9,7 +9,7 @@ and gene sets extracted from MSigDB}
 A data.frame with 559 rows and 18 columns.
 }
 \usage{
-data(example_ora_results)
+data("example_ora_results")
 }
 \description{
 This example result is used primarily to do package tests

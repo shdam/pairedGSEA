@@ -1,27 +1,21 @@
 ## code to prepare `example_se` dataset goes here
-pkgload::load_all(path = "/home/projects/shd_pairedGSEA")
-source("tmp/run_experiment.R")
+pkgload::load_all(".")
 library("magrittr")
 library("dplyr")
 library("stringr")
 
-example_experiment <- "77_GSE61220_TNF Treatment 12hrs"
+experiment_title <- "77_GSE61220_TNF Treatment 12hrs"
 
-# Extract experiment genes
-concatenated_genes <- readRDS("results/concatenated_genes.RDS")
-experiment_data <- concatenated_genes %>% 
-  filter(experiment == example_experiment)
-rm(concatenated_genes)
+# Download results from Zenodo
+url <- "https://zenodo.org/record/7032090/files/77_GSE61220_TNF%20Treatment%2012hrs.RDS?download=1"
+download.file(url, destfile = "example_experiment.rds", method = "curl")
 
-# Extract experiment gene sets
-ora_all <- readRDS("results/ora_all.RDS")
+experiment <- readRDS("example_experiment.rds")
+system2("rm", "example_experiment.rds")
 
-experiment_ora <- ora_all %>% 
-  filter(experiment == example_experiment)
-rm(ora_all)
 
 # Identify "Telomer" gene sets and extract related genes
-experiment_ora_small <- experiment_ora %>% 
+experiment_ora_small <- experiment$gene_sets %>% 
   filter(str_detect(tolower(pathway), tolower("Telomer")))
 
 interesting_genes <- unlist(experiment_ora_small$overlapGenes_dexseq) %>% 
@@ -29,23 +23,20 @@ interesting_genes <- unlist(experiment_ora_small$overlapGenes_dexseq) %>%
 
 # Add 900 random genes
 set.seed(900)
-random_genes <- experiment_data %>% 
+random_genes <- experiment$genes %>% 
   slice_sample(n = 900) %>% 
   pull(gene) %>% 
   c(interesting_genes) %>% 
   unique()
 
 
-# Prepare count matrix
+# Prepare count matrix from ARCHS4 database
 archs4db <- "/home/databases/archs4/v11/human_transcript_v11_counts.h5"
 gtf <- readRDS("gtfextract.rds")
 gtf <- tibble::tibble(gene = gtf$gene, transcript = gtf$transcript)
 
-md_file <- "metadata/77_GSE61220.xlsx"
-metadata <- readxl::read_excel(md_file)
-
 tx_count <- prepare_tx_count(
-  metadata = metadata,
+  metadata = experiment$metadata,
   gtf = gtf,
   archs4db = archs4db,
   group_col = "group_nr",
@@ -59,7 +50,7 @@ tx_count_example <- tx_count[which((str_split(rownames(tx_count), pattern = ":",
 # Combine count matrix and metadata in Summarized Experiment
 example_data <- SummarizedExperiment::SummarizedExperiment(
   assays = list("counts" = tx_count_example),
-  colData = metadata %>% 
+  colData = experiment$metadata %>% 
     dplyr::filter(id %in% colnames(tx_count_example)) %>% 
     dplyr::mutate(group_nr = factor(group_nr)) %>% 
     dplyr::select(study, id, source, final_description, group_nr) %>% 

@@ -15,7 +15,7 @@ A SummarizedExperiment
 \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE61220}
 }
 \usage{
-data(example_se)
+data("example_se")
 }
 \description{
 The subset is used in the vignettes and function man pages.
