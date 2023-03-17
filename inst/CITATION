@@ -1,0 +1,18 @@
+bibentry(
+    bibtype = "Article",
+    title = "Expression and Splicing Mediate Distinct Biological Signals",
+    author = personList(
+        as.person("S\u{00F8}ren Helweg Dam"),
+        as.person("Lars R\u{00F8}nn Olsen"),
+        as.person("Kristoffer Vitting-Seerup")
+        ),
+    year = 2023,
+    journal = "BioRxiv",
+    doi = "10.1101/2022.08.29.505720",
+    textVersion = 
+    paste(
+        "Dam, S.H., Olsen, L.R., Vitting-Seerup, K.", 
+        "Expression and Splicing Mediate Distinct Biological Signals",
+        "BioRxiv (2023)"
+        )
+    )

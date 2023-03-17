@@ -1,15 +1,10 @@
 ---
 title: "User Guide"
 output: 
-  # rmarkdown::html_vignette:
   BiocStyle::html_document:
     toc: true
     toc_depth: 2
     highlight: pygments
-  # html_document:
-  #   toc: true
-  #   toc_float: true
-  #   highlight: kate
 author: "Søren Helweg Dam"
 date: "Last updated: `r format(Sys.Date(), '%Y.%m.%d')`"
 bibliography: library.bib
@@ -26,41 +21,6 @@ knitr::opts_chunk$set(
 )
 ```
 
-
-<!-- <style type="text/css"> -->
-
-<!-- h1.title { -->
-<!--   color: #004d66; -->
-<!-- } -->
-<!-- h4.author { -->
-<!--   font-style: italic; -->
-<!--   font-size: 18px; -->
-<!--   color: #008cba; -->
-<!-- } -->
-<!-- h4.date { -->
-<!--   font-style: italic; -->
-<!--   font-size: 16px; -->
-<!--   color: #008cba; -->
-<!-- } -->
-<!-- h1 { /* Header 1 */ -->
-<!--   color: #004d66; -->
-<!--   font-size: 28px; -->
-<!-- } -->
-<!-- h2 { /* Header 2 */ -->
-<!--   color: #004d66; -->
-<!--   font-size: 22px; -->
-<!-- } -->
-<!-- h3 { /* Header 3 */ -->
-<!--   color: #004d66; -->
-<!--   font-size: 16px; -->
-<!-- } -->
-<!-- pre code, pre, code { -->
-<!--   white-space: pre !important; -->
-<!--   overflow-x: scroll !important; -->
-<!--   word-break: keep-all !important; -->
-<!--   word-wrap: initial !important; -->
-<!-- } -->
-<!-- </style> -->
 
 
 
