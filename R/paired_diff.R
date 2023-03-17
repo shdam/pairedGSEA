@@ -183,7 +183,7 @@ paired_diff <- function(
     ## Check for presence of undesired characters
     if(any(stringr::str_detect(metadata[[sample_col]], "[- ]")))
         message("OBS! Some or all sample names contain a '-' or ' ', ",
-                "which will cause downstream methods to throw warnings.")
+                "which will cause downstream methods to complain.")
 
     ## Check sample_col is in metadata
     stopifnot(
@@ -243,8 +243,9 @@ paired_diff <- function(
             dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"))
 
     if(store_results) store_result(
-        expression_aggregated, paste0(experiment_title,
-                                      "_aggregated_pvals.RDS"),
+        expression_aggregated, paste0(
+            experiment_title,
+            "_aggregated_pvals.RDS"),
         "gene pvalue aggregation")
     return(expression_aggregated)
     }
@@ -334,8 +335,10 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
         as.character(metadata[[group_col]]) %in% baseline_case,]
     
     # Check both baseline and case is in metadata
-    stopifnot("Check for misspellings in baseline or case IDs." = 
-                  all(baseline_case %in% metadata[[group_col]]))
+    stopifnot(
+        "Check for misspellings in baseline or case IDs." = 
+            all(baseline_case %in% metadata[[group_col]])
+        )
 
     # Check metadata content
     if(nrow(metadata) == 0) stop(

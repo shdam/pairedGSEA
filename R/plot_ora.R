@@ -71,8 +71,9 @@ plot_ora <- function(
                 TRUE ~ "NA"
                 ),
             plot_color = factor(
-                plot_color, levels = c("Both", "Only Splicing",
-                                       "Only Expression"))
+                plot_color, levels = c(
+                    "Both", "Only Splicing",
+                    "Only Expression"))
             ) %>% 
         dplyr::filter(plot_color != "NA")
     # Check that there is data to plot
