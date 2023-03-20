@@ -12,25 +12,43 @@ coverage](https://codecov.io/gh/shdam/pairedGSEA/branch/master/graph/badge.svg)]
 <!-- badges: end -->
 
 `pairedGSEA` is an R package that helps you to run a paired differential
-gene expression (DGE) and splicing (DGS) analysis. Providing a count
-matrix, `pairedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq`
-(DGS), aggregates the p-values to gene level, and allows you to run a
-subsequent gene set over-representation analysis using its
+gene expression (DGE) and splicing (DGS) analysis. Providing a bulk RNA
+count data, `pairedGSEA` combines the results of `DESeq2` (DGE) and
+`DEXSeq` (DGS), aggregates the p-values to gene level, and allows you to
+run a subsequent gene set over-representation analysis using its
 implementation of the `fgsea::fora` function.
 
 ## Article
 
-A preprint on pairedGSEA is available
+A preprint on `pairedGSEA` is available
 [here](https://doi.org/10.1101/2022.08.29.505720).
 
 ## Installation
 
-``` r
-# Install Bioconductor packages with:
-# devtools::install_bioc(c("DESeq2", "DEXSeq", "fgsea", "SummarizedExperiment", "S4Vectors", "sva", "BiocParallel"))
+Dependencies
 
-# Install pairedGSEA
+``` r
+# Install Bioconductor dependencies
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install(c("SummarizedExperiment", "S4Vectors", "DESeq2", "DEXSeq", "fgsea", "sva", "BiocParallel"))
+```
+
+Install `pairedGSEA` from GitHub
+
+``` r
+# Install pairedGSEA from github
 devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
+```
+
+Install `pairedGSEA` from Bioconductor
+
+``` r
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("pairedGSEA", version = 'devel')
 ```
 
 ## Documentation

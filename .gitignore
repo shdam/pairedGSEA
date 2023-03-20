@@ -9,3 +9,6 @@ vignettes/.DS_Store
 pairedGSEA.Rproj
 codecov
 figs
+/doc/
+/Meta/
+LICENSE

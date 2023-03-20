@@ -23,27 +23,38 @@ knitr::opts_chunk$set(
 
 
 `pairedGSEA` is an R package that helps you to run a paired differential gene expression (DGE) and splicing (DGS) analysis.
-Providing a count matrix, `pairedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq` (DGS), aggregates the p-values to gene level, and allows you to run a subsequent gene set over-representation analysis using its implementation of the `fgsea::fora` function. 
+Providing a bulk RNA count data, `pairedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq` (DGS), aggregates the p-values to gene level, and allows you to run a subsequent gene set over-representation analysis using its implementation of the `fgsea::fora` function. 
 
 
 ## Article
 
-A preprint on pairedGSEA is available [here](https://doi.org/10.1101/2022.08.29.505720).
+A preprint on `pairedGSEA` is available [here](https://doi.org/10.1101/2022.08.29.505720).
 
 
 ## Installation
 
+Dependencies 
+``` {r install_dep, eval=FALSE}
+# Install Bioconductor dependencies
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
 
-``` {r install, eval=FALSE}
-# Install Bioconductor packages with:
-# devtools::install_bioc(c("DESeq2", "DEXSeq", "fgsea", "SummarizedExperiment", "S4Vectors", "sva", "BiocParallel"))
-
-# Install pairedGSEA
-devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
-
+BiocManager::install(c("SummarizedExperiment", "S4Vectors", "DESeq2", "DEXSeq", "fgsea", "sva", "BiocParallel"))
 ```
 
+Install `pairedGSEA` from GitHub
+``` {r install_github, eval=FALSE}
+# Install pairedGSEA from github
+devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
+```
 
+Install `pairedGSEA` from Bioconductor
+```{r install_bioc, eval=FALSE}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("pairedGSEA", version = 'devel')
+```
 
 ## Documentation
 
@@ -52,7 +63,6 @@ To view documentation for the version of this package installed in your system, 
 ```{r vignettes, eval=FALSE}
 browseVignettes("pairedGSEA")
 ```
-
 
 
 

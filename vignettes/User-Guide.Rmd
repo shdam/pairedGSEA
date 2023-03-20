@@ -31,7 +31,7 @@ knitr::opts_chunk$set(
 Welcome to the User Guide for `pariedGSEA`!
 `pariedGSEA` is an R package that allows you to run a paired differential gene
 expression and splicing analysis.
-Providing a count matrix, `pariedGSEA` combines the results of
+Providing bulk RNA-seq count data, `pariedGSEA` combines the results of
 `DESeq2` and `DEXSeq`, aggregates the p-values to gene level and allows
 you to run a subsequent gene set over-representation analysis using its
 implementation of the `fgsea::fora` function. 
@@ -60,34 +60,30 @@ please see `?pairedGSEA::example_se`.
 # Installation
 
 To install this package, start R (version "4.2") and enter:
-<!--
-```{r installation, eval=FALSE, include = FALSE}
+
+Bioconductor dependencies 
+``` {r install_dep, eval=FALSE}
+# Install Bioconductor dependencies
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install("pairedGSEA")
+BiocManager::install(c(
+    "SummarizedExperiment", "S4Vectors", "DESeq2", "DEXSeq",
+    "fgsea", "sva", "BiocParallel"))
 ```
--->
-<!-- For older versions of R, please refer to the appropriate
-[Bioconductor release](https://bioconductor.org/about/release-announcements/). 
--->
-<!-- 
-```{r installation_github, eval=FALSE}
-if (!require("devtools", quietly = TRUE))
-    install.packages("devtools")
 
-devtools::install_github("biosurf/pairedGSEA")
-```
--->
-
-``` {r install, eval=FALSE}
-# Install Bioconductor packages with:
-# devtools::install_bioc(c("DESeq2", "DEXSeq", "fgsea", "SummarizedExperiment",
-# "S4Vectors", "sva", "BiocParallel"))
-
-# Install pairedGSEA
+Install `pairedGSEA` from GitHub
+``` {r install_github, eval=FALSE}
+# Install pairedGSEA from github
 devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
+```
 
+Install `pairedGSEA` from Bioconductor
+```{r install_bioc, eval=FALSE}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("pairedGSEA", version = 'devel')
 ```
 
 # Paired differential expression and splicing

@@ -66,6 +66,6 @@ biocViews:
     Software,
     Transcription,
 URL: https://github.com/shdam/pairedGSEA
-BugReports: https://github.com/shdam/pairedGSEA
+BugReports: https://github.com/shdam/pairedGSEA/issues
 Depends:
     R (>= 4.2.0)
