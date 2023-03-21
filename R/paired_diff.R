@@ -56,6 +56,15 @@
 #' \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @family paired
 #' @importFrom methods is
+#' @import SummarizedExperiment
+#' @import DESeq2
+#' @import DEXSeq
+#' @import BiocParallel
+#' @importFrom tibble as_tibble
+#' @importFrom dplyr mutate across all_of full_join
+#' @importFrom stringr str_detect
+#' @importFrom S4Vectors DataFrame
+#' @importFrom stats p.adjust
 #' @return A data.frame of aggregated pvalues
 #' @usage 
 #' paired_diff(
@@ -311,6 +320,8 @@ paired_diff <- function(
 #' 
 #' @inheritParams paired_diff
 #' @param baseline_case A character vector with baseline and case values
+#' @importFrom stringr str_ends
+#' @note Suggested: importFrom readxl read_excel importFrom readr read_csv
 #' @keywords internal
 #' @return A data.frame
 prepare_metadata <- function(metadata, group_col, baseline_case){
@@ -382,6 +393,9 @@ convert_matrix_to_dds <- function(tx_count, metadata, design){
 #' @inheritParams paired_diff
 #' @param dds A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} 
 #' for more information about the object type.
+#' @importFrom stats model.matrix cor na.omit
+#' @importFrom sva sva
+#' @importFrom stringr str_split
 #' @keywords internal
 #' @return A DESeqDataSet
 run_sva <- function(dds, quiet = FALSE){
@@ -445,6 +459,8 @@ run_sva <- function(dds, quiet = FALSE){
 #' @inheritParams run_sva
 #' @param ... Additional parameters passed to
 #' \code{\link[DESeq2:DESeq]{DESeq()}}
+#' @importFrom tidyr separate
+#' @importFrom dplyr rename
 #' @keywords internal
 #' @return A data.frame
 #' @usage
@@ -536,6 +552,7 @@ run_deseq <- function(
 #' 
 #' @inheritParams paired_diff
 #' @inheritParams run_sva
+#' @importFrom dplyr select all_of rename mutate case_when
 #' @keywords internal
 #' @return A data.frame
 #' @usage
@@ -659,6 +676,9 @@ run_dexseq <- function(
 #' DESeq2 results or "splicing" for aggregation of DEXSeq results
 #' @param weights (Default: "baseMean") The column to use
 #' for weighting the aggregation
+#' @importFrom dplyr filter rename mutate group_by summarise case_when
+#' @importFrom purrr when
+#' @importFrom aggregation lancaster
 #' @keywords internal
 #' @usage 
 #' aggregate_pvalue(

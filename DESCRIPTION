@@ -1,6 +1,6 @@
 Package: pairedGSEA
 Title: Paired DGE and DGS analysis for gene set enrichment analysis
-Version: 0.99.0
+Version: 0.99.1
 Authors@R: c(
     person(given = "Søren Helweg",
         family = "Dam",
@@ -32,7 +32,8 @@ Imports:
     sva,
     SummarizedExperiment,
     S4Vectors,
-    dplyr, magrittr, purrr, stringr, tibble, tidyr,
+    BiocParallel,
+    dplyr, magrittr, purrr, stringr, tibble, tidyr, ggplot2,
     aggregation,
     stats,
     utils,
@@ -41,14 +42,12 @@ Suggests:
     writexl, readxl, readr,
     rhdf5,
     msigdbr,
-    plotly, ggplot2,
+    plotly,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,
     covr,
     BiocStyle
-Enhances:
-    BiocParallel
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US

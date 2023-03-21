@@ -7,7 +7,7 @@
 doc/.DS_Store
 vignettes/.DS_Store
 pairedGSEA.Rproj
-codecov
+codecov*
 figs
 /doc/
 /Meta/

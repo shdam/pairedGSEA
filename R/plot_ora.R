@@ -8,6 +8,14 @@
 #' @param lines (Default: TRUE) Whether to show dashed lines
 #' @param colors (Default: c("darkgray", "purple", "navy"))
 #' Colors to use in plot. The colors are ordered as "Both", "DGS", and "DGE"
+#' @importFrom stringr str_detect
+#' @importFrom dplyr filter summarise pull mutate case_when
+#' @importFrom stats cor
+#' @importFrom purrr when
+#' @importFrom ggplot2 ggplot aes annotate labs guides guide_legend
+#' scale_fill_manual scale_colour_manual geom_point scale_shape_manual
+#' geom_abline geom_hline geom_vline
+#' @note Suggested: importFrom plotly ggplotly
 #' @family plotting
 #' @export
 #' @return A ggplot

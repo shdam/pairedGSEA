@@ -33,6 +33,9 @@ Please make sure the gene IDs match those from your DE analysis.
 This function will format the gene sets such that they can be directly
 used with \code{\link[pairedGSEA:paired_ora]{paired_ora()}}.
 }
+\note{
+Suggested: importFrom msigdbr msigdbr
+}
 \examples{
 gene_sets <- prepare_msigdb(species = "Homo sapiens")
 }

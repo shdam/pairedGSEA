@@ -23,6 +23,9 @@ This internal function reads a filepath for a metadata file
 and filters out the rows that do not contain data from the
 relevant patient group, as defined in the \code{comparison} argument.
 }
+\note{
+Suggested: importFrom readxl read_excel importFrom readr read_csv
+}
 \examples{
 \dontrun{
 metadata <- prepare_metadata(metadata = "path/to/metadata.xlsx",

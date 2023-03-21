@@ -63,6 +63,7 @@ check_colname <- function(df_colnames, col_name, location = "metadata"){
 }
 
 #' Check comparison has the right format
+#' @importFrom stringr str_detect str_count str_replace str_split
 #' @noRd
 check_comparison <- function(comparison){
 
@@ -89,6 +90,8 @@ check_comparison <- function(comparison){
 
 
 #' Store result object
+#' @importFrom utils write.csv write.table
+#' @note Suggested: importFrom writexl write_xlsx
 #' @noRd
 store_result <- function(object, file, analysis = "results", quiet = FALSE){
     check_make_dir("results/")
@@ -133,6 +136,7 @@ pre_filter <- function(dds, threshold = 10){
 
 #' Convert character vector into a stats formula
 #' @param vector Character vector of variables to add to model
+#' @importFrom stats formula
 #' @noRd
 formularise_vector <- function(vector){
     stopifnot(
@@ -158,6 +162,7 @@ formularise_vector <- function(vector){
 #' @param formula Design formula to reduce. The first variable will be removed.
 #' @param formularise (Default: TRUE) Logical determining if the design
 #' should be formularised
+#' @importFrom stringr str_split
 #' @noRd
 reduce_formula <- function(formula, formularise = TRUE){
     # Convert design formula to character string

@@ -23,6 +23,9 @@
 #' @param quiet (Default: FALSE) Whether to print messages
 #' @param expression_only (Default: FALSE) A logical that indicates whether
 #' to only run DESeq2 analysis. Not generally recommended.
+#' @importFrom dplyr rename filter arrange rename mutate full_join
+#' @importFrom tibble as_tibble
+#' @import fgsea
 #' @family paired
 #' @export 
 #' @return A data.frame
@@ -151,6 +154,7 @@ paired_ora <- function(
 #' @param gene_id_type (Default: "ensemble_gene") The gene ID type to extract.
 #' The IDs should match the gene IDs from your DE analysis.
 #' @inheritParams msigdbr::msigdbr
+#' @note Suggested: importFrom msigdbr msigdbr
 #' @return A data.frame
 #' @examples 
 #' gene_sets <- prepare_msigdb(species = "Homo sapiens")
