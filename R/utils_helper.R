@@ -67,7 +67,9 @@ check_colname <- function(df_colnames, col_name, location = "metadata"){
 #' @noRd
 check_comparison <- function(comparison){
 
+    if(is(comparison, "list")) comparison <- as.character(comparison)
     if(is(comparison, "character") & length(comparison) == 1){
+        comparison <- stringr::str_replace(comparison, "vs", "v")
         stopifnot(
             "Comparison must have the format 'baseline_v_case' (e.g., '2v1')." =
                 stringr::str_detect(comparison, "v"))
@@ -76,8 +78,9 @@ check_comparison <- function(comparison){
             'baseline_v_case' (e.g., '2v1')." =
                 stringr::str_count(comparison, "v") == 1)
         comparison <- comparison %>% 
+            stringr::str_replace_all(pattern = " ", replacement = "") %>% 
             stringr::str_replace(pattern = "_v_", replacement = "v") %>% 
-            stringr::str_replace(pattern = " v ", replacement = "v") %>% 
+            # stringr::str_replace(pattern = " v ", replacement = "v") %>% 
             stringr::str_split(pattern = "v", simplify = TRUE) %>% 
             as.character()
     }

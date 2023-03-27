@@ -677,8 +677,8 @@ run_dexseq <- function(
 #' @param weights (Default: "baseMean") The column to use
 #' for weighting the aggregation
 #' @importFrom dplyr filter rename mutate group_by summarise case_when
-#' @importFrom purrr when
 #' @importFrom aggregation lancaster
+#' @importFrom stats weighted.mean
 #' @keywords internal
 #' @usage 
 #' aggregate_pvalue(
@@ -713,17 +713,23 @@ aggregate_pvalue <- function (
         dplyr::mutate(pvalue = dplyr::case_when(
             pvalue < 10e-320 ~ 10e-320,
             TRUE ~ pvalue)) %>% 
-        dplyr::group_by(gene) %>% 
-        # p value aggregation
-        purrr::when(
-            type == "splicing" ~ 
-                dplyr::summarise(
-                    ., lfc = lfc[which(pvalue == min(pvalue))][[1]],
-                    pvalue = aggregation::lancaster(pvalue, weights)),
-            type == "expression" ~ dplyr::summarise(
-                ., lfc = weighted.mean(lfc, weights),
-                pvalue = aggregation::lancaster(pvalue, weights))) %>% 
-        # Adjust p values and remove zeros to prevent downstream issues
+        dplyr::group_by(gene)
+    # p value aggregation
+    if(type == "splicing"){
+        res <- res %>% 
+            dplyr::summarise(
+            lfc = lfc[which(pvalue == min(pvalue))][[1]],
+            pvalue = aggregation::lancaster(pvalue, weights)
+            )
+        } else if(type == "expression"){
+        res <- res %>% 
+            dplyr::summarise(
+                lfc = stats::weighted.mean(lfc, weights),
+                pvalue = aggregation::lancaster(pvalue, weights)
+                )
+        }
+    # Adjust p values and remove zeros to prevent downstream issues
+    res <- res %>% 
         dplyr::mutate(
             padj = stats::p.adjust(pvalue, "fdr"),
             pvalue = dplyr::case_when(

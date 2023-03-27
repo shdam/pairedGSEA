@@ -1,6 +1,6 @@
 Package: pairedGSEA
 Title: Paired DGE and DGS analysis for gene set enrichment analysis
-Version: 0.99.1
+Version: 0.99.2
 Authors@R: c(
     person(given = "Søren Helweg",
         family = "Dam",
@@ -33,7 +33,7 @@ Imports:
     SummarizedExperiment,
     S4Vectors,
     BiocParallel,
-    dplyr, magrittr, purrr, stringr, tibble, tidyr, ggplot2,
+    dplyr, magrittr, stringr, tibble, tidyr, ggplot2,
     aggregation,
     stats,
     utils,

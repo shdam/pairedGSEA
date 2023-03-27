@@ -11,7 +11,6 @@
 #' @importFrom stringr str_detect
 #' @importFrom dplyr filter summarise pull mutate case_when
 #' @importFrom stats cor
-#' @importFrom purrr when
 #' @importFrom ggplot2 ggplot aes annotate labs guides guide_legend
 #' scale_fill_manual scale_colour_manual geom_point scale_shape_manual
 #' geom_abline geom_hline geom_vline
@@ -40,6 +39,11 @@ plot_ora <- function(
         lines = TRUE,
         colors = c("darkgray", "purple", "lightblue")){
 
+    if(is(pattern, "numeric")) pattern <- as.character(pattern)
+    stopifnot(
+        "Pattern must be a string"
+        = is.null(pattern) || is(pattern, "character"))
+    
     stopifnot(
         "plot_ora currently only works when Differential Splicing has been run"
         = any(stringr::str_detect(colnames(ora), "_splicing")))
@@ -50,9 +54,12 @@ plot_ora <- function(
     # Set default match to FALSE for when pattern is NULL
     ora$pattern_match <- FALSE
     
+    # Filter ora
+    ora <- ora %>% 
+    dplyr::filter(padj_expression < cutoff | padj_splicing < cutoff)
+    
     # Compute spearman correlation between enrichment scores
     correlation <- ora %>% 
-    dplyr::filter(padj_expression < cutoff | padj_splicing < cutoff) %>% 
     dplyr::summarise(correlation = stats::cor(
         enrichment_score_splicing,
         enrichment_score_expression,
@@ -63,13 +70,13 @@ plot_ora <- function(
     
     # Extract plot data allowing two layers of dots, one for patter non-matches
     # and one for matches
+    if(!is.null(pattern)) {
+        ora$pattern_match <- factor(
+            stringr::str_detect(tolower(ora$pathway), tolower(pattern)),
+            levels = c(FALSE, TRUE))
+    }
+    
     plt_data <- ora %>% 
-        dplyr::filter(padj_expression < cutoff | padj_splicing < cutoff) %>% 
-        purrr::when(
-            is.null(pattern) ~ ., # Search for pattern
-            TRUE ~ dplyr::mutate(., pattern_match = factor(
-                stringr::str_detect(tolower(pathway),tolower(pattern)),
-                levels = c(FALSE, TRUE)))) %>% 
         dplyr::mutate( 
         # Color dots based on which analysis found the pathway enriched
             plot_color = dplyr::case_when(
@@ -141,9 +148,6 @@ plot_ora <- function(
                 ggplot2::aes(shape = TRUE)) +
             ggplot2::labs(shape = pattern) +
             ggplot2::scale_shape_manual(values = c(4, 23))
-            #+ , color = "red"
-            # ggplot2::geom_point(data = matches, size = 2.5, alpha = 0.9, 
-            # ggplot2::aes(shape = FALSE))
     } else{
         plt <- plt +
             ggplot2::geom_point(alpha = 0.3, size = 1.5, shape = 4)
