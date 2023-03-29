@@ -1,7 +1,8 @@
 # pairedGSEA 0.99.2
 
+* Implement `limma` as alternative analysis method
 * Increased test coverage significantly
-* Removed usage of deprecated purrr::when
+* Removed usage of deprecated `purrr::when`
 
 # pairedGSEA 0.99.1
 

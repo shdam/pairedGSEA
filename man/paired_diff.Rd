@@ -15,6 +15,7 @@ paired_diff(
     experiment_title = NULL,
     store_results = TRUE,
     run_sva = TRUE,
+    use_limma = FALSE,
     prefilter = 10,
     test = "LRT",
     fit_type = "local",
@@ -52,6 +53,9 @@ stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
 be stored in the folder "results/".}
 
 \item{run_sva}{(Default: TRUE) A logical stating whether SVA should be run.}
+
+\item{use_limma}{(Default: FALSE) A logical determining if limma+voom or
+DESeq2 + DEXSeq should be used for the analysis}
 
 \item{prefilter}{(Default: 10) The prefilter threshold, where rowSums lower
 than the prefilter threshold will be removed from the count matrix.

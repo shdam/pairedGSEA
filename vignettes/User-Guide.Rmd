@@ -35,6 +35,8 @@ Providing bulk RNA-seq count data, `pariedGSEA` combines the results of
 gene level and allows
 you to run a subsequent gene set over-representation analysis using its
 implementation of the `fgsea::fora` [@fgsea] function. 
+Since version 0.99.2, you can also do the differential analyses using `limma`.
+
 
 `pairedGSEA` was developed to highlight the importance of differential
 splicing analysis. It was build in a way that yields comparable results between
@@ -217,6 +219,7 @@ See `?pairedGSEA::paired_diff` for further details.
 ```{r extra_settings, eval=FALSE}
 covariates = NULL,
 run_sva = TRUE,
+use_limma = FALSE,
 prefilter = 10,
 fit_type = "local",
 test = "LRT",
@@ -228,14 +231,16 @@ BPPARAM = BiocParallel::bpparam(),
 
 To highlight some examples of use:
 
-1. You can use additional columns in your metadata as covariates in the
+1. You can use `limma::eBayes` and `limma::diffSplice` for the analyses with
+`use_limma = TRUE`.
+2. You can use additional columns in your metadata as covariates in the
 model matrix by setting `covariates` to a character vector of the
 specific names. This will be used in SVA, DGE, and DGS.
-2. The test should be kept at default settings, but advanced users may use
+3. The test should be kept at default settings, but advanced users may use
 the "wald" test instead, if they wish.
-3. The `...` parameters will be fed to `DESeq2::DESeq`,
+4. The `...` parameters will be fed to `DESeq2::DESeq`,
 see their manual for options.
-4. If you want a stricter, more loose, or more advanced pre-filtering
+5. If you want a stricter, more loose, or more advanced pre-filtering
 (generally not necessary, as DESeq2 and DEXSeq performs their own
 pre-filtering), you can set the parameter to a different value or NULL and
 use your own pre-filtering method directly on the counts matrix.

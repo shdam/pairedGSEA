@@ -40,4 +40,5 @@ utils::globalVariables(c(
     "enrichment_score_expression",
     "enrichment_score_splicing",
     "pattern_match",
-    "plot_color"))
+    "plot_color",
+    "baseMean"))

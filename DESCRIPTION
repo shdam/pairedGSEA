@@ -28,6 +28,7 @@ Description: pairedGSEA makes it simple to run a paired Differential
 License: MIT + file LICENSE
 Imports: 
     DESeq2, DEXSeq,
+    limma,
     fgsea,
     sva,
     SummarizedExperiment,

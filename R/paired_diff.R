@@ -31,6 +31,8 @@
 #' @param experiment_title Title of your experiment. Your results will be
 #' stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").
 #' @param run_sva (Default: TRUE) A logical stating whether SVA should be run.
+#' @param use_limma (Default: FALSE) A logical determining if limma+voom or
+#' DESeq2 + DEXSeq should be used for the analysis
 #' @param prefilter (Default: 10) The prefilter threshold, where rowSums lower
 #' than the prefilter threshold will be removed from the count matrix.
 #' Set to 0 or FALSE to prevent prefiltering
@@ -78,6 +80,7 @@
 #'     experiment_title = NULL,
 #'     store_results = TRUE,
 #'     run_sva = TRUE,
+#'     use_limma = FALSE,
 #'     prefilter = 10,
 #'     test = "LRT",
 #'     fit_type = "local",
@@ -115,6 +118,7 @@ paired_diff <- function(
         experiment_title = NULL,
         store_results = TRUE,
         run_sva = TRUE,
+        use_limma = FALSE,
         prefilter = 10,
         test = "LRT",
         fit_type = "local",
@@ -227,52 +231,69 @@ paired_diff <- function(
     if(run_sva){
         dds <- run_sva(dds, quiet = quiet)
     }
-
-    # Run DESeq2
-    expression_results <- run_deseq(
-        dds,
-        group_col = group_col,
-        baseline = baseline,
-        case = case,
-        fit_type = fit_type,
-        test = test,
-        experiment_title = experiment_title,
-        store_results = store_results,
-        quiet = quiet,
-        parallel = parallel,
-        BPPARAM = BPPARAM,
-        ...
+    
+    if(use_limma){
+        # Run limma
+        results <- run_limma(
+            dds = dds, 
+            group_col = group_col,
+            baseline = baseline,
+            case = case,
+            experiment_title = experiment_title,
+            store_results = store_results,
+            quiet = quiet
         )
-
-    ## If only DGE is requested (used for SVA evaluations in the paper)
-    if(expression_only){
-        expression_aggregated <- aggregate_pvalue(
-            expression_results, gene = "gene", weights = "baseMean",
-            lfc = "lfc", type = "expression") %>% 
-            dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"))
-
-    if(store_results) store_result(
-        expression_aggregated, paste0(
-            experiment_title,
-            "_aggregated_pvals.RDS"),
-        "gene pvalue aggregation")
-    return(expression_aggregated)
+        # Extract results
+        expression_results <- results$expression
+        splicing_results <- results$splicing
+        rm(results)
+    } else{ # DESeq2 + DEXSeq
+        # Run DESeq2
+        expression_results <- run_deseq(
+            dds,
+            group_col = group_col,
+            baseline = baseline,
+            case = case,
+            fit_type = fit_type,
+            test = test,
+            experiment_title = experiment_title,
+            store_results = store_results,
+            quiet = quiet,
+            parallel = parallel,
+            BPPARAM = BPPARAM,
+            ...
+        )
+        
+        ## If only DGE is requested (used for SVA evaluations in the paper)
+        if(expression_only){
+            expression_aggregated <- aggregate_pvalue(
+                expression_results, gene = "gene", weights = "baseMean",
+                lfc = "lfc", type = "expression") %>% 
+                dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"))
+            
+            if(store_results) store_result(
+                expression_aggregated, paste0(
+                    experiment_title,
+                    "_aggregated_pvals.RDS"),
+                "gene pvalue aggregation")
+            return(expression_aggregated)
+        }
+        
+        # Run DEXSeq
+        splicing_results <- run_dexseq(
+            dds,
+            group_col = group_col,
+            baseline = baseline,
+            case = case,
+            experiment_title = experiment_title,
+            store_results = store_results,
+            quiet = quiet,
+            parallel = parallel,
+            BPPARAM = BPPARAM
+        )
     }
 
-    # Run DEXSeq
-    splicing_results <- run_dexseq(
-        dds,
-        group_col = group_col,
-        baseline = baseline,
-        case = case,
-        experiment_title = experiment_title,
-        store_results = store_results,
-        quiet = quiet,
-        parallel = parallel,
-        BPPARAM = BPPARAM
-        )
-
-
+    
     # Aggregate p values
     if(!quiet) {
         if(!is(experiment_title, "NULL"))
@@ -280,13 +301,15 @@ paired_diff <- function(
         message("Aggregating p values")
     }
 
-    splicing_aggregated <- aggregate_pvalue(
-        splicing_results, gene = "groupID", weights = "exonBaseMean",
-        type = "splicing")
     expression_aggregated <- aggregate_pvalue(
         expression_results, gene = "gene", weights = "baseMean",
         type = "expression")
+    
+    splicing_aggregated <- aggregate_pvalue(
+        splicing_results, gene = "gene", weights = "baseMean",
+        type = "splicing")
 
+    
     aggregated_pvals <- dplyr::full_join(
         expression_aggregated,
         splicing_aggregated,
@@ -537,7 +560,7 @@ run_deseq <- function(
     expression_results <- expression_results %>% 
         tibble::as_tibble(rownames = "gene_tx") %>% 
         tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
-        dplyr::rename(lfc = log2FoldChange)
+        dplyr::rename(lfc = .data$log2FoldChange)
 
     return(expression_results)
 }
@@ -654,9 +677,126 @@ run_dexseq <- function(
     # Rename LFC column for consistency and human-readability
     splicing_results <- splicing_results %>% 
         tibble::as_tibble() %>% 
-        dplyr::rename(lfc = log2fold_C_B)
+        dplyr::rename(
+            lfc = .data$log2fold_C_B,
+            baseMean = .data$exonBaseMean,
+            gene = .data$groupID)
 
     return(splicing_results)
+}
+
+#' Run limma and voom analyses
+#' 
+#' This internal function runs a differential gene expression analysis using
+#' limma (See \code{?limma::lmFit} for more detailed information), and 
+#' differential gene splicing using voom (See \code{limma::voom}).
+#' Here, the surrogate variables found by \code{\link{run_sva}},
+#' if any, will be added to the DESeqDataSet before running the analysis.
+#'   
+#' @inheritParams paired_diff
+#' @inheritParams run_sva
+#' @importFrom tidyr separate
+#' @importFrom tibble as_tibble
+#' @importFrom dplyr rename select left_join
+#' @importFrom limma voom lmFit eBayes topTable diffSplice topSplice
+#' @import DESeq2
+#' @importFrom stats model.matrix
+#' @importFrom SummarizedExperiment colData
+#' @keywords internal
+#' @return A data.frame
+#' @usage
+#' run_deseq(
+#'     dds,
+#'     group_col,
+#'     baseline,
+#'     case,
+#'     test = "LRT",
+#'     fit_type = "local",
+#'     experiment_title = "Experiment Title",
+#'     store_results = FALSE,
+#'     quiet = FALSE,
+#'     parallel = FALSE,
+#'     BPPARAM = BiocParallel::bpparam(),
+#'     ...
+#'     )
+#' 
+run_limma <- function(
+        dds,
+        group_col,
+        baseline,
+        case,
+        experiment_title = "Experiment Title",
+        store_results = FALSE,
+        quiet = FALSE
+){
+    
+    if(!quiet) message("Running limma+voom")
+    
+    # Design matrix
+    modelMatrix <- stats::model.matrix(
+        DESeq2::design(dds),
+        data = SummarizedExperiment::colData(dds))
+    
+    stopifnot(
+        "Experiment design is not full rank" 
+        = limma::is.fullrank( modelMatrix ))
+    
+    # Voom
+    voom <- limma::voom(
+        counts = DESeq2::counts(dds),
+        design = modelMatrix
+    )
+    fit <- limma::lmFit(object = voom)
+    
+    # Differential expression
+    dgeModel <- limma::eBayes(fit)
+    expression <- limma::topTable(
+        dgeModel, sort.by = "p", coef = 2, number = Inf)
+    
+    # Differential splicing
+    dguModel <- diffSplice( 
+        fit,
+        exonid = stringr::str_remove(rownames(fit), pattern = ".*:"),
+        geneid = stringr::str_remove(rownames(fit), pattern = ":.*"),
+        verbose = !quiet
+    )
+    splicing <- limma::topSplice(
+        dguModel, coef = 2, number = Inf, sort.by = "p", test = "t")
+    
+    
+    # Convert result to tibble
+    expression <- expression %>% 
+        tibble::as_tibble(rownames = "gene_tx") %>% 
+        tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
+        dplyr::rename(
+            lfc = .data$logFC,
+            padj = .data$adj.P.Val,
+            pvalue = .data$P.Value,
+            baseMean = .data$AveExpr)
+    splicing <- splicing %>% 
+        tibble::as_tibble() %>%
+        dplyr::rename(
+            padj = .data$FDR,
+            lfc = .data$logFC,
+            pvalue = .data$P.Value,
+            gene = .data$GeneID,
+            transcript = .data$ExonID
+            ) %>% 
+        dplyr::left_join(
+            expression %>% dplyr::select(transcript, baseMean),
+            by = "transcript"
+        )
+        
+    
+    # Store results before aggregation
+    if(store_results) {
+        if(store_results) store_result(
+            list("expression" = expression, "splicing" = splicing),
+            paste0(experiment_title, "_limma_results.RDS"),
+            "differential expression/splicing results", quiet = quiet)
+    }
+    
+    return(list("expression" = expression, "splicing" = splicing))
 }
 
 
@@ -737,3 +877,4 @@ aggregate_pvalue <- function (
                 TRUE ~ pvalue)) 
     return(res)
 }
+
