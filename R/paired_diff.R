@@ -383,6 +383,7 @@ paired_diff <- function(
 #' @param baseline_case A character vector with baseline and case values
 #' @note Suggested: importFrom readxl read_excel importFrom readr read_csv
 #' @keywords internal
+#' @noRd
 #' @return A data.frame
 prepare_metadata <- function(metadata, group_col, baseline_case){
 
@@ -429,6 +430,7 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
 #' @param tx_count Count matrix to convert to dds
 #' @inheritParams paired_diff
 #' @keywords internal
+#' @noRd
 #' @return A \code{\link[DESeq2]{DESeqDataSet}}
 convert_matrix_to_dds <- function(tx_count, metadata, design){
 
@@ -454,6 +456,7 @@ convert_matrix_to_dds <- function(tx_count, metadata, design){
 #' @importFrom stats model.matrix cor na.omit
 #' @importFrom sva sva
 #' @keywords internal
+#' @noRd
 #' @return A DESeqDataSet
 run_sva <- function(dds, quiet = FALSE) {
     if (!quiet) message("Running SVA")
@@ -520,7 +523,8 @@ run_sva <- function(dds, quiet = FALSE) {
 #' @param ... Additional parameters passed to
 #' \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @keywords internal
-#' @return A data.frame
+#' @noRd
+#' @return A DFrame
 #' @usage
 #' run_deseq(
 #'     dds,
@@ -616,7 +620,8 @@ run_deseq <- function(
 #' @inheritParams paired_diff
 #' @inheritParams run_sva
 #' @keywords internal
-#' @return A data.frame
+#' @noRd
+#' @return A DFrame
 #' @usage
 #' run_dexseq(
 #'     dds,
@@ -738,7 +743,8 @@ run_dexseq <- function(
 #' @importFrom stats model.matrix
 #' @importFrom SummarizedExperiment colData
 #' @keywords internal
-#' @return A DFrame
+#' @noRd
+#' @return A list of two DFrames
 #' @usage
 #' run_limma(
 #'     dds,
@@ -845,12 +851,13 @@ run_limma <- function(
 #' @importFrom stats weighted.mean
 #' @importFrom S4Vectors split DataFrame
 #' @keywords internal
+#' @noRd
 #' @usage 
 #' aggregate_pvalue(
 #'     df,
 #'     type = c("expression", "splicing")
 #'     )
-#' @return A data.frame
+#' @return A DFrame
 aggregate_pvalue <- function(
         df,
         type = c("expression", "splicing")) {

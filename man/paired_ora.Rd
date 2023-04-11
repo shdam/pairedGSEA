@@ -37,7 +37,7 @@ Not generally recommended.}
 \item{quiet}{(Default: \code{FALSE}) Whether to print messages}
 }
 \value{
-A DFrame
+A data.table of merged ORA results
 }
 \description{
 paired_ora uses \code{\link[fgsea:fora]{fora}} to run the

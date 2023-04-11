@@ -125,4 +125,4 @@ plot_ora(ora) +
 
 ## Report issues
 
-If you have any issues or questions regarding the use of pairedGSEA, please do not hesitate to raise an issue on GitHub. In this way, others may also benefit from the answers and discussions.
+If you have any issues or questions regarding the use of `pairedGSEA`, please do not hesitate to raise an issue on GitHub. In this way, others may also benefit from the answers and discussions.

@@ -31,7 +31,7 @@
 #' @import fgsea
 #' @family paired
 #' @export 
-#' @return A DFrame
+#' @return A data.table of merged ORA results
 #' @usage 
 #' paired_ora(
 #'     paired_diff_result,

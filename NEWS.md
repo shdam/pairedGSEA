@@ -1,3 +1,7 @@
+# pairedGSEA 0.99.5
+
+* Remove non-exported man pages
+
 # pairedGSEA 0.99.4
 
 * Remove filter_gene_sets option, as it is inherent in `fgsea::ora`
