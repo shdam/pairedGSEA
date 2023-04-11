@@ -98,6 +98,7 @@ plot_ora <- function(
 #' Spearman correlation between the enrichment scores.
 #' @importFrom stats cor
 #' @keywords internal
+#' @noRd
 spearman <- function(ora) {
     correlation <- cor(
         ora$enrichment_score_splicing,

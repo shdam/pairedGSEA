@@ -6,6 +6,20 @@ data("example_gene_sets")
 test_that("paired_ora works", {
     ora_test <- paired_ora(example_diff_result, example_gene_sets)
     expect_equal(nrow(ora_test), 8)
+    ora_test <- paired_ora(example_diff_result, example_gene_sets, expression_only = TRUE)
+    expect_equal(nrow(ora_test), 8)
+})
+
+test_that("paired_ora prints results", {
+    ora_test <- paired_ora(example_diff_result, example_gene_sets, experiment_title = "test")
+    expect_true(file.exists("results/test_ora.RDS"))
+    file.remove("results/test_ora.RDS")
+    expect_false(file.exists("results/test_ora.RDS"))
+    
+    ora_test <- paired_ora(example_diff_result, example_gene_sets, experiment_title = "test", expression_only = TRUE)
+    expect_true(file.exists("results/test_ora.RDS"))
+    file.remove("results/test_ora.RDS")
+    expect_false(file.exists("results/test_ora.RDS"))
 })
 
 test_that("paired_ora works with limma", {
@@ -29,18 +43,6 @@ test_that("prepare_msigdb returns a list of gene sets", {
     expect_true(is.list(gene_sets))
     expect_true(length(gene_sets) > 0)
     expect_true(all(sapply(gene_sets, is.character)))
-})
-
-genes <- c("A", "B", "C")
-gene_sets <- list(c("A", "D", "E"), c("F", "G", "B"), c("H", "I", "J"))
-
-# Define test cases
-test_that("rm_gene_sets removes gene sets without any genes", {
-    expect_equal(length(rm_gene_sets(gene_sets, genes)), 2)
-})
-
-test_that("rm_gene_sets returns the correct gene sets", {
-    expect_equal(rm_gene_sets(gene_sets, genes), list(c("A", "D", "E"), c("F", "G", "B")))
 })
 
 test_that("it subsets genes to a cutoff based on type", {

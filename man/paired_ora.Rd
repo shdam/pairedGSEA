@@ -9,7 +9,6 @@ paired_ora(
     gene_sets,
     cutoff = 0.05,
     min_size = 25,
-    filter_gene_sets = FALSE,
     experiment_title = NULL,
     expression_only = FALSE,
     quiet = FALSE
@@ -26,9 +25,6 @@ selecting significant genes}
 
 \item{min_size}{(Default: \code{25}) Minimal size of a gene set to test.
 All pathways below the threshold are excluded.}
-
-\item{filter_gene_sets}{(Defualt: \code{FALSE}) Logical that informs if the 
-gene sets without any genes from the \code{paired_diff_result} input}
 
 \item{experiment_title}{Title of your experiment. Your results will be
 stored in \code{paste0("results/", experiment_title, "_fora.RDS")}.}
@@ -63,8 +59,7 @@ data("example_gene_sets")
 
 ora <- paired_ora(
     example_diff_result,
-    example_gene_sets,
-    filter_gene_sets = TRUE)
+    example_gene_sets)
 
 
 }

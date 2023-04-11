@@ -133,7 +133,7 @@ Transcript-level results can be extracted by setting
 data("example_se")
 
 diff_results <- paired_diff(
-    object = example_se[1:20, ],
+    object = example_se[1:15, ],
     group_col = "group_nr",
     sample_col = "id",
     baseline = 1,

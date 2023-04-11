@@ -20,8 +20,6 @@
 #' selecting significant genes
 #' @param min_size (Default: \code{25}) Minimal size of a gene set to test.
 #' All pathways below the threshold are excluded.
-#' @param filter_gene_sets (Defualt: \code{FALSE}) Logical that informs if the 
-#' gene sets without any genes from the \code{paired_diff_result} input
 #' @param experiment_title Title of your experiment. Your results will be
 #' stored in \code{paste0("results/", experiment_title, "_fora.RDS")}.
 #' @param quiet (Default: \code{FALSE}) Whether to print messages
@@ -40,7 +38,6 @@
 #'     gene_sets,
 #'     cutoff = 0.05,
 #'     min_size = 25,
-#'     filter_gene_sets = FALSE,
 #'     experiment_title = NULL,
 #'     expression_only = FALSE,
 #'     quiet = FALSE
@@ -51,8 +48,7 @@
 #' 
 #' ora <- paired_ora(
 #'     example_diff_result,
-#'     example_gene_sets,
-#'     filter_gene_sets = TRUE)
+#'     example_gene_sets)
 #' 
 #' 
 paired_ora <- function(
@@ -60,12 +56,11 @@ paired_ora <- function(
         gene_sets,
         cutoff = 0.05,
         min_size = 25,
-        filter_gene_sets = FALSE,
         experiment_title = NULL,
         expression_only = FALSE,
         quiet = FALSE){
     ## Initial error checks
-    stopifnot(is(c(quiet, filter_gene_sets, expression_only), "logical"))
+    stopifnot(is(c(quiet, expression_only), "logical"))
     stopifnot(is(c(cutoff, min_size), "numeric"))
     stopifnot(
         is(paired_diff_result, "data.frame") | is(paired_diff_result, "DFrame")
@@ -86,11 +81,6 @@ paired_ora <- function(
     check_colname(
         paired_diff_result, "pvalue_expression", "paired_diff_result")
     check_colname(paired_diff_result, "gene", "paired_diff_result")
-    
-    # Filter irrelevant gene sets
-    if(filter_gene_sets){
-        gene_sets <- rm_gene_sets(gene_sets, paired_diff_result$gene)
-    }
     
     if(!quiet) message("Running over-representation analyses")
     # fora on expression
@@ -244,14 +234,4 @@ join_oras <- function(ora_expression, ora_splicing){
     ora_joined <- ora_joined[order(ora_joined$enrichment_score_shift), ]
     
     return(ora_joined)
-}
-
-#' Filter gene sets that does not contain a single gene in the gene universe
-#' @noRd
-rm_gene_sets <- function(gene_sets, genes) {
-    # Loop through each gene set and check if it contains at least one gene
-    idx <- vapply(gene_sets, function(x) any(x %in% genes), logical(1L))
-    
-    # Return the gene sets that contain at least one gene
-    return(gene_sets[idx])
 }

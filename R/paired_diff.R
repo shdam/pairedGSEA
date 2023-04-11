@@ -111,7 +111,7 @@
 #' data("example_se")
 #' 
 #' diff_results <- paired_diff(
-#'     object = example_se[1:20, ],
+#'     object = example_se[1:15, ],
 #'     group_col = "group_nr",
 #'     sample_col = "id",
 #'     baseline = 1,
@@ -230,11 +230,10 @@ paired_diff <- function(
         column names of the count matrix." = nrow(metadata) > 0)
     
     ## Check for presence of undesired characters
-    if(any(grepl("[- ]", metadata[[sample_col]])))
-        message(
-            "OBS! Some or all sample names contain a '-' or ' ', ",
-            "which will cause downstream methods to complain.",
-            "Please rename these.")
+    stopifnot(
+    "OBS! Some or all sample names contain a '-' or ' ',\
+    which will cause downstream methods to complain.\
+    Please rename these." = !any(grepl("[- ]", metadata[[sample_col]])))
 
     ## Check sample_col is in metadata
     stopifnot(
@@ -413,11 +412,6 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
             all(baseline_case %in% metadata[[group_col]])
         )
 
-    # Check metadata content
-    if(nrow(metadata) == 0) stop(
-        "The values in", group_col,
-        "does not correspond to the baseline and case values.")
-
     # Add comparison levels to metadata
     metadata[[group_col]] <- factor(
         metadata[[group_col]], levels = baseline_case)
@@ -588,7 +582,7 @@ run_deseq <- function(
     
     # Store result extraction
     if(store_results) {
-        if(store_results) store_result(
+        store_result(
             expression_results,
             paste0(experiment_title, "_expression_results.RDS"),
             "differential expression results", quiet = quiet)
@@ -692,7 +686,9 @@ run_dexseq <- function(
     
     # Store DEXSeqDataSet before DEXSeq analysis
     if(store_results) {
-        saveRDS(dxd, paste0(experiment_title, "_dxd.RDS"))
+        store_result(
+            dxd, paste0(experiment_title, "_dxd.RDS"),
+            "DEXSeqDataSet", quiet = quiet)
     }
     
     ### Run DEXSeq
@@ -705,9 +701,12 @@ run_dexseq <- function(
         quiet = quiet)
     
     # Store result extraction
-    if(store_results) saveRDS(
-        splicing_results,
-        paste0(experiment_title, "_splicing_results.RDS"))
+    if(store_results) {
+        store_result(
+            splicing_results,
+            paste0(experiment_title, "_splicing_results.RDS"),
+            "differential splicing results", quiet = quiet)
+    }
     
     # Rename LFC column for consistency and human-readability
     # splicing_results <- data.frame(splicing_results)
@@ -815,7 +814,7 @@ run_limma <- function(
     
     # Store results before aggregation
     if(store_results) {
-        if(store_results) store_result(
+        store_result(
             list("expression" = expression, "splicing" = splicing),
             paste0(experiment_title, "_limma_results.RDS"),
             "differential expression/splicing results", quiet = quiet)

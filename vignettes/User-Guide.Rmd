@@ -299,13 +299,8 @@ ora <- paired_ora(
 ```{r ora_settings, eval=FALSE}
 cutoff = 0.05,
 min_size = 25,
-filter_gene_sets = FALSE,
 quiet = FALSE
 ```
-
-You can reduce gene set bias by setting `filter_gene_sets = TRUE`.
-This will remove all gene sets that does not contain a single gene found
-in the input.
 
 Please investigate the returned object to see the column names and what
 they contain.

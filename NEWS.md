@@ -1,3 +1,9 @@
+# pairedGSEA 0.99.4
+
+* Remove filter_gene_sets option, as it is inherent in `fgsea::ora`
+* Added test depth and coverage for `paired_diff` and `paired_ora`
+* Fixed wrong storing location for splicing intermediate results
+
 # pairedGSEA 0.99.3
 
 * Rewrote code base to remove tidyverse dependencies
