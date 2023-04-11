@@ -22,13 +22,13 @@ The IDs should match the gene IDs from your DE analysis.}
 \item{subcategory}{MSigDB sub-collection abbreviation, such as CGP or BP.}
 }
 \value{
-A data.frame
+A list of gene sets
 }
 \description{
 This function is wrapper around \code{\link[msigdbr:msigdbr]{msigdbr()}}.
 Please see their manual for details on its use.
 The function extracts the gene set name and a user-defined gene id type
-(Defualt: "ensembl_gene").
+(Default: "ensembl_gene").
 Please make sure the gene IDs match those from your DE analysis.
 This function will format the gene sets such that they can be directly
 used with \code{\link[pairedGSEA:paired_ora]{paired_ora()}}.

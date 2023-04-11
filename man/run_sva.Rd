@@ -2,24 +2,25 @@
 % Please edit documentation in R/paired_diff.R
 \name{run_sva}
 \alias{run_sva}
-\title{Run SVA on DESeqDataSet}
+\title{Run SVA on \code{\link[DESeq2]{DESeqDataSet}}}
 \usage{
 run_sva(dds, quiet = FALSE)
 }
 \arguments{
-\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} 
+\item{dds}{A DESeqDataSet. See \code{\link[DESeq2]{DESeqDataSet}} 
 for more information about the object type.}
 
-\item{quiet}{(Default: FALSE) Whether to print messages}
+\item{quiet}{(Default: \code{FALSE}) Whether to print messages}
 }
 \value{
 A DESeqDataSet
 }
 \description{
 This internal function runs a surrogate variable analysis on the
-count matrix in the DESeqDataSet. 
+count matrix in the \code{\link[DESeq2]{DESeqDataSet}} 
 The found surrogate variables will then be added to the metadata
-and the design formula in the DESeqDataSet object to be used in
+and the design formula in the \code{\link[DESeq2]{DESeqDataSet}}
+object to be used in
 the DGE and DTU analyses.
 }
 \keyword{internal}

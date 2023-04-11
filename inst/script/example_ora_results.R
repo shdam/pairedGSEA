@@ -2,7 +2,7 @@
 
 
 data("example_diff_result")
-data("example_gene_sets", package = "pairedGSEA")
+data("example_gene_sets")
 
 example_ora_results <- paired_ora(
     example_diff_result,

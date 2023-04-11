@@ -1,28 +1,3 @@
-#' Inverted versions of in
-#' @noRd
-#' @examples
-#' 1 %!in% seq_len(10)
-`%!in%` <- Negate(`%in%`)
-
-#' Pipe operator
-#'
-#' See \code{magrittr::\link[magrittr:pipe]{\%>\%}} for details.
-#'
-#' @name %>%
-#' @rdname pipe
-#' @keywords internal
-#' @export
-#' @importFrom magrittr %>%
-#' @usage lhs \%>\% rhs
-#' @param lhs A value or the magrittr placeholder.
-#' @param rhs A function call using the magrittr semantics.
-#' @return The result of calling `rhs(lhs)`.
-#' @examples 
-#' seq_len(5) %>% mean()
-NULL
-
-
-
 #' Wrapper for missing packages
 #'
 #' @noRd
@@ -55,34 +30,31 @@ check_make_dir <- function(dir_path) {
 #' Check colname
 #' @noRd
 check_colname <- function(df_colnames, col_name, location = "metadata"){
-    if(is(df_colnames, "data.frame")) df_colnames <- colnames(df_colnames)
+    if(is(df_colnames, "data.frame") | is(df_colnames, "DFrame")) 
+        df_colnames <- colnames(df_colnames)
     if(!is.null(col_name)){
-        if(col_name %!in% df_colnames){
+        if(!(col_name %in% df_colnames)){
             stop("Column \"", col_name, "\" was not found in the ", location)
     }}
 }
 
 #' Check comparison has the right format
-#' @importFrom stringr str_detect str_count str_replace str_split
 #' @noRd
 check_comparison <- function(comparison){
-
+    
     if(is(comparison, "list")) comparison <- as.character(comparison)
     if(is(comparison, "character") & length(comparison) == 1){
-        comparison <- stringr::str_replace(comparison, "vs", "v")
+        comparison <- gsub("vs", "v", comparison)
         stopifnot(
             "Comparison must have the format 'baseline_v_case' (e.g., '2v1')." =
-                stringr::str_detect(comparison, "v"))
+                grepl("v", comparison))
         stopifnot(
             "Comparison must not contain multiple 'v's, the format should be
             'baseline_v_case' (e.g., '2v1')." =
-                stringr::str_count(comparison, "v") == 1)
-        comparison <- comparison %>% 
-            stringr::str_replace_all(pattern = " ", replacement = "") %>% 
-            stringr::str_replace(pattern = "_v_", replacement = "v") %>% 
-            # stringr::str_replace(pattern = " v ", replacement = "v") %>% 
-            stringr::str_split(pattern = "v", simplify = TRUE) %>% 
-            as.character()
+                length(gregexpr("v", comparison)[[1]]) == 1)
+        comparison <- gsub(pattern = " ", replacement = "", comparison)
+        comparison <- gsub(pattern = "_v_", replacement = "v", comparison)
+        comparison <- strsplit(comparison, "v")[[1]]
     }
     stopifnot(
         "Comparison must be a character string (e.g., '2v1')
@@ -96,9 +68,11 @@ check_comparison <- function(comparison){
 #' @importFrom utils write.csv write.table
 #' @note Suggested: importFrom writexl write_xlsx
 #' @noRd
-store_result <- function(object, file, analysis = "results", quiet = FALSE){
-    check_make_dir("results/")
-    if(!startsWith(file, "results")) file <- paste0("results/", file)
+store_result <- function(
+        object, file, analysis = "results", quiet = FALSE,
+        location = "results/"){
+    check_make_dir(location)
+    if(!startsWith(file, location)) file <- paste0(location, file)
     
     if(endsWith(toupper(file), ".RDS")) saveRDS(object, file = file)
     else if(endsWith(tolower(file), ".rdata")) save(object, file = file)
@@ -108,7 +82,7 @@ store_result <- function(object, file, analysis = "results", quiet = FALSE){
         object, file = file)
     else if(endsWith(tolower(file), ".xlsx")) {check_missing_package("writexl")
         writexl::write_xlsx(object, path = file)}
-    else{stop("Could not store result object ", file)}
+    else{stop("Could not store result object at ", file)}
     if(!quiet) message("Stored ", analysis, " in ", file)
 }
 
@@ -117,7 +91,7 @@ store_result <- function(object, file, analysis = "results", quiet = FALSE){
 #' Pre-filter
 #' @inheritParams paired_diff
 #' @noRd
-pre_filter <- function(dds, threshold = 10){
+pre_filter <- function(dds, threshold = 10, quiet = FALSE){
     if(threshold < 1) return(dds)
     # Remove low counts
     remove_low <- rowSums(DESeq2::counts(dds)) < threshold
@@ -128,7 +102,7 @@ pre_filter <- function(dds, threshold = 10){
     
     dds <- dds[!remove_singles,]
     
-    if(sum(remove_low) > 0 | sum(remove_singles) > 0) warning(
+    if(sum(remove_low) > 0 | sum(remove_singles) > 0 & !quiet) message(
         "\nRemoving ", sum(remove_low), 
         " rows with a summed count lower than ", threshold,
         "\nRemoving ", sum(remove_singles),
@@ -143,8 +117,7 @@ pre_filter <- function(dds, threshold = 10){
 #' @noRd
 formularise_vector <- function(vector){
     stopifnot(
-        "Names must not contain spaces" = stringr::str_detect(
-        vector, " ", negate = TRUE))
+        "Names must not contain spaces" = all(grepl("\\s", vector) == FALSE))
     if(is.null(vector)){
         formula <- NULL
     } else if(length(vector) == 1){
@@ -165,12 +138,12 @@ formularise_vector <- function(vector){
 #' @param formula Design formula to reduce. The first variable will be removed.
 #' @param formularise (Default: TRUE) Logical determining if the design
 #' should be formularised
-#' @importFrom stringr str_split
 #' @noRd
 reduce_formula <- function(formula, formularise = TRUE){
     # Convert design formula to character string
-    formula_vector <- as.character(formula)[2] %>% 
-        stringr::str_split(" \\+ ", simplify = TRUE)
+    formula_vector <- strsplit(
+        as.character(formula)[2], split = " \\+ ", fixed = FALSE)
+    formula_vector <- unlist(formula_vector)
     
     # If design only contains 1 variable, return ~1
     if(length(formula_vector) == 1) reduced_vector <- "1"
@@ -182,4 +155,47 @@ reduce_formula <- function(formula, formularise = TRUE){
     return(reduced_vector)
 }
 
-
+#' Create sample data for differential expression analysis
+#'
+#' @param dds A DESeq2 object.
+#' @param group_col A character string specifying the column in the
+#'  colData to use for grouping samples.
+#' @param baseline A character string specifying the value in \code{group_col}
+#'  to use as the baseline group.
+#' @param case A character string specifying the value in \code{group_col}
+#'  to use as the case group.
+#' @param svs_covariates A character vector specifying the columns to
+#'  include in the output data.frame in addition to the \code{group_col} column.
+#' @noRd
+#' @keywords internal
+#' @return A data.frame with the formatted sample data.
+#'
+#' @examples
+#' create_sample_data(dds, group_col = "condition", baseline = "1", case = "2",
+#'  svs_covariates = c("sv1", "sv2"))
+#'
+create_sample_data <- function(
+        dds, group_col, baseline, case, svs_covariates) {
+    # Extract colData from DESeq2 object and convert to data.frame
+    sample_data <- as.data.frame(SummarizedExperiment::colData(dds))
+    
+    # Set values in group_col column to B or C based on whether they match 
+    # the baseline or case variables
+    sample_data[[group_col]] <- ifelse(
+        sample_data[[group_col]] == baseline, "B", 
+        ifelse(sample_data[[group_col]] == case, "C", NA))
+    
+    # Remove any rows with missing values and convert group_col
+    #  to a factor with levels B and C
+    sample_data <- na.omit(sample_data)
+    sample_data[[group_col]] <- factor(
+        sample_data[[group_col]], levels = c("B", "C"))
+    
+    # Select columns specified in svs_covariates, and
+    # rename group_col to "condition"
+    sample_data <- sample_data[, c(group_col, svs_covariates), drop = FALSE]
+    colnames(sample_data)[which(
+        colnames(sample_data) == group_col)] <- "condition"
+    
+    return(sample_data)
+}

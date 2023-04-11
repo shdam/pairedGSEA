@@ -7,7 +7,8 @@
 prepare_metadata(metadata, group_col, baseline_case)
 }
 \arguments{
-\item{metadata}{(Default: NULL) A metadata file or data frame object}
+\item{metadata}{(Default: \code{NULL}) A metadata file or
+\code{data.frame} object}
 
 \item{group_col}{The metadata column specifying the what group each
 sample is associated with}

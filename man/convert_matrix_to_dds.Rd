@@ -2,20 +2,22 @@
 % Please edit documentation in R/paired_diff.R
 \name{convert_matrix_to_dds}
 \alias{convert_matrix_to_dds}
-\title{Convert matrix to DESeqDataSet}
+\title{Convert matrix to \code{\link[DESeq2]{DESeqDataSet}}}
 \usage{
 convert_matrix_to_dds(tx_count, metadata, design)
 }
 \arguments{
 \item{tx_count}{Count matrix to convert to dds}
 
-\item{metadata}{(Default: NULL) A metadata file or data frame object}
+\item{metadata}{(Default: \code{NULL}) A metadata file or
+\code{data.frame} object}
 }
 \value{
-A DESeqDataSet
+A \code{\link[DESeq2]{DESeqDataSet}}
 }
 \description{
 This internal function converts a matrix and metadata object into a
-DESeqDataSet, using the group_col as the basic design.
+\code{\link[DESeq2]{DESeqDataSet}}, using the \code{group_col}
+as the basic design.
 }
 \keyword{internal}

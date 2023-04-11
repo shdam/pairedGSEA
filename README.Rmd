@@ -96,7 +96,6 @@ diff_results <- paired_diff(
   store_results = FALSE,
   quiet = TRUE
   )
-diff_results
 ```
 
 Over-representation analysis of results
@@ -113,7 +112,7 @@ ora <- paired_ora(
   paired_diff_result = diff_results,
   gene_sets = gene_sets
   )
-ora
+
 ```
 
 You can now plot the enrichment scores against each other and identify pathways of interest.

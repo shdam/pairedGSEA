@@ -9,6 +9,7 @@ paired_ora(
     gene_sets,
     cutoff = 0.05,
     min_size = 25,
+    filter_gene_sets = FALSE,
     experiment_title = NULL,
     expression_only = FALSE,
     quiet = FALSE
@@ -16,44 +17,55 @@ paired_ora(
 }
 \arguments{
 \item{paired_diff_result}{The output of 
-\code{\link[pairedGSEA:paired_diff]{paired_diff()}}}
+\code{\link[pairedGSEA:paired_diff]{paired_diff}}}
 
 \item{gene_sets}{List of gene sets to analyse}
 
-\item{cutoff}{(Default: 0.05) Adjusted p-value cutoff for
+\item{cutoff}{(Default: \code{0.05}) Adjusted p-value cutoff for
 selecting significant genes}
 
-\item{min_size}{(Default: 25) Minimal size of a gene set to test.
+\item{min_size}{(Default: \code{25}) Minimal size of a gene set to test.
 All pathways below the threshold are excluded.}
 
+\item{filter_gene_sets}{(Defualt: \code{FALSE}) Logical that informs if the 
+gene sets without any genes from the \code{paired_diff_result} input}
+
 \item{experiment_title}{Title of your experiment. Your results will be
-stored in paste0("results/", experiment_title, "_fora.RDS").}
+stored in \code{paste0("results/", experiment_title, "_fora.RDS")}.}
 
-\item{expression_only}{(Default: FALSE) A logical that indicates whether
-to only run DESeq2 analysis. Not generally recommended.}
+\item{expression_only}{(Default: \code{FALSE})
+A logical that indicates whether
+to only run \code{\link[DESeq2:DESeq]{DESeq2}} analysis.
+Not generally recommended.}
 
-\item{quiet}{(Default: FALSE) Whether to print messages}
+\item{quiet}{(Default: \code{FALSE}) Whether to print messages}
 }
 \value{
-A data.frame
+A DFrame
 }
 \description{
-paired_ora uses \code{\link[fgsea:fora]{fora()}} to run the
+paired_ora uses \code{\link[fgsea:fora]{fora}} to run the
 over-representation analysis.
 First the aggregated pvalues are adjusted using the
 Benjamini & Hochberg method.
 The analysis is run on all significant genes found by
-DESeq2 and DEXSeq individually.
-I.e., two runs of fora() are executed and subsequently
+\code{\link[DESeq2:DESeq]{DESeq2}} and 
+\code{\link[DEXSeq:DEXSeq]{DEXSeq}} individually.
+I.e., two runs of \code{\link[fgsea:fora]{fora}}
+are executed and subsequently
 joined into a single object.
-You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb()}}
+You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb}}
 to create a list of gene_sets.
 }
 \examples{
-data(example_diff_result)
-gene_sets <- pairedGSEA::prepare_msigdb()
+data("example_diff_result")
+data("example_gene_sets")
 
-paired_ora(example_diff_result, gene_sets)
+ora <- paired_ora(
+    example_diff_result,
+    example_gene_sets,
+    filter_gene_sets = TRUE)
+
 
 }
 \seealso{

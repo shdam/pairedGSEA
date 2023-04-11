@@ -14,18 +14,20 @@ plot_ora(
     )
 }
 \arguments{
-\item{ora}{Output of \code{\link[pairedGSEA:paired_ora]{paired_ora()}}}
+\item{ora}{Output of \code{\link[pairedGSEA:paired_ora]{paired_ora}}}
 
-\item{plotly}{(Default: FALSE) Logical on whether to return plot as an
-interactive plotly plot or a simple ggplot.}
+\item{plotly}{(Default: \code{FALSE})
+Logical on whether to return plot as an
+interactive \code{\link[plotly:ggplotly]{plotly}} plot or a simple ggplot.}
 
 \item{pattern}{Highlight pathways containing a specific regex pattern}
 
-\item{cutoff}{(Default: 0.2) Adjusted p-value cutoff for pathways to include}
+\item{cutoff}{(Default: \code{0.2}) Adjusted p-value cutoff for
+pathways to include}
 
-\item{lines}{(Default: TRUE) Whether to show dashed lines}
+\item{lines}{(Default: \code{TRUE}) Whether to show dashed lines}
 
-\item{colors}{(Default: c("darkgray", "purple", "navy"))
+\item{colors}{(Default: \code{c("darkgray", "purple", "navy")})
 Colors to use in plot. The colors are ordered as "Both", "DGS", and "DGE"}
 }
 \value{

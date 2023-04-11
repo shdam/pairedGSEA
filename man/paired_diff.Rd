@@ -13,7 +13,7 @@ paired_diff(
     metadata = NULL,
     covariates = NULL,
     experiment_title = NULL,
-    store_results = TRUE,
+    store_results = FALSE,
     run_sva = TRUE,
     use_limma = FALSE,
     prefilter = 10,
@@ -28,80 +28,98 @@ paired_diff(
     )
 }
 \arguments{
-\item{object}{A data object of the types matrix, SummarizedExperiment,
-or DESeqDataSet. If a matrix is used, please also provide metadata.}
+\item{object}{A data object of the types matrix, 
+\code{\link[SummarizedExperiment]{SummarizedExperiment}},
+or \code{\link[DESeq2:DESeqDataSet]{DESeqDataSet}}.
+If a matrix is used, please also provide metadata.}
 
 \item{group_col}{The metadata column specifying the what group each
 sample is associated with}
 
 \item{sample_col}{The column in the metadata that specifies the sample IDs
-(should correspond to column names in tx_count)}
+(should correspond to column names in \code{object}).
+Set to \code{"rownames"} if the rownames should be used.}
 
 \item{baseline}{Group value of baseline samples}
 
 \item{case}{Group value of case samples}
 
-\item{metadata}{(Default: NULL) A metadata file or data frame object}
+\item{metadata}{(Default: \code{NULL}) A metadata file or
+\code{data.frame} object}
 
-\item{covariates}{Name of column(s) in the metadata that indicate(s)
+\item{covariates}{Name of column(s) in the \code{metadata} that indicate(s)
 covariates. E.g., c("gender", "tissue_type")}
 
 \item{experiment_title}{Title of your experiment. Your results will be
-stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
+stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.}
 
-\item{store_results}{(Default: TRUE) A logical indicating if results should
-be stored in the folder "results/".}
+\item{store_results}{(Default: \code{FALSE})
+A logical indicating if results should
+be stored in the folder \code{"results/"}.}
 
-\item{run_sva}{(Default: TRUE) A logical stating whether SVA should be run.}
+\item{run_sva}{(Default: \code{TRUE})
+A logical stating whether SVA should be run.}
 
-\item{use_limma}{(Default: FALSE) A logical determining if limma+voom or
-DESeq2 + DEXSeq should be used for the analysis}
+\item{use_limma}{(Default: \code{FALSE})
+A logical determining if \code{limma+voom} or
+\code{DESeq2} + \code{DEXSeq} should be used for the analysis}
 
-\item{prefilter}{(Default: 10) The prefilter threshold, where rowSums lower
-than the prefilter threshold will be removed from the count matrix.
-Set to 0 or FALSE to prevent prefiltering}
+\item{prefilter}{(Default: \code{10}) The prefilter threshold,
+where \code{rowSums}
+lower than the prefilter threshold will be removed from the count matrix.
+Set to 0 or \code{FALSE} to prevent prefiltering}
 
 \item{test}{either "Wald" or "LRT", which will then use either 
 Wald significance tests (defined by \code{\link[DESeq2]{nbinomWaldTest}}),
 or the likelihood ratio test on the difference in deviance between a
 full and reduced model formula (defined by \code{\link[DESeq2]{nbinomLRT}})}
 
-\item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or
-"glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
+\item{fit_type}{(Default: \code{"local"}) Either 
+\code{"parametric", "local", "mean", or "glmGamPoi"}
+for the type of fitting of dispersions to the mean intensity.}
 
-\item{quiet}{(Default: FALSE) Whether to print messages}
+\item{quiet}{(Default: \code{FALSE}) Whether to print messages}
 
-\item{parallel}{(Default: FALSE) If FALSE, no parallelization.
-If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.}
+\item{parallel}{(Default: \code{FALSE}) If FALSE, no parallelization.
+If TRUE, parallel execution using
+\code{\link[BiocParallel:bpparam]{BiocParallel}}, see next argument
+\code{BPPARAM}.}
 
-\item{BPPARAM}{(Default: \code{BiocParallel::bpparam()}) An optional
-parameter object passed internally to bplapply when parallel = TRUE.
-If not specified, the parameters last registered with registerwill be used.}
+\item{BPPARAM}{(Default: 
+\code{\link[BiocParallel:bpparam]{bpparam()}})
+An optional
+parameter object passed internally to
+\code{\link[BiocParallel:bplapply]{bplapply}}
+when \code{parallel = TRUE}.
+If not specified, the parameters last registered with register will be used.}
 
-\item{expression_only}{(Default: FALSE) 
+\item{expression_only}{(Default: \code{FALSE}) 
 A logical that indicates whether to only
-run DESeq2 analysis. Not generally recommended.
+run \code{\link[DESeq2:DESeq]{DESeq2}} analysis. Not generally recommended.
 The setting was implemented to make the SVA impact analysis easier}
 
-\item{custom_design}{(Default: FALSE) A logical or formula. Can be used to
-apply a custom desing formula for the analysis. Generally not recommended, 
-as pairedGSEA will make its own design formula
-from the group and covariate columns}
+\item{custom_design}{(Default: \code{FALSE}) A logical or formula.
+Can be used to apply a custom design formula for the analysis.
+Generally not recommended, 
+as \code{pairedGSEA} will make its own design formula
+from the group and \code{covariate} columns}
 
 \item{...}{Additional parameters passed to
 \code{\link[DESeq2:DESeq]{DESeq()}}}
 }
 \value{
-A data.frame of aggregated pvalues
+A DFrame of aggregated pvalues
 }
 \description{
-With paired_diff you can run a paired differential gene expression and
+With \code{paired_diff} you can run a paired differential gene expression and
 splicing analysis. The function expects a counts matrix or a
-SummarizedExperiment or DESeqDataSet object as input.
+\code{\link[SummarizedExperiment:SummarizedExperiment]{SummarizedExperiment}}
+or
+\code{\link[DESeq2:DESeqDataSet]{DESeqDataSet}} object as input.
 A preliminary prefiltering step is performed to remove genes with a summed 
 count lower than the provided threshold. Likewise, genes with counts in 
 only one sample are removed. This step is mostly to speed up differential 
-analyses, as DESeq2 will do a stricter filtering.
+analyses, as \code{\link[DESeq2:DESeq]{DESeq2}} will do a stricter filtering.
 Surrogate Variable Analysis is recommended to allow the analyses to take
 batch effects etc. into account.
 After the two differential analyses, the transcript-level p-values will be
@@ -114,8 +132,8 @@ Transcript-level results can be extracted by setting
 # Run analysis on included example data
 data("example_se")
 
-paired_diff(
-    object = example_se,
+diff_results <- paired_diff(
+    object = example_se[1:20, ],
     group_col = "group_nr",
     sample_col = "id",
     baseline = 1,

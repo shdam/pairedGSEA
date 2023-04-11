@@ -1,12 +1,14 @@
 #' Run paired DESeq2 and DEXSeq analyses
 #' 
-#' With paired_diff you can run a paired differential gene expression and
+#' With \code{paired_diff} you can run a paired differential gene expression and
 #' splicing analysis. The function expects a counts matrix or a
-#' SummarizedExperiment or DESeqDataSet object as input.
+#' \code{\link[SummarizedExperiment:SummarizedExperiment]{SummarizedExperiment}}
+#' or
+#' \code{\link[DESeq2:DESeqDataSet]{DESeqDataSet}} object as input.
 #' A preliminary prefiltering step is performed to remove genes with a summed 
 #' count lower than the provided threshold. Likewise, genes with counts in 
 #' only one sample are removed. This step is mostly to speed up differential 
-#' analyses, as DESeq2 will do a stricter filtering.
+#' analyses, as \code{\link[DESeq2:DESeq]{DESeq2}} will do a stricter filtering.
 #' Surrogate Variable Analysis is recommended to allow the analyses to take
 #' batch effects etc. into account.
 #' After the two differential analyses, the transcript-level p-values will be
@@ -17,57 +19,69 @@
 #' 
 #' 
 #' @inheritParams DESeq2::DESeq
-#' @param object A data object of the types matrix, SummarizedExperiment,
-#' or DESeqDataSet. If a matrix is used, please also provide metadata.
-#' @param metadata (Default: NULL) A metadata file or data frame object
+#' @param object A data object of the types matrix, 
+#' \code{\link[SummarizedExperiment]{SummarizedExperiment}},
+#' or \code{\link[DESeq2:DESeqDataSet]{DESeqDataSet}}.
+#' If a matrix is used, please also provide metadata.
+#' @param metadata (Default: \code{NULL}) A metadata file or
+#' \code{data.frame} object
 #' @param group_col The metadata column specifying the what group each
 #' sample is associated with
 #' @param sample_col The column in the metadata that specifies the sample IDs
-#' (should correspond to column names in tx_count)
+#' (should correspond to column names in \code{object}).
+#' Set to \code{"rownames"} if the rownames should be used.
 #' @param baseline Group value of baseline samples
 #' @param case Group value of case samples
-#' @param covariates Name of column(s) in the metadata that indicate(s)
+#' @param covariates Name of column(s) in the \code{metadata} that indicate(s)
 #' covariates. E.g., c("gender", "tissue_type")
 #' @param experiment_title Title of your experiment. Your results will be
-#' stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").
-#' @param run_sva (Default: TRUE) A logical stating whether SVA should be run.
-#' @param use_limma (Default: FALSE) A logical determining if limma+voom or
-#' DESeq2 + DEXSeq should be used for the analysis
-#' @param prefilter (Default: 10) The prefilter threshold, where rowSums lower
-#' than the prefilter threshold will be removed from the count matrix.
-#' Set to 0 or FALSE to prevent prefiltering
-#' @param fit_type (Default: "local") Either "parametric", "local", "mean", or
-#' "glmGamPoi" for the type of fitting of dispersions to the mean intensity.
-#' @param store_results (Default: TRUE) A logical indicating if results should
-#' be stored in the folder "results/".
-#' @param quiet (Default: FALSE) Whether to print messages
-#' @param expression_only (Default: FALSE) 
+#' stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.
+#' @param run_sva (Default: \code{TRUE})
+#' A logical stating whether SVA should be run.
+#' @param use_limma (Default: \code{FALSE})
+#' A logical determining if \code{limma+voom} or
+#' \code{DESeq2} + \code{DEXSeq} should be used for the analysis
+#' @param prefilter (Default: \code{10}) The prefilter threshold,
+#' where \code{rowSums}
+#' lower than the prefilter threshold will be removed from the count matrix.
+#' Set to 0 or \code{FALSE} to prevent prefiltering
+#' @param fit_type (Default: \code{"local"}) Either 
+#' \code{"parametric", "local", "mean", or "glmGamPoi"}
+#' for the type of fitting of dispersions to the mean intensity.
+#' @param store_results (Default: \code{FALSE})
+#' A logical indicating if results should
+#' be stored in the folder \code{"results/"}.
+#' @param quiet (Default: \code{FALSE}) Whether to print messages
+#' @param expression_only (Default: \code{FALSE}) 
 #' A logical that indicates whether to only
-#' run DESeq2 analysis. Not generally recommended.
+#' run \code{\link[DESeq2:DESeq]{DESeq2}} analysis. Not generally recommended.
 #' The setting was implemented to make the SVA impact analysis easier
-#' @param custom_design (Default: FALSE) A logical or formula. Can be used to
-#' apply a custom desing formula for the analysis. Generally not recommended, 
-#' as pairedGSEA will make its own design formula
-#' from the group and covariate columns
-#' @param parallel (Default: FALSE) If FALSE, no parallelization.
-#' If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.
-#' @param BPPARAM (Default: \code{BiocParallel::bpparam()}) An optional
-#' parameter object passed internally to bplapply when parallel = TRUE.
-#' If not specified, the parameters last registered with registerwill be used.
+#' @param custom_design (Default: \code{FALSE}) A logical or formula.
+#' Can be used to apply a custom design formula for the analysis.
+#' Generally not recommended, 
+#' as \code{pairedGSEA} will make its own design formula
+#' from the group and \code{covariate} columns
+#' @param parallel (Default: \code{FALSE}) If FALSE, no parallelization.
+#' If TRUE, parallel execution using
+#' \code{\link[BiocParallel:bpparam]{BiocParallel}}, see next argument
+#' \code{BPPARAM}.
+#' @param BPPARAM (Default: 
+#' \code{\link[BiocParallel:bpparam]{bpparam()}})
+#' An optional
+#' parameter object passed internally to
+#' \code{\link[BiocParallel:bplapply]{bplapply}}
+#' when \code{parallel = TRUE}.
+#' If not specified, the parameters last registered with register will be used.
 #' @param ... Additional parameters passed to
 #' \code{\link[DESeq2:DESeq]{DESeq()}}
 #' @family paired
 #' @importFrom methods is
+#' @importFrom S4Vectors DataFrame
 #' @import SummarizedExperiment
 #' @import DESeq2
 #' @import DEXSeq
 #' @import BiocParallel
-#' @importFrom tibble as_tibble
-#' @importFrom dplyr mutate across all_of full_join
-#' @importFrom stringr str_detect
-#' @importFrom S4Vectors DataFrame
-#' @importFrom stats p.adjust
-#' @return A data.frame of aggregated pvalues
+#' @return A DFrame of aggregated pvalues
 #' @usage 
 #' paired_diff(
 #'     object,
@@ -78,7 +92,7 @@
 #'     metadata = NULL,
 #'     covariates = NULL,
 #'     experiment_title = NULL,
-#'     store_results = TRUE,
+#'     store_results = FALSE,
 #'     run_sva = TRUE,
 #'     use_limma = FALSE,
 #'     prefilter = 10,
@@ -96,8 +110,8 @@
 #' # Run analysis on included example data
 #' data("example_se")
 #' 
-#' paired_diff(
-#'     object = example_se,
+#' diff_results <- paired_diff(
+#'     object = example_se[1:20, ],
 #'     group_col = "group_nr",
 #'     sample_col = "id",
 #'     baseline = 1,
@@ -116,7 +130,7 @@ paired_diff <- function(
         metadata = NULL,
         covariates = NULL,
         experiment_title = NULL,
-        store_results = TRUE,
+        store_results = FALSE,
         run_sva = TRUE,
         use_limma = FALSE,
         prefilter = 10,
@@ -130,6 +144,15 @@ paired_diff <- function(
         ...){
 
     ## Initial error checks
+    stopifnot(is(
+        c(quiet, use_limma, expression_only, run_sva, store_results, parallel),
+        "logical"))
+    stopifnot(is(custom_design, "logical") | is(custom_design, "formula"))
+    stopifnot(
+        "You cannot use 'expression_only' and 'use_limma" =
+            !(use_limma & expression_only)
+        )
+    
     stopifnot(
         "Please provide a valid data type: matrix, SummarizedExperiment,
         DESeqDataSet" = any(class(object) %in% c(
@@ -146,47 +169,60 @@ paired_diff <- function(
     ## Checking column names
     stopifnot(
         "Covariate names must not contain spaces" =
-            stringr::str_detect(covariates, " ", negate = TRUE))
+            !grepl(" ", covariates))
     stopifnot(
         "group_col name must not contain spaces" =
-            stringr::str_detect(group_col, " ", negate = TRUE))
+            !grepl(" ", group_col))
     stopifnot(
         "sample_col name must not contain spaces" =
-            stringr::str_detect(sample_col, " ", negate = TRUE))
+            !grepl(" ", sample_col)
+        | sample_col == "rownames")
 
     if(!quiet) message("Running ", experiment_title)
 
     ## Define design formula
-    if(custom_design == TRUE & is(object, "DESeqDataSet")) {
-        design <- DESeq2::design(object)
+    if(custom_design != FALSE){
+        if(custom_design == TRUE & is(object, "DESeqDataSet")) {
+            design <- DESeq2::design(object)
         } else if(is(custom_design, "formula")) {
+            stopifnot(
+                "Please ensure the group_col is in the custom design" =
+                    grepl(group_col, as.character(custom_design)[2]))
             design <- custom_design
-            } else {
-                design <- formularise_vector(c(group_col, covariates))
-                if(is(object, "DESeqDataSet")) warning(
-                    "OBS: your design will be overwritten to: ",
-                    as.character(design))
+            
+            if(is(object, "DESeqDataSet")){
+                if(DESeq2::design(object) != design){
+                    message(
+                        "OBS: your design will be overwritten to: ",
+                        as.character(design))
                 }
+            }
+        }
+    } else{
+        design <- formularise_vector(c(group_col, covariates))
+    }
 
     ## Convert se to dds
-    if(is(object, "SummarizedExperiment")) {
-        SummarizedExperiment::colData(object) <- SummarizedExperiment::colData(
-            object) %>% 
-            tibble::as_tibble() %>% 
-            # Ensure columns are factors
-            dplyr::mutate(dplyr::across(dplyr::all_of(
-                c(group_col, covariates)), factor)) %>% 
-            S4Vectors::DataFrame(row.names = colnames(object))
+    if (is(object, "SummarizedExperiment")) {
         object <- DESeq2::DESeqDataSet(object, design)
-        }
+    }
 
     ## Load metadata
     if(!quiet) message("Preparing metadata")
     if(!(is(object, "matrix")) & is.null(metadata))
         metadata <- SummarizedExperiment::colData(object)
 
+    if(sample_col == "rownames"){
+        metadata$sample <- rownames(metadata)
+        sample_col <- "sample"
+    }
+    
     metadata <- prepare_metadata(metadata, group_col, paste(c(baseline, case)))
-
+    
+    # ensure columns are factors
+    cols_to_factor <- c(group_col, covariates)
+    metadata[cols_to_factor] <- lapply(metadata[cols_to_factor], factor)
+    
     ## Subsample metadata to only include samples present in the count matrix
     metadata <- metadata[metadata[[sample_col]] %in% colnames(object), ]
     stopifnot(
@@ -194,17 +230,22 @@ paired_diff <- function(
         column names of the count matrix." = nrow(metadata) > 0)
     
     ## Check for presence of undesired characters
-    if(any(stringr::str_detect(metadata[[sample_col]], "[- ]")))
-        message("OBS! Some or all sample names contain a '-' or ' ', ",
-                "which will cause downstream methods to complain.")
+    if(any(grepl("[- ]", metadata[[sample_col]])))
+        message(
+            "OBS! Some or all sample names contain a '-' or ' ', ",
+            "which will cause downstream methods to complain.",
+            "Please rename these.")
 
     ## Check sample_col is in metadata
     stopifnot(
         "Sample column not in metadata" = sample_col %in% colnames(metadata))
 
     # Add metadata to DESeqDataSet
-    if(is(object, "DESeqDataSet"))
+    if(is(object, "DESeqDataSet")){
+        object <- 
+            object[, colnames(object) %in% rownames(metadata), drop = FALSE]
         SummarizedExperiment::colData(object) <- S4Vectors::DataFrame(metadata)
+    }
 
     ## Convert count matrix to DESeqDataSet
     if(is(object, "matrix")){
@@ -218,14 +259,14 @@ paired_diff <- function(
 
     stopifnot(
         "Please ensure the rownames have the format 'gene:transcript'" =
-            (expression_only | (!expression_only & stringr::str_detect(
-                rownames(object)[1], ":"))))
+            (expression_only | (!expression_only & 
+                                    grepl(":", rownames(object)[1]))))
 
     # Rename object variable to dds
     dds <- object; rm(object)
 
     # Prefiltering
-    if(prefilter) dds <- pre_filter(dds, prefilter)
+    if(prefilter) dds <- pre_filter(dds, prefilter, quiet = quiet)
 
     # Detect surrogate variables
     if(run_sva){
@@ -267,9 +308,7 @@ paired_diff <- function(
         ## If only DGE is requested (used for SVA evaluations in the paper)
         if(expression_only){
             expression_aggregated <- aggregate_pvalue(
-                expression_results, gene = "gene", weights = "baseMean",
-                lfc = "lfc", type = "expression") %>% 
-                dplyr::mutate(padj = stats::p.adjust(pvalue, "fdr"))
+                expression_results, type = "expression")
             
             if(store_results) store_result(
                 expression_aggregated, paste0(
@@ -302,19 +341,19 @@ paired_diff <- function(
     }
 
     expression_aggregated <- aggregate_pvalue(
-        expression_results, gene = "gene", weights = "baseMean",
-        type = "expression")
+        expression_results, type = "expression")
     
     splicing_aggregated <- aggregate_pvalue(
-        splicing_results, gene = "gene", weights = "baseMean",
-        type = "splicing")
+        splicing_results, type = "splicing")
 
     
-    aggregated_pvals <- dplyr::full_join(
+    aggregated_pvals <- merge(
         expression_aggregated,
         splicing_aggregated,
         by = "gene",
-        suffix = c("_expression", "_splicing"))
+        suffixes = c("_expression", "_splicing"),
+        all = TRUE
+    )
 
 
     if(store_results) store_result(
@@ -343,25 +382,25 @@ paired_diff <- function(
 #' 
 #' @inheritParams paired_diff
 #' @param baseline_case A character vector with baseline and case values
-#' @importFrom stringr str_ends
 #' @note Suggested: importFrom readxl read_excel importFrom readr read_csv
 #' @keywords internal
 #' @return A data.frame
 prepare_metadata <- function(metadata, group_col, baseline_case){
 
-    if(is(metadata, "character")){
-        if(stringr::str_ends(metadata, ".xlsx")) {
+    if (is.character(metadata)) {
+        if (endsWith(metadata, ".xlsx")) {
             check_missing_package(package = "readxl")
-            metadata <- readxl::read_excel(metadata)}
-        else if(stringr::str_ends(metadata, ".csv")) {
+            metadata <- readxl::read_excel(metadata)
+        } else if (endsWith(metadata, ".csv")) {
             check_missing_package(package = "readr")
-            metadata <- readr::read_csv(metadata)}
-    } else if(!is(metadata, "data.frame") & !is(metadata, "DataFrame")){
+            metadata <- readr::read_csv(metadata)
+        }
+    } else if (!is(metadata, "data.frame") & !is(metadata, "DataFrame")){
             stop(
             "Please provide path to a metadata file or a data.frame /
             DataFrame object.")}
 
-    if(group_col %!in% colnames(metadata))
+    if(!(group_col %in% colnames(metadata)))
         stop("Could not find column ", group_col, " in metadata.")
     
     # Remove irrelevant groups
@@ -387,15 +426,16 @@ prepare_metadata <- function(metadata, group_col, baseline_case){
 }
 
 
-#' Convert matrix to DESeqDataSet
+#' Convert matrix to \code{\link[DESeq2]{DESeqDataSet}}
 #' 
 #' This internal function converts a matrix and metadata object into a
-#' DESeqDataSet, using the group_col as the basic design.
+#' \code{\link[DESeq2]{DESeqDataSet}}, using the \code{group_col}
+#' as the basic design.
 #' 
 #' @param tx_count Count matrix to convert to dds
 #' @inheritParams paired_diff
 #' @keywords internal
-#' @return A DESeqDataSet
+#' @return A \code{\link[DESeq2]{DESeqDataSet}}
 convert_matrix_to_dds <- function(tx_count, metadata, design){
 
     dds <- DESeq2::DESeqDataSetFromMatrix(
@@ -405,85 +445,86 @@ convert_matrix_to_dds <- function(tx_count, metadata, design){
     return(dds)
 }
 
-#' Run SVA on DESeqDataSet
+#' Run SVA on \code{\link[DESeq2]{DESeqDataSet}}
 #' 
 #' This internal function runs a surrogate variable analysis on the
-#' count matrix in the DESeqDataSet. 
+#' count matrix in the \code{\link[DESeq2]{DESeqDataSet}} 
 #' The found surrogate variables will then be added to the metadata
-#' and the design formula in the DESeqDataSet object to be used in
+#' and the design formula in the \code{\link[DESeq2]{DESeqDataSet}}
+#' object to be used in
 #' the DGE and DTU analyses.
 #'  
 #' @inheritParams paired_diff
-#' @param dds A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} 
+#' @param dds A DESeqDataSet. See \code{\link[DESeq2]{DESeqDataSet}} 
 #' for more information about the object type.
 #' @importFrom stats model.matrix cor na.omit
 #' @importFrom sva sva
-#' @importFrom stringr str_split
 #' @keywords internal
 #' @return A DESeqDataSet
-run_sva <- function(dds, quiet = FALSE){
-
-    if(!quiet) message("Running SVA")
+run_sva <- function(dds, quiet = FALSE) {
+    if (!quiet) message("Running SVA")
+    
     # Normalize counts with DESeq2 for SVA
-    normalized_counts <- DESeq2::normTransform(dds) %>% 
-        SummarizedExperiment::assay()
-
+    normalized_counts <- SummarizedExperiment::assay(
+        DESeq2::normTransform(dds)
+        )
+    
     # Extract metadata
     metadata <- SummarizedExperiment::colData(dds)
-
+    
     # Get dds design
     design <- DESeq2::design(dds)
-    reduced <- design %>% 
-        reduce_formula()
+    reduced <- reduce_formula(design)
     
-
-    # Define model matrix 
+    # Define model matrix
     mod1 <- stats::model.matrix(design, data = metadata)
     mod0 <- stats::model.matrix(reduced, data = metadata)
-
+    
     # Run SVA
     svseq <- sva::sva(normalized_counts, mod = mod1, mod0 = mod0)
-    if(!quiet) message("\nFound ", svseq$n.sv, " surrogate variables")
-
-    if(svseq$n.sv == 0) return(dds)
-
+    if (!quiet) message("\nFound ", svseq$n.sv, " surrogate variables")
+    
+    if (svseq$n.sv == 0) return(dds)
+    
     # Store surrogate variables and rename for ease of reference
-    svs <- tibble::as_tibble(svseq$sv, .name_repair = "minimal")
+    svs <- data.frame(svseq$sv)
     colnames(svs) <- paste0("sv", seq_len(svseq$n.sv))
-
+    
     # Remove svs that confound with mod1
-    cors <- as.matrix(stats::cor(svs, mod1[,2:ncol(mod1)]))
+    cors <- as.matrix(stats::cor(svs, mod1[, seq.int(2, ncol(mod1))]))
     cors[abs(cors) > 0.8] <- NA
-    if(any(is.na(cors)) & !quiet) message(
-        "Removing surrogate variables confounding with design model.")
+    if (any(is.na(cors)) & !quiet)
+        message("Removing surrogate variables confounding with design model.")
     cors <- stats::na.omit(cors)
-    svs <- svs[, rownames(cors)]
-
-    if(!quiet) message("Redefining DESeq2 design formula\n")
+    svs <- svs[, rownames(cors), drop = FALSE]
+    
+    if (!quiet) message("Redefining DESeq2 design formula\n")
+    
     # Add svs to dds colData
     SummarizedExperiment::colData(dds) <- cbind(metadata, svs)
+    
     # Redefine design formula to include svs
-    DESeq2::design(dds) <- formularise_vector(c(
-        as.character(design)[2] %>% 
-            stringr::str_split(" \\+ ", simplify = TRUE), colnames(svs)))
-
+    design_vars <- unlist(strsplit(as.character(design)[2], " \\+ "))
+    design_vars <- c(design_vars, colnames(svs))
+    DESeq2::design(dds) <- formularise_vector(design_vars)
+    
     return(dds)
 }
+
 
 
 #' Run DESeq2 analysis
 #' 
 #' This internal function runs a differential gene expression analysis using
-#' DESeq2 (See \code{?DESeq2::DESeq} for more detailed information).
+#' DESeq2 (See \code{\link[DESeq2:DESeq]{DESeq}} for more detailed information).
 #' Here, the surrogate variables found by \code{\link{run_sva}},
-#' if any, will be added to the DESeqDataSet before running the analysis.
+#' if any, will be added to the \code{\link[DESeq2:DESeqDataSet]{DESeqDataSet}}
+#' before running the analysis.
 #'   
 #' @inheritParams paired_diff
 #' @inheritParams run_sva
 #' @param ... Additional parameters passed to
 #' \code{\link[DESeq2:DESeq]{DESeq()}}
-#' @importFrom tidyr separate
-#' @importFrom dplyr rename
 #' @keywords internal
 #' @return A data.frame
 #' @usage
@@ -515,14 +556,12 @@ run_deseq <- function(
         parallel = FALSE,
         BPPARAM = BiocParallel::bpparam(),
         ...){
-
+    
     if(!quiet) message("Running DESeq2")
-
+    
     # Reduce design formula to surrogate variables and covariates
-    reduced <- DESeq2::design(dds) %>% 
-        reduce_formula()
-
-
+    reduced <- reduce_formula(DESeq2::design(dds))
+    
     dds <- DESeq2::DESeq(
         dds,
         reduced = reduced,
@@ -532,22 +571,21 @@ run_deseq <- function(
         fitType = fit_type,
         quiet = quiet,
         ...)
-
+    
     # Store DESeqDataSet with DESeq2 analysis
     if(store_results) {
         store_result(
             dds, paste0(experiment_title, "_dds.RDS"),
             "DESeqDataSet", quiet = quiet)
     }
-
-
+    
     if(!quiet) message("Extracting results")
     expression_results <- DESeq2::results(
         dds,
         contrast = c(group_col, paste(c(case, baseline))),
         parallel = parallel,
         BPPARAM = BPPARAM)
-
+    
     # Store result extraction
     if(store_results) {
         if(store_results) store_result(
@@ -555,27 +593,34 @@ run_deseq <- function(
             paste0(experiment_title, "_expression_results.RDS"),
             "differential expression results", quiet = quiet)
     }
-
-    # Convert result to tibble
-    expression_results <- expression_results %>% 
-        tibble::as_tibble(rownames = "gene_tx") %>% 
-        tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
-        dplyr::rename(lfc = .data$log2FoldChange)
-
+    
+    # Separate gene and transcript
+    gene_tx <- do.call("rbind", strsplit(
+        rownames(expression_results), ":", fixed = TRUE))
+    expression_results$gene <- gene_tx[, 1]
+    expression_results$transcript <- gene_tx[, 2]
+    expression_results$lfc <- expression_results$log2FoldChange
+    
+    # Reorder columns
+    expression_results <- expression_results[, c(
+        "gene", "transcript", "lfc", "pvalue", "padj", "baseMean")]
+    
     return(expression_results)
 }
+
 
 
 #' Run DEXSeq analysis
 #' 
 #' This internal function runs a differential transcript usage analysis using
-#' DEXSeq (See \code{?DEXSeq::DEXSeq} for more detailed information).
+#' DEXSeq (See \code{\link[DEXSeq:DEXSeq]{DEXSeq}}
+#' for more detailed information).
 #' Here, the surrogate variables found by \code{\link{run_sva}}, if any,
-#' will be added to the DEXSeqDataSet before running the analysis.
+#' will be added to the \code{\link[DEXSeq:DEXSeqDataSet]{DEXSeqDataSet}}
+#' before running the analysis.
 #' 
 #' @inheritParams paired_diff
 #' @inheritParams run_sva
-#' @importFrom dplyr select all_of rename mutate case_when
 #' @keywords internal
 #' @return A data.frame
 #' @usage
@@ -590,7 +635,7 @@ run_deseq <- function(
 #'     parallel = FALSE,
 #'     BPPARAM = BiocParallel::bpparam()
 #'     )
-#' 
+#'     
 run_dexseq <- function(
         dds,
         group_col,
@@ -601,50 +646,42 @@ run_dexseq <- function(
         quiet = FALSE,
         parallel = FALSE,
         BPPARAM = BiocParallel::bpparam()){
-
+    
     if(!quiet) message("Initiating DEXSeq")
-
+    
     stopifnot(
         "Please ensure the rownames have the format 'gene:transcript'" =
-            stringr::str_detect(rownames(dds)[1], ":"))
-
+            grepl(":", rownames(dds)[1]))
+    
     # Extract group and feature from rownames of DESeq2 object
-    group_feat <- rownames(dds) %>% 
-        stringr::str_split(":", simplify = TRUE)
-
-    # Extract the found surrogate variables and  covariates
-    svs_covariates <- DESeq2::design(dds) %>% 
-        reduce_formula(formularise = FALSE)
-
+    group_feat <- do.call("rbind", strsplit(rownames(dds), ":", fixed = TRUE))
+    
+    # Extract the found surrogate variables and covariates
+    svs_covariates <- colnames(SummarizedExperiment::colData(dds))
+    svs_covariates <- svs_covariates[grep("^sv", svs_covariates)]
+    
     # Add surrogate variables and covariates to DEXSeq design formula
-    if(svs_covariates[[1]] == "1"){
-        svs_covariates <- NULL
+    if(length(svs_covariates) == 0){
         design_formula <- formularise_vector(
             c("sample", "exon", "condition:exon"))
         reduced_formula <- formularise_vector(c("sample", "exon"))
     } else{
-        design_formula <- c("sample", "exon", "condition:exon") %>% 
-            c(paste0(svs_covariates, ":exon")) %>% 
-            formularise_vector()
-    reduced_formula <- c("sample", "exon") %>% 
-        c(paste0(svs_covariates, ":exon")) %>% 
-        formularise_vector()
+        design_formula <- formularise_vector(c(
+            "sample", "exon", "condition:exon",
+            paste0(svs_covariates, ":exon")))
+        reduced_formula <- formularise_vector(c(
+            "sample", "exon",
+            paste0(svs_covariates, ":exon")))
+        
     }
-
-    # Define sample data based on DESeq2 object
-    sample_data <- SummarizedExperiment::colData(dds) %>% 
-        as.data.frame(row.names = SummarizedExperiment::colnames(dds)) %>% 
-        dplyr::select(dplyr::all_of(c(group_col, svs_covariates))) %>% 
-        dplyr::rename(condition = dplyr::all_of(group_col)) %>% 
-        dplyr::mutate(condition = dplyr::case_when(
-            condition == baseline ~ "B", 
-            condition == case ~ "C") %>% 
-                factor(levels = c("B", "C")))
-
-
-
+    
     # Convert to DEXSeqDataSet
     if(!quiet) message("Creating DEXSeqDataSet")
+    sample_data <- create_sample_data(
+        dds, group_col, baseline, case, svs_covariates)
+    
+    dds <- dds[, colnames(dds) %in% rownames(sample_data), drop = FALSE]
+    
     dxd <- DEXSeq::DEXSeqDataSet(
         countData = DESeq2::counts(dds),
         sampleData = sample_data,
@@ -652,14 +689,12 @@ run_dexseq <- function(
         groupID = group_feat[, 1],
         featureID = group_feat[, 2]
     )
-
+    
     # Store DEXSeqDataSet before DEXSeq analysis
     if(store_results) {
-        store_result(
-            dxd, paste0(experiment_title, "_dxd.RDS"), "DEXSeqDataSet",
-            quiet = quiet)
+        saveRDS(dxd, paste0(experiment_title, "_dxd.RDS"))
     }
-
+    
     ### Run DEXSeq
     if(!quiet) message("\nRunning DEXSeq -- This might take a while")
     if(!parallel) BiocParallel::register(BiocParallel::SerialParam())
@@ -668,56 +703,52 @@ run_dexseq <- function(
         reducedModel = reduced_formula,
         BPPARAM = BPPARAM,
         quiet = quiet)
-
+    
     # Store result extraction
-    if(store_results) store_result(
-        splicing_results, paste0(experiment_title, "_splicing_results.RDS"),
-        "differnetial splicing results", quiet = quiet)
-
+    if(store_results) saveRDS(
+        splicing_results,
+        paste0(experiment_title, "_splicing_results.RDS"))
+    
     # Rename LFC column for consistency and human-readability
-    splicing_results <- splicing_results %>% 
-        tibble::as_tibble() %>% 
-        dplyr::rename(
-            lfc = .data$log2fold_C_B,
-            baseMean = .data$exonBaseMean,
-            gene = .data$groupID)
+    # splicing_results <- data.frame(splicing_results)
+    splicing_results <- splicing_results[, c(
+        "groupID", "featureID", "exonBaseMean",
+        "log2fold_C_B", "padj", "pvalue")]
 
+    # Rename columns for consistency and human-readability
+    colnames(splicing_results) <- c(
+        "gene", "transcript", "baseMean", "lfc", "padj", "pvalue")
+    
     return(splicing_results)
 }
+
 
 #' Run limma and voom analyses
 #' 
 #' This internal function runs a differential gene expression analysis using
-#' limma (See \code{?limma::lmFit} for more detailed information), and 
-#' differential gene splicing using voom (See \code{limma::voom}).
+#' limma (See \code{\link[limma]{lmFit}} for more detailed information), and 
+#' differential gene splicing using voom (See \code{\link[limma]{voom}}).
 #' Here, the surrogate variables found by \code{\link{run_sva}},
 #' if any, will be added to the DESeqDataSet before running the analysis.
 #'   
 #' @inheritParams paired_diff
 #' @inheritParams run_sva
-#' @importFrom tidyr separate
-#' @importFrom tibble as_tibble
-#' @importFrom dplyr rename select left_join
-#' @importFrom limma voom lmFit eBayes topTable diffSplice topSplice
+#' @importFrom limma voom lmFit eBayes topTable
+#' diffSplice topSplice is.fullrank
 #' @import DESeq2
 #' @importFrom stats model.matrix
 #' @importFrom SummarizedExperiment colData
 #' @keywords internal
-#' @return A data.frame
+#' @return A DFrame
 #' @usage
-#' run_deseq(
+#' run_limma(
 #'     dds,
 #'     group_col,
 #'     baseline,
 #'     case,
-#'     test = "LRT",
-#'     fit_type = "local",
 #'     experiment_title = "Experiment Title",
 #'     store_results = FALSE,
-#'     quiet = FALSE,
-#'     parallel = FALSE,
-#'     BPPARAM = BiocParallel::bpparam(),
-#'     ...
+#'     quiet = FALSE
 #'     )
 #' 
 run_limma <- function(
@@ -754,39 +785,33 @@ run_limma <- function(
         dgeModel, sort.by = "p", coef = 2, number = Inf)
     
     # Differential splicing
-    dguModel <- diffSplice( 
+    dguModel <- limma::diffSplice( 
         fit,
-        exonid = stringr::str_remove(rownames(fit), pattern = ".*:"),
-        geneid = stringr::str_remove(rownames(fit), pattern = ":.*"),
+        exonid = sub(".*:", "", rownames(fit)),
+        geneid = sub(":.*", "", rownames(fit)),
         verbose = !quiet
     )
     splicing <- limma::topSplice(
         dguModel, coef = 2, number = Inf, sort.by = "p", test = "t")
     
     
-    # Convert result to tibble
-    expression <- expression %>% 
-        tibble::as_tibble(rownames = "gene_tx") %>% 
-        tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
-        dplyr::rename(
-            lfc = .data$logFC,
-            padj = .data$adj.P.Val,
-            pvalue = .data$P.Value,
-            baseMean = .data$AveExpr)
-    splicing <- splicing %>% 
-        tibble::as_tibble() %>%
-        dplyr::rename(
-            padj = .data$FDR,
-            lfc = .data$logFC,
-            pvalue = .data$P.Value,
-            gene = .data$GeneID,
-            transcript = .data$ExonID
-            ) %>% 
-        dplyr::left_join(
-            expression %>% dplyr::select(transcript, baseMean),
-            by = "transcript"
-        )
-        
+    # Convert result to data.frame and separate gene and transcript
+    # expression <- data.frame(expression, row.names = rownames(expression))
+    expression$gene <- sub(":.*", "", rownames(expression))
+    expression$transcript <- sub(".*:", "", rownames(expression))
+    names(expression) <- c(
+        "lfc", "baseMean", "t", "pvalue", "padj", "B", "gene", "transcript")
+    expression <- expression[, c(
+        "gene", "transcript", "lfc", "padj", "pvalue", "baseMean")]
+    
+    # splicing <- data.frame(splicing, row.names = NULL)
+    names(splicing) <- c("transcript", "gene", "lfc", "Test", "pvalue", "padj")
+    splicing <- splicing[, c("gene", "transcript", "lfc", "padj", "pvalue")]
+    
+    
+    baseMean <- expression$baseMean
+    names(baseMean) <- expression$transcript
+    splicing$baseMean <- baseMean[as.character(splicing$transcript)]
     
     # Store results before aggregation
     if(store_results) {
@@ -796,9 +821,10 @@ run_limma <- function(
             "differential expression/splicing results", quiet = quiet)
     }
     
-    return(list("expression" = expression, "splicing" = splicing))
+    return(list(
+        "expression" = S4Vectors::DataFrame(expression),
+        "splicing" = S4Vectors::DataFrame(splicing)))
 }
-
 
 
 
@@ -816,65 +842,57 @@ run_limma <- function(
 #' DESeq2 results or "splicing" for aggregation of DEXSeq results
 #' @param weights (Default: "baseMean") The column to use
 #' for weighting the aggregation
-#' @importFrom dplyr filter rename mutate group_by summarise case_when
 #' @importFrom aggregation lancaster
 #' @importFrom stats weighted.mean
+#' @importFrom S4Vectors split DataFrame
 #' @keywords internal
 #' @usage 
 #' aggregate_pvalue(
 #'     df,
-#'     gene = "gene",
-#'     p = "pvalue",
-#'     weights = "baseMean",
-#'     lfc = "lfc",
-#'     type = "expression"
+#'     type = c("expression", "splicing")
 #'     )
 #' @return A data.frame
-aggregate_pvalue <- function (
+aggregate_pvalue <- function(
         df,
-        gene = "gene",
-        p = "pvalue",
-        weights = "baseMean",
-        lfc = "lfc",
-        type = "expression"){
-    stopifnot("df is not a data.frame-type object" = is(df, "data.frame"))
-    stopifnot(all(c("padj", gene, p, weights, lfc) %in% colnames(df)))
+        type = c("expression", "splicing")) {
+    
+    # Check input data
+    required_cols <- c("gene", "pvalue", "baseMean", "lfc")
+    stopifnot(
+        "Input data is not a data.frame" = 
+            is(df, "data.frame") | is(df, "DFrame"),
+        "Columns 'gene', 'pvalue', 'baseMean', and 'lfc' are not in input data"
+        = all(required_cols %in% colnames(df)))
+    
+    # Check input parameters
+    type <- match.arg(type)
+    
+    # Rename columns and convert values to the correct type
+    df <- df[!is.na(df$pvalue) & !is.na(df$baseMean),]
+    # Prevent warning from Lancaster
+    if(any(df$pvalue < 10e-320)) df$pvalue[df$pvalue < 10e-320] <- 10e-320
 
-    type <- tolower(type)
-
-    res <- df %>% 
-        dplyr::filter(!is.na(padj)) %>% 
-        dplyr::rename(
-            pvalue = .data[[p]],
-            gene = .data[[gene]],
-            lfc = .data[[lfc]],
-            weights = .data[[weights]]) %>% 
-        # Prevent warning from Lancaster
-        dplyr::mutate(pvalue = dplyr::case_when(
-            pvalue < 10e-320 ~ 10e-320,
-            TRUE ~ pvalue)) %>% 
-        dplyr::group_by(gene)
-    # p value aggregation
-    if(type == "splicing"){
-        res <- res %>% 
-            dplyr::summarise(
-            lfc = lfc[which(pvalue == min(pvalue))][[1]],
-            pvalue = aggregation::lancaster(pvalue, weights)
-            )
-        } else if(type == "expression"){
-        res <- res %>% 
-            dplyr::summarise(
-                lfc = stats::weighted.mean(lfc, weights),
-                pvalue = aggregation::lancaster(pvalue, weights)
-                )
-        }
-    # Adjust p values and remove zeros to prevent downstream issues
-    res <- res %>% 
-        dplyr::mutate(
-            padj = stats::p.adjust(pvalue, "fdr"),
-            pvalue = dplyr::case_when(
-                pvalue < 10e-320 ~ 10e-320,
-                TRUE ~ pvalue)) 
+    # Split data by gene and perform aggregation
+    res <- S4Vectors::split(df, df$gene)
+    if(type == "splicing") {
+        res <- lapply(res, function(x) {
+            lfc <- x$lfc[which.min(x$pvalue)]
+            pvalue <- aggregation::lancaster(x$pvalue, weights = x$baseMean)
+            data.frame(lfc = lfc, pvalue = pvalue)
+        })
+    } else if(type == "expression") {
+        res <- lapply(res, function(x) {
+            lfc <- weighted.mean(x$lfc, w = x$baseMean)
+            pvalue <- aggregation::lancaster(x$pvalue, weights = x$baseMean)
+            data.frame(lfc = lfc, pvalue = pvalue)
+        })
+    }
+    
+    # Combine results and adjust p values
+    res <- do.call("rbind", res)
+    res <- S4Vectors::DataFrame(gene = rownames(res), res)
+    res$padj <- stats::p.adjust(res$pvalue, "fdr")
+    #if(any(res$pvalue < 10e-320)) res$pvalue[res$pvalue < 10e-320] <- 10e-320
+    
     return(res)
 }
-

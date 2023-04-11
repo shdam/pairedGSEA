@@ -1,5 +1,6 @@
 
 test_that("plot_ora generates a ggplot object", {
+    data("example_ora_results")
     plt <- plot_ora(example_ora_results)
     expect_s3_class(plt, "ggplot")
 })
@@ -12,18 +13,13 @@ test_that("plot_ora returns an interactive plotly plot when plotly = TRUE", {
 test_that("plot_ora throws an error if no significant gene sets in input data", {
     ora_empty <- example_ora_results[0, ]
     expect_error(plot_ora(ora_empty),
-                 "No significant gene sets in input data")
+                 "No over-represented gene sets found.")
 })
 
-test_that("plot_ora converts a numeric pattern to a string",
-          {
-              # Call function with numeric pattern
-              plot1 <- plot_ora(example_ora_results, pattern = 123)
-              # Convert pattern to character and call function again
-              plot2 <- plot_ora(example_ora_results, pattern = "123")
-              # Check that the two plots are identical
-              expect_identical(plot1, plot2)
-          })
+test_that("plot_ora throws warning if pattern not found", {
+    expect_warning(plot_ora(example_ora_results, pattern = 123),
+                 "No matches found with pattern: 123")
+})
 
 test_that("plot_ora throws an error if input data is missing splicing data",
           {

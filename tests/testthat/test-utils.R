@@ -152,3 +152,35 @@ test_that("convert_matrix_to_dds converts matrix to DESeq2 object", {
     dds_filtered <- suppressWarnings(pre_filter(dds, threshold = 0))
     expect_equal(dim(dds_filtered), c(3, 2))
 })
+
+
+test_that("store_result function works correctly", {
+    # create a dummy object to save
+    x <- data.frame(matrix(1:6, ncol = 2))
+    colnames(x) <- c("A", "B")
+    # test RDS
+    store_result(x, "test_result.RDS")
+    expect_true(file.exists("results/test_result.RDS"))
+    file.remove("results/test_result.RDS")
+    expect_false(file.exists("results/test_result.RDS"))
+    # test csv
+    store_result(x, "results/test_result.csv")
+    expect_true(file.exists("results/test_result.csv"))
+    file.remove("results/test_result.csv")
+    expect_false(file.exists("results/test_result.csv"))
+    # test xlsx
+    store_result(x, "results/test_result.xlsx")
+    expect_true(file.exists("results/test_result.xlsx"))
+    file.remove("results/test_result.xlsx")
+    expect_false(file.exists("results/test_result.xlsx"))
+    # test rdata
+    store_result(x, "results/test_result.rdata")
+    expect_true(file.exists("results/test_result.rdata"))
+    file.remove("results/test_result.rdata")
+    expect_false(file.exists("results/test_result.rdata"))
+    # test tsv
+    store_result(x, "results/test_result.tsv")
+    expect_true(file.exists("results/test_result.tsv"))
+    file.remove("results/test_result.tsv")
+    expect_false(file.exists("results/test_result.tsv"))
+})

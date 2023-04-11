@@ -4,23 +4,18 @@
 \alias{run_limma}
 \title{Run limma and voom analyses}
 \usage{
-run_deseq(
+run_limma(
     dds,
     group_col,
     baseline,
     case,
-    test = "LRT",
-    fit_type = "local",
     experiment_title = "Experiment Title",
     store_results = FALSE,
-    quiet = FALSE,
-    parallel = FALSE,
-    BPPARAM = BiocParallel::bpparam(),
-    ...
+    quiet = FALSE
     )
 }
 \arguments{
-\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} 
+\item{dds}{A DESeqDataSet. See \code{\link[DESeq2]{DESeqDataSet}} 
 for more information about the object type.}
 
 \item{group_col}{The metadata column specifying the what group each
@@ -31,20 +26,21 @@ sample is associated with}
 \item{case}{Group value of case samples}
 
 \item{experiment_title}{Title of your experiment. Your results will be
-stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
+stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.}
 
-\item{store_results}{(Default: TRUE) A logical indicating if results should
-be stored in the folder "results/".}
+\item{store_results}{(Default: \code{FALSE})
+A logical indicating if results should
+be stored in the folder \code{"results/"}.}
 
-\item{quiet}{(Default: FALSE) Whether to print messages}
+\item{quiet}{(Default: \code{FALSE}) Whether to print messages}
 }
 \value{
-A data.frame
+A DFrame
 }
 \description{
 This internal function runs a differential gene expression analysis using
-limma (See \code{?limma::lmFit} for more detailed information), and 
-differential gene splicing using voom (See \code{limma::voom}).
+limma (See \code{\link[limma]{lmFit}} for more detailed information), and 
+differential gene splicing using voom (See \code{\link[limma]{voom}}).
 Here, the surrogate variables found by \code{\link{run_sva}},
 if any, will be added to the DESeqDataSet before running the analysis.
 }

@@ -6,28 +6,24 @@
 \usage{
 aggregate_pvalue(
     df,
-    gene = "gene",
-    p = "pvalue",
-    weights = "baseMean",
-    lfc = "lfc",
-    type = "expression"
+    type = c("expression", "splicing")
     )
 }
 \arguments{
 \item{df}{A data.frame-type object with pvalues to aggregate}
 
+\item{type}{(Default: "expression") 
+Either "expression" for aggregation of
+DESeq2 results or "splicing" for aggregation of DEXSeq results}
+
 \item{gene}{(Default: "gene") The column with gene names}
 
 \item{p}{(Default: "pvalue") The column with p-values}
 
-\item{weights}{(Default: "baseMean") The column to use
-for weighting the aggregation}
-
 \item{lfc}{(Default: "lfc") The column with log2-foldchanges}
 
-\item{type}{(Default: "expression") 
-Either "expression" for aggregation of
-DESeq2 results or "splicing" for aggregation of DEXSeq results}
+\item{weights}{(Default: "baseMean") The column to use
+for weighting the aggregation}
 }
 \value{
 A data.frame

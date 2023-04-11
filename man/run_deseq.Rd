@@ -20,7 +20,7 @@ run_deseq(
     )
 }
 \arguments{
-\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} 
+\item{dds}{A DESeqDataSet. See \code{\link[DESeq2]{DESeqDataSet}} 
 for more information about the object type.}
 
 \item{group_col}{The metadata column specifying the what group each
@@ -35,23 +35,31 @@ Wald significance tests (defined by \code{\link[DESeq2]{nbinomWaldTest}}),
 or the likelihood ratio test on the difference in deviance between a
 full and reduced model formula (defined by \code{\link[DESeq2]{nbinomLRT}})}
 
-\item{fit_type}{(Default: "local") Either "parametric", "local", "mean", or
-"glmGamPoi" for the type of fitting of dispersions to the mean intensity.}
+\item{fit_type}{(Default: \code{"local"}) Either 
+\code{"parametric", "local", "mean", or "glmGamPoi"}
+for the type of fitting of dispersions to the mean intensity.}
 
 \item{experiment_title}{Title of your experiment. Your results will be
-stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
+stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.}
 
-\item{store_results}{(Default: TRUE) A logical indicating if results should
-be stored in the folder "results/".}
+\item{store_results}{(Default: \code{FALSE})
+A logical indicating if results should
+be stored in the folder \code{"results/"}.}
 
-\item{quiet}{(Default: FALSE) Whether to print messages}
+\item{quiet}{(Default: \code{FALSE}) Whether to print messages}
 
-\item{parallel}{(Default: FALSE) If FALSE, no parallelization.
-If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.}
+\item{parallel}{(Default: \code{FALSE}) If FALSE, no parallelization.
+If TRUE, parallel execution using
+\code{\link[BiocParallel:bpparam]{BiocParallel}}, see next argument
+\code{BPPARAM}.}
 
-\item{BPPARAM}{(Default: \code{BiocParallel::bpparam()}) An optional
-parameter object passed internally to bplapply when parallel = TRUE.
-If not specified, the parameters last registered with registerwill be used.}
+\item{BPPARAM}{(Default: 
+\code{\link[BiocParallel:bpparam]{bpparam()}})
+An optional
+parameter object passed internally to
+\code{\link[BiocParallel:bplapply]{bplapply}}
+when \code{parallel = TRUE}.
+If not specified, the parameters last registered with register will be used.}
 
 \item{...}{Additional parameters passed to
 \code{\link[DESeq2:DESeq]{DESeq()}}}
@@ -61,8 +69,9 @@ A data.frame
 }
 \description{
 This internal function runs a differential gene expression analysis using
-DESeq2 (See \code{?DESeq2::DESeq} for more detailed information).
+DESeq2 (See \code{\link[DESeq2:DESeq]{DESeq}} for more detailed information).
 Here, the surrogate variables found by \code{\link{run_sva}},
-if any, will be added to the DESeqDataSet before running the analysis.
+if any, will be added to the \code{\link[DESeq2:DESeqDataSet]{DESeqDataSet}}
+before running the analysis.
 }
 \keyword{internal}

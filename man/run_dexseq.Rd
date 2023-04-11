@@ -17,7 +17,7 @@ run_dexseq(
     )
 }
 \arguments{
-\item{dds}{A DESeqDataSet. See \code{?DESeq2::DESeqDataSet} 
+\item{dds}{A DESeqDataSet. See \code{\link[DESeq2]{DESeqDataSet}} 
 for more information about the object type.}
 
 \item{group_col}{The metadata column specifying the what group each
@@ -28,27 +28,36 @@ sample is associated with}
 \item{case}{Group value of case samples}
 
 \item{experiment_title}{Title of your experiment. Your results will be
-stored in paste0("results/", experiment_title, "_pairedGSEA.RDS").}
+stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.}
 
-\item{store_results}{(Default: TRUE) A logical indicating if results should
-be stored in the folder "results/".}
+\item{store_results}{(Default: \code{FALSE})
+A logical indicating if results should
+be stored in the folder \code{"results/"}.}
 
-\item{quiet}{(Default: FALSE) Whether to print messages}
+\item{quiet}{(Default: \code{FALSE}) Whether to print messages}
 
-\item{parallel}{(Default: FALSE) If FALSE, no parallelization.
-If TRUE, parallel execution using BiocParallel, see next argument BPPARAM.}
+\item{parallel}{(Default: \code{FALSE}) If FALSE, no parallelization.
+If TRUE, parallel execution using
+\code{\link[BiocParallel:bpparam]{BiocParallel}}, see next argument
+\code{BPPARAM}.}
 
-\item{BPPARAM}{(Default: \code{BiocParallel::bpparam()}) An optional
-parameter object passed internally to bplapply when parallel = TRUE.
-If not specified, the parameters last registered with registerwill be used.}
+\item{BPPARAM}{(Default: 
+\code{\link[BiocParallel:bpparam]{bpparam()}})
+An optional
+parameter object passed internally to
+\code{\link[BiocParallel:bplapply]{bplapply}}
+when \code{parallel = TRUE}.
+If not specified, the parameters last registered with register will be used.}
 }
 \value{
 A data.frame
 }
 \description{
 This internal function runs a differential transcript usage analysis using
-DEXSeq (See \code{?DEXSeq::DEXSeq} for more detailed information).
+DEXSeq (See \code{\link[DEXSeq:DEXSeq]{DEXSeq}}
+for more detailed information).
 Here, the surrogate variables found by \code{\link{run_sva}}, if any,
-will be added to the DEXSeqDataSet before running the analysis.
+will be added to the \code{\link[DEXSeq:DEXSeqDataSet]{DEXSeqDataSet}}
+before running the analysis.
 }
 \keyword{internal}
