@@ -6,10 +6,13 @@
 \title{Output of running paired_ora on example_diff_result
 and gene sets extracted from MSigDB}
 \format{
-A data.frame with 559 rows and 18 columns.
+A `DataFrame` with 559 rows and 18 columns.
 }
 \usage{
 data("example_ora_results")
+}
+\value{
+A `DataFrame`
 }
 \description{
 This example result is used primarily to do package tests

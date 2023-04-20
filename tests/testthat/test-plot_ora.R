@@ -1,7 +1,11 @@
-
+data("example_ora_results")
 test_that("plot_ora generates a ggplot object", {
-    data("example_ora_results")
     plt <- plot_ora(example_ora_results)
+    expect_s3_class(plt, "ggplot")
+})
+
+test_that("plot_ora works with a DFrame", {
+    plt <- plot_ora(S4Vectors::DataFrame(example_ora_results))
     expect_s3_class(plt, "ggplot")
 })
 

@@ -115,7 +115,7 @@ paired_ora <- function(
             ora_joined, paste0(experiment_title, "_ora.RDS"),
             "ORA on both DESeq2 and DEXSeq results", quiet = quiet)
     }
-    return(ora_joined)
+    return(S4Vectors::DataFrame(ora_joined))
 }
 
 

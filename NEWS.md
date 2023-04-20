@@ -1,3 +1,10 @@
+# pairedGSEA 0.99.6
+
+* Improved test coverage and depth
+* Coerced `paired_ora` output to `DataFrame` from `data.table`
+* Added value field to data man pages
+
+
 # pairedGSEA 0.99.5
 
 * Remove non-exported man pages

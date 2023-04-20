@@ -5,10 +5,13 @@
 \alias{example_diff_result}
 \title{Output of running paired_diff on example_se.}
 \format{
-A data.frame with 954 rows and 7 columns.
+A `DataFrame` with 954 rows and 7 columns.
 }
 \usage{
 data("example_diff_result")
+}
+\value{
+A `DataFrame`.
 }
 \description{
 This example result is used primarily to do package tests

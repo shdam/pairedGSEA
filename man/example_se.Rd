@@ -5,7 +5,7 @@
 \alias{example_se}
 \title{A small subset of the GEO:GSE61220 data set.}
 \format{
-A SummarizedExperiment
+A `SummarizedExperiment`
 \describe{
     \item{assay}{Count matrix with 5611 transcripts and 6 samples}
     \item{colData}{The metadata associated with the count matrix}
@@ -16,6 +16,9 @@ A SummarizedExperiment
 }
 \usage{
 data("example_se")
+}
+\value{
+A `SummarizedExperiment`
 }
 \description{
 The subset is used in the vignettes and function man pages.
