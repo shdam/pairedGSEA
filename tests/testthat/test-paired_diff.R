@@ -287,6 +287,19 @@ test_that("prepare_metadata errors", {
             "1_2"
     ), "Please provide path to a metadata file or a data.frame /
             DataFrame object.")
+    expect_error(
+        prepare_metadata(
+            "metadata.csv", 
+            "1",
+            "2"
+        ), "'metadata.csv' does not exist.*")
+    
+    expect_error(
+        prepare_metadata(
+            SummarizedExperiment::colData(example_se), 
+            "non_existing",
+            "2"
+        ), "Could not find column non_existing in metadata")
     
 })
 
@@ -420,4 +433,16 @@ test_that("run_deseq handles invalid arguments", {
     expect_error(run_deseq(
         test_dds, group_col = "invalid", baseline = "1", case = "2", quiet = TRUE),
         "invalid should be the name of a factor in the colData of the DESeqDataSet")
+})
+
+
+test_that("run_sva finds surrogate variables",{
+    
+    test_dds <- DESeqDataSetFromMatrix(countData = assay(example_se), colData = colData(example_se), design = ~group_nr)
+    
+    set.seed(500)
+    sva_dds <- run_sva(test_dds)
+    
+    expect_true(grepl("sv", as.character(DESeq2::design(sva_dds))[2]))
+    
 })

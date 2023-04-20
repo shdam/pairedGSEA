@@ -183,4 +183,18 @@ test_that("store_result function works correctly", {
     expect_true(file.exists("results/test_result.tsv"))
     file.remove("results/test_result.tsv")
     expect_false(file.exists("results/test_result.tsv"))
+    
+    # Test error
+    expect_error(store_result(x, "test_result.wrong"),
+                 "Could not store result object at results/test_result.wrong"
+                 )
+})
+
+
+# Test if a package that is already installed can be loaded
+test_that("check_missing_package works", {
+    expect_silent(check_missing_package("DESeq2", repo = "Bioc"))
+    expect_error(check_missing_package("ggplot3", repo = "CRAN"), ".*install.packages.*ggplot3.*")
+    expect_error(check_missing_package("ggplot3", repo = "Bioc"), ".*BiocManager::install.*ggplot3.*")
+    expect_error(check_missing_package("ggplot3", repo = "github", git_repo = "shdam"), ".*install_github.*shdam/ggplot3.*")
 })
