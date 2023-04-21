@@ -1,11 +1,13 @@
 ### Load package
-pkgload::load_all(path = "/home/projects/shd/pairedGSEA")
+# pkgload::load_all(path = "/home/projects/shd/pairedGSEA")
 # pkgload::load_all()
-library(tidyverse)
+#devtools::install_github("shdam/pairedGSEA", ref = "R4.0")
+library("tidyverse")
+library("pairedGSEA")
 
-source("tmp/run_experiment.R")
-source("tmp/run_analysis.R")
-source("tmp/concat.R")
+source("R/run_experiment.R")
+source("R/run_analysis.R")
+source("R/concat.R")
 
 rm(aggregate_pvalue)
 theme_set(theme_classic(base_size = 20))
@@ -37,10 +39,25 @@ gene_sets <- pairedGSEA::prepare_msigdb()
 # apply(row, 1, run_experiment, archs4db)
 # apply(row, 1, analyse_experiment)
 
-apply(experiments[151:199, ], 1, run_experiment, archs4db)
-apply(experiments, 1, run_experiment, archs4db, run_sva = FALSE, deseq_only = TRUE)
+# Run experiments
+apply(experiments[150, ], 1, run_experiment, archs4db, prefilter = 15)
+apply(experiments, 1, run_experiment, archs4db, run_sva = FALSE, expression_only = TRUE)
 apply(experiments[151:199, ], 1, run_analysis, gene_sets)
 apply(experiments, 1, getDDS, archs4db)
+## Run limma
+experiments_limma <- combine_experiments(limma = TRUE)
+row <- experiments_limma[1,]
+apply(experiments_limma[150, ], 1, run_experiment, archs4db, use_limma = TRUE, prefilter = 15)
+apply(experiments_limma[151:180, ], 1, run_experiment, archs4db, use_limma = TRUE)
+apply(experiments_limma[181:199, ], 1, run_experiment, archs4db, use_limma = TRUE)
+apply(experiments_limma[1:99, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments_limma[100:199, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+
+apply(experiments_limma[1:49, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
+apply(experiments_limma[50:99, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
+apply(experiments_limma[150, ], 1, run_experiment, archs4db, use_limma = TRUE, prefilter = 15, run_sva = FALSE)
+apply(experiments_limma[100:149, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
+apply(experiments_limma[151:199, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
 
 #4_GSE156101_TP53 and TNKS1-2T Knockout  
 
@@ -189,12 +206,12 @@ qplot(jac$dexdex2, main = "DEXSeq & DEXSeq2 overlap")
 
 # Find relevant experiments
 (relexp <- concatFgsea %>% 
-  mutate(across(starts_with("de"), .fns = ~as.logical(.x))) %>% 
-  filter(!deseq2 & (dexseq | dexseq2)) %>% 
-  count(experiment) %>% 
-  arrange(desc(n)))
+  dplyr::mutate(across(starts_with("de"), .fns = ~as.logical(.x))) %>% 
+    dplyr::filter(!deseq & (dexseq | dexseq)) %>% 
+    dplyr::count(experiment) %>% 
+    dplyr::arrange(dplyr::desc(n)))
 (study <- concatFgsea %>%
-  filter(experiment == relexp$experiment[1]))
+    dplyr::filter(experiment == relexp$experiment[1]))
 study %>% 
   pivot_longer(cols = c("deseq2", "dexseq", "dexseq2"),names_to = "analysis", values_to = "present") %>% 
   mutate(present = as.factor(present)) %>% 
@@ -204,10 +221,14 @@ median((select(concatFgsea, starts_with("de"))))
 
 concatFgsea %>% 
   group_by(experiment) %>% 
-  summarise(n1 = sum(deseq2), n2 = sum(dexseq), n3 = sum(dexseq2)) %>% 
+  summarise(n1 = sum(deseq), n2 = sum(dexseq), n3 = sum(dexseqlfc)) %>% 
   summarise(med1 = median(n1), med2 = median(n2), med3 = median(n3))
 
-
+concatFgsea %>% 
+  group_by(experiment) %>% 
+  summarise(n1 = sum(deseq), n2 = sum(dexseq), n3 = sum(dexseqlfc)) %>% 
+  ggplot(aes(x = n1, y = n2)) +
+  geom_point()
 
 ### ora analysis ----
 
@@ -930,6 +951,7 @@ ggsave(plot = fig2e, filename = "figs/fig2e.png")
 ## fgsa analysis ----
 
 # concatFgsea <- concatFgseaResults(experiments)
+concatFgsea <- readRDS("results_prev/concatFgsea.RDS")
 
 concatFgsea %>% 
   group_by(experiment) %>% 

@@ -13,103 +13,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-# pairedGSEA
+# pairedGSEA - experimental scripts
 
 <!-- badges: start -->
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![Codecov test coverage](https://codecov.io/gh/shdam/pairedGSEA/branch/master/graph/badge.svg)](https://app.codecov.io/gh/shdam/pairedGSEA?branch=master)
+<!-- [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental) -->
+<!-- [![Codecov test coverage](https://codecov.io/gh/shdam/pairedGSEA/branch/master/graph/badge.svg)](https://app.codecov.io/gh/shdam/pairedGSEA?branch=master) -->
 <!-- badges: end -->
 
 
-
-`pairedGSEA` is an R package that helps you to run a paired differential gene expression (DGE) and splicing (DGS) analysis.
-Providing a count matrix, `pairedGSEA` combines the results of `DESeq2` (DGE) and `DEXSeq` (DGS), aggregates the p-values to gene level, and allows you to run a subsequent gene set over-representation analysis using its implementation of the `fgsea::fora` function. 
-
-
-## Article
-
-A preprint on pairedGSEA is available [here](https://doi.org/10.1101/2022.08.29.505720).
-
-
-## Installation
-
-
-``` {r install, eval=FALSE}
-# Install Bioconductor packages with:
-# devtools::install_bioc(c("DESeq2", "DEXSeq", "fgsea", "SummarizedExperiment", "S4Vectors", "sva", "BiocParallel"))
-
-# Install pairedGSEA
-devtools::install_github("shdam/pairedGSEA")
-
-```
-
-
-
-## Documentation
-
-To view documentation for the version of this package installed in your system, start R and enter:
-
-```{r vignettes, eval=FALSE}
-browseVignettes("pairedGSEA")
-```
-
-
-
-
-## Usage
-
-Please see the User Guide vignette for a detailed description of usage.
-
-Here is a quick runthrough of the functions:
-
-
-<br>
-Load example data.
-```{r data}
-library("pairedGSEA")
-suppressPackageStartupMessages(library("SummarizedExperiment"))
-
-data("example_se")
-example_se
-```
-
-Run paired differential analysis
-
-```{r diff}
-set.seed(500) # For reproducible results
-
-diff_results <- paired_diff(
-  example_se,
-  group_col = "group_nr",
-  sample_col = "id",
-  baseline = 1,
-  case = 2,
-  store_results = FALSE,
-  quiet = TRUE
-  )
-diff_results
-```
-
-Over-representation analysis of results
-
-```{r ora}
-# Define gene sets in your preferred way
-gene_sets <- pairedGSEA::prepare_msigdb(species = "Homo sapiens", category = "C5", gene_id_type = "ensembl_gene")
-
-ora <- paired_ora(
-  paired_diff_result = diff_results,
-  gene_sets = gene_sets
-  )
-ora
-```
-
-You can now plot the enrichment scores against each other and identify pathways of interest.
-
-```{r plot}
-plot_ora(ora)
-```
-
-
-## Report issues
-
-If you have any issues or questions regarding the use of pairedGSEA, please do not hesitate to raise an issue on GitHub. In this way, others may also benefit from the answers and discussions.
+This branch contains the source code for the analyses and figures in the [paper](https://doi.org/10.1101/2022.08.29.505720).

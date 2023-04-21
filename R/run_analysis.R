@@ -2,7 +2,7 @@
 
 #' Analyse experiments
 #' @noRd
-run_analysis <- function(row, gene_sets){
+run_analysis <- function(row, gene_sets, run_fgsea = TRUE){
   
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
@@ -30,44 +30,52 @@ run_analysis <- function(row, gene_sets){
   
   aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
   
-  if(TRUE){#fgsea
+  # Rename old result colnames for new version
+  colnames(aggregated_pvals) <- colnames(aggregated_pvals) %>%
+    stringr::str_replace_all("deseq", "expression") %>%
+    stringr::str_replace_all("dexseq", "splicing")
+  
+  if(run_fgsea){#fgsea
     message("Gene set enrichment analysis")
     
+    if(stringr::str_detect(colnames(aggregated_pvals),"dexseq")) colnames(aggregated_pvals) <- stringr::str_replace_all(colnames(aggregated_pvals), "dexseq", "splicing")
+    if(stringr::str_detect(colnames(aggregated_pvals),"deseq")) colnames(aggregated_pvals) <- stringr::str_replace_all(colnames(aggregated_pvals), "deseq", "expression")
+    
     ### Defining stats
-    stats_deseq <- aggregated_pvals %>% 
-      dplyr::filter(!is.na(pvalue_deseq) & !is.na(gene)) %>% 
-      dplyr::mutate(pvalue = -log10(pvalue_deseq) * sign(lfc_deseq)) %>% 
+    stats_expression <- aggregated_pvals %>% 
+      dplyr::filter(!is.na(pvalue_expression) & !is.na(gene)) %>% 
+      dplyr::mutate(pvalue = -log10(pvalue_expression) * sign(lfc_expression)) %>% 
       dplyr::pull(pvalue, name = gene)
     
     
-    stats_dexseq <- aggregated_pvals %>% 
-      dplyr::filter(!is.na(pvalue_dexseq) & !is.na(gene)) %>% 
-      dplyr::mutate(pvalue = -log10(pvalue_dexseq)) %>% 
+    stats_splicing <- aggregated_pvals %>% 
+      dplyr::filter(!is.na(pvalue_splicing) & !is.na(gene)) %>% 
+      dplyr::mutate(pvalue = -log10(pvalue_splicing)) %>% 
       dplyr::pull(pvalue, name = gene) 
     
     
     ### Run fgsea
     message("Running fgsea on DESeq2 results")
-    fgsea_deseq <- fgsea::fgseaMultilevel(pathways = gene_sets,
-                                          stats = stats_deseq,
+    fgsea_expression <- fgsea::fgseaMultilevel(pathways = gene_sets,
+                                          stats = stats_expression,
                                           nproc = 10,
                                           scoreType = "std",
                                           eps = 10e-320,
                                           minSize = 25
     )
-    pairedGSEA:::store_result(fgsea_deseq, paste0(experiment_title, "_fgsea_deseq.RDS"), "fgsea on deseq2 results")
+    pairedGSEA:::store_result(fgsea_expression, paste0(experiment_title, "_fgsea_expression.RDS"), "fgsea on deseq2 results")
     
     message("Running fgsea on DEXSeq results")
-    fgsea_dexseq <- fgsea::fgseaMultilevel(pathways = gene_sets,
-                                           stats = stats_dexseq,
+    fgsea_splicing <- fgsea::fgseaMultilevel(pathways = gene_sets,
+                                           stats = stats_splicing,
                                            nproc = 10,
                                            scoreType = "std",
                                            eps = 10e-320,
                                            minSize = 25
     )
-    pairedGSEA:::store_result(fgsea_dexseq, paste0(experiment_title, "_fgsea_dexseq.RDS"), "fgsea on dexseq results")
+    pairedGSEA:::store_result(fgsea_splicing, paste0(experiment_title, "_fgsea_splicing.RDS"), "fgsea on dexseq results")
     
-    message("fgsea results are stored in the results folder. Look for '*_fgsea_deseq.RDS' and '*_fgsea_dexseq*.RDS'")
+    message("fgsea results are stored in the results folder. Look for '*_fgsea_expression.RDS' and '*_fgsea_splicing*.RDS'")
   } # fgsea
   
   if(TRUE){ # fora

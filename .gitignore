@@ -14,3 +14,7 @@ dev
 figs
 /doc/
 /Meta/
+projectdocument.txt
+gtfextract.rds
+image.Rdata
+results*

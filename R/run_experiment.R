@@ -1,8 +1,19 @@
-#' Run DESeq2 and DEXSeq analyses
+#' Run meta analysis
 #' 
 #' @noRd
 #' @param row A row from the data.frame of experiments generated with \code{combine_experiments}
-run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "group_nr", tpm = TRUE, prefilter = 10, parallel = TRUE, gtf = NULL, deseq_only = FALSE, store_results = TRUE, run_sva = TRUE){
+run_experiment <- function(row,
+                           archs4db = NULL,
+                           tx_count = NULL,
+                           group_col = "group_nr",
+                           tpm = TRUE,
+                           prefilter = 10,
+                           parallel = TRUE,
+                           gtf = NULL,
+                           expression_only = FALSE,
+                           store_results = TRUE,
+                           run_sva = TRUE,
+                           use_limma = FALSE){
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
@@ -21,9 +32,10 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
   ### Define tpm file
   if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
   ### Define experiment details
+  comparison_title <- row$`comparison_title (empty_if_not_okay)`
   comparison_title <- ifelse(run_sva,
-                             yes = row$`comparison_title (empty_if_not_okay)`,
-                             no = paste0(row$`comparison_title (empty_if_not_okay)`, "_no_sva"))
+                             yes = comparison_title,
+                             no = paste0(comparison_title, "_no_sva"))
   baseline_case <- row$`comparison (baseline_v_condition)` %>% stringr::str_split(pattern = "v", simplify = TRUE) %>% as.character()
   experiment_title <- paste0(data_name, "_", comparison_title)
   
@@ -49,11 +61,12 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
     case = baseline_case[2],
     experiment_title = experiment_title,
     run_sva = run_sva,
+    use_limma = use_limma,
     prefilter = prefilter,
     fit_type = "local",
     store_results = store_results,
     quiet = FALSE,
-    deseq_only = deseq_only,
+    expression_only = expression_only,
     parallel = parallel,
     BPPARAM = BiocParallel::bpparam()
   )
@@ -65,13 +78,16 @@ run_experiment <- function(row, archs4db = NULL, tx_count = NULL, group_col = "g
 
 #' Combine experiments
 #' @noRd
-combine_experiments <- function(md_dir = "metadata"){
+combine_experiments <- function(md_dir = "metadata", limma = FALSE){
   ### List metadata files
   md_files <- list.files(md_dir, full.names = TRUE)
   ### Combine experiments
   experiments <- lapply(md_files, FUN = function(x) {df <- readxl::read_xlsx(x); df$filename <- x; df})  %>% 
     dplyr::bind_rows() %>% 
     dplyr::filter(!is.na(`comparison_title (empty_if_not_okay)`))
+  
+  if(limma) experiments$`comparison_title (empty_if_not_okay)` <- stringr::str_c(experiments$`comparison_title (empty_if_not_okay)`, "_limma", sep = "")
+  
   return(experiments)
 }
 
@@ -126,13 +142,13 @@ load_archs4 <- function(samples, archs4db, gtf = NULL){
 #' Add TPM
 #' 
 #' @noRd
-add_tpm <- function(deseq_results, samples, archs4db_tpm, gtf = NULL){
+add_tpm <- function(expression_results, samples, archs4db_tpm, gtf = NULL){
   ### Add TPM values
   tx_tpm <- load_archs4(samples, archs4db_tpm, gtf = gtf)
   
-  deseq_results$tpm <- tx_tpm[rownames(deseq_results), ] %>% 
+  expression_results$tpm <- tx_tpm[rownames(expression_results), ] %>% 
     rowMeans()
-  return(deseq_results)
+  return(expression_results)
 }
 
 

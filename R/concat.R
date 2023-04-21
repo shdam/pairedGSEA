@@ -1,3 +1,28 @@
+## Concat all ----
+
+if(FALSE){
+  
+  experiments <- combine_experiments()
+  
+  concatenate_ora(experiments)
+  concatenate_results(experiments)
+  concatenate_genes(experiments)
+  concatenate_no_sva_genes(experiments)
+  concatenate_design(experiments)
+  concatenate_sva_correlation(experiments)
+  
+  
+  experiments_limma <- combine_experiments(limma = TRUE)
+  
+  concatenate_ora(experiments_limma, suffix = "_limma_all")
+  concatenate_results(experiments_limma, suffix = "_limma_results", limma = TRUE)
+  concatenate_genes(experiments_limma, suffix = "_limma_genes", limma = TRUE)
+  concatenate_no_sva_genes(experiments_limma, suffix = "_limma_no_sva_genes")
+  # concatenate_design(experiments_limma)
+  # concatenate_sva_correlation(experiments_limma)
+  
+}
+
 
 # fgsea ----
 concatFgseaResults <- function(experiments){
@@ -15,7 +40,7 @@ concatFgseaResults <- function(experiments){
     ### Define experiment details
     comparison <- row$`comparison (baseline_v_condition)` %>% pairedGSEA:::check_comparison()
     experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
-
+    
     message("Adding ", row$study, " ", experiment_title)
     
     ### Load results
@@ -75,16 +100,16 @@ concatForaResults <- function(experiments){
     
     comb <- forares %>% 
       dplyr::rename(padj_deseq2 = padj,
-             pval_deseq2 = pval,
-             overlap_deseq2 = overlap) %>% 
+                    pval_deseq2 = pval,
+                    overlap_deseq2 = overlap) %>% 
       dplyr::full_join(foradxr, by = "pathway") %>% 
       dplyr::rename(padj_dexseq = padj,
-             pval_dexseq = pval,
-             overlap_dexseq = overlap) %>% 
+                    pval_dexseq = pval,
+                    overlap_dexseq = overlap) %>% 
       dplyr::full_join(foraresdxr, by = "pathway") %>% 
       dplyr::rename(padj_decombined = padj,
-             pval_decombined = pval,
-             overlap_decombined = overlap) %>% 
+                    pval_decombined = pval,
+                    overlap_decombined = overlap) %>% 
       dplyr::select(pathway, starts_with("padj_"), starts_with("pval_"), starts_with("overlap_"), size) %>% 
       dplyr::mutate(experiment = paste(row$study, experimentTitle))
     foratot <- foratot %>% 
@@ -98,10 +123,10 @@ concatForaResults <- function(experiments){
     
     overlap <- dplyr::union(pathres, pathdxr) %>% dplyr::union(pathresdxr) %>% 
       dplyr::mutate(deseq2 = pathway %in% pathres$pathway,
-             dexseq = pathway %in% pathdxr$pathway,
-             decombined = pathway %in% pathresdxr$pathway,
-             overlap = deseq2 + dexseq + decombined,
-             experiment = paste(row$study, experimentTitle)
+                    dexseq = pathway %in% pathdxr$pathway,
+                    decombined = pathway %in% pathresdxr$pathway,
+                    overlap = deseq2 + dexseq + decombined,
+                    experiment = paste(row$study, experimentTitle)
       )
     concatFora <- concatFora %>% 
       dplyr::bind_rows(overlap)
@@ -110,7 +135,8 @@ concatForaResults <- function(experiments){
   saveRDS(concatFora, "results/concatFora.RDS")
   return(concatFora)
 }
-concatenate_ora <- function(experiments){
+
+concatenate_ora <- function(experiments, suffix = "_all"){
   
   ora_all <- tibble::tibble()
   
@@ -147,13 +173,13 @@ concatenate_ora <- function(experiments){
     ora_all <- ora_all %>% 
       dplyr::bind_rows(ora_joined)
   }
-  saveRDS(ora_all, "results/ora_all.RDS")
+  saveRDS(ora_all, paste0("results/ora", suffix,".RDS"))
   return(ora_all)
 }
 # concatenated_ora <- concatenate_ora(experiments)
 
 # deseq2 + dexseq ----
-concatenate_results <- function(experiments){
+concatenate_results <- function(experiments, suffix = "_results", new = FALSE, limma = FALSE){
   
   concatenated_results <- tibble::tibble()
   
@@ -166,37 +192,58 @@ concatenate_results <- function(experiments){
       stringr::str_remove("csv") 
     ### Define experiment details
     experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+    if(new | limma){
+      suffix_expression <- "_expression"
+      suffix_splicing <- "_splicing"
+    } else{
+      suffix_expression <- "_deseqres"
+      suffix_splicing <- "_dexseqres"
+    }
     ### Check that results exists
     message("Adding ", row$study, " ", experiment_title)
-    results_deseq <- readRDS(paste0("results/", experiment_title, "_deseqres.RDS"))
-    results_dexseq <- readRDS(paste0("results/", experiment_title, "_dexseqres.RDS"))
+    if(limma){
+      results <- readRDS(paste0("results/", experiment_title, suffix, ".RDS"))
+      results_expression <- results$expression
+      results_splicing <- results$splicing
+      rm(results)
+    } else{
+      results_expression <- readRDS(paste0("results/", experiment_title, suffix_expression, ".RDS"))
+      results_splicing <- readRDS(paste0("results/", experiment_title, suffix_splicing, ".RDS"))
+      results_splicing <- tibble::as_tibble(results_splicing)
+      results_expression <- tibble::as_tibble(results_expression, rownames = "gene_tx") %>%
+        tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") 
+    }
     
-    results_dexseq <- results_dexseq %>% 
-      tibble::as_tibble() %>% 
-      dplyr::rename(lfc_dexseq = log2fold_C_B) %>% 
-    results_deseq <- results_deseq %>%
-      tibble::as_tibble(rownames = "gene_tx") %>% 
-      dplyr::rename(lfc_deseq = log2FoldChange) %>% 
-      tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") 
+    if(!new & !limma){
+      colnames(results_expression) <- colnames(results_expression) %>%
+        stringr::str_replace("log2FoldChange", "lfc_deseq") %>%
+        stringr::str_replace_all("deseq", "expression")
+      colnames(results_splicing) <- colnames(results_splicing) %>%
+        stringr::str_replace("log2fold_C_B", "lfc_dexseq") %>%
+        stringr::str_replace("lfcSE", "lfc_dexseq") %>%
+        stringr::str_replace_all("dexseq", "splicing") %>%
+        stringr::str_replace_all("groupID", "gene") %>%
+        stringr::str_replace_all("featureID", "transcript")
+    }
     
-    genes_to_keep_dexseq <- results_dexseq %>%
-      dplyr::group_by(groupID) %>% 
+    if("featureID" %in% colnames(results_splicing)) colnames(results_splicing) <- stringr::str_replace(colnames(results_splicing), "featureID", "transcript")
+    
+    
+    genes_to_keep_splicing <- results_splicing %>%
+      dplyr::group_by(gene) %>% 
       dplyr::summarise(n_significant = sum(padj < 0.05, na.rm = TRUE)) %>% 
       dplyr::filter(n_significant > 1) %>% 
-      dplyr::pull(groupID)
-    genes_to_keep_deseq <- results_deseq %>%
-      # tibble::as_tibble(rownames = "gene_tx") %>% 
-      # tidyr::separate(gene_tx, into = c("gene", "transcript"), sep = ":") %>% 
-      # dplyr::rename(log2FC_deseq = log2FoldChange) %>% 
+      dplyr::pull(gene)
+    genes_to_keep_expression <- results_expression %>%
       dplyr::group_by(gene) %>% 
       dplyr::summarise(n_significant = sum(padj < 0.05, na.rm = TRUE)) %>% 
       dplyr::filter(n_significant > 1) %>% 
       dplyr::pull(gene)
     
-    genes_to_keep <- union(genes_to_keep_dexseq, genes_to_keep_deseq)
+    genes_to_keep <- union(genes_to_keep_splicing, genes_to_keep_expression)
     
-    results_joined <- results_deseq %>% 
-      dplyr::left_join(results_dexseq, by = c("transcript" = "featureID"), suffix = c("_deseq", "_dexseq")) %>% 
+    results_joined <- results_expression %>% 
+      dplyr::left_join(results_splicing, by = c("gene", "transcript"), suffix = c("_expression", "_splicing")) %>% 
       dplyr::filter(gene %in% genes_to_keep) %>% 
       dplyr::mutate(experiment = experiment_title) %>% 
       dplyr::select(-dplyr::starts_with("count"))
@@ -205,13 +252,13 @@ concatenate_results <- function(experiments){
     concatenated_results <- concatenated_results %>% 
       dplyr::bind_rows(results_joined)
   }
-  saveRDS(concatenated_results, "results/concatenated_results.RDS")
+  saveRDS(concatenated_results, paste0("results/concatenated", suffix,".RDS"))
   return(concatenated_results)
 }
 # concatenated_results <- concatenate_results(experiments)
 
 # Concat gene level ----
-concatenate_genes <- function(experiments){
+concatenate_genes <- function(experiments, suffix = "_genes", new = FALSE, limma = FALSE){
   
   concatenated_genes <- tibble::tibble()
   
@@ -224,24 +271,34 @@ concatenate_genes <- function(experiments){
       stringr::str_remove("csv") 
     ### Define experiment details
     experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+
+    
     ### Loading results
     message("Adding ", experiment_title)
     aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
-    aggregated_pvals <- aggregated_pvals %>% 
-      dplyr::mutate(padj_deseq = p.adjust(pvalue_deseq, "fdr"),
-                    padj_dexseq = p.adjust(pvalue_dexseq, "fdr"),
-                    experiment = experiment_title)
+    
+    if(!new & !limma){
+      colnames(aggregated_pvals) <- colnames(aggregated_pvals) %>%
+        stringr::str_replace_all("deseq", "expression") %>%
+        stringr::str_replace_all("dexseq", "splicing")
+      aggregated_pvals <- aggregated_pvals %>% 
+        dplyr::mutate(padj_expression = p.adjust(pvalue_expression, "fdr"),
+                      padj_splicing = p.adjust(pvalue_splicing, "fdr"))
+    }
+    
+    aggregated_pvals$experiment <- experiment_title
     
     
     concatenated_genes <- concatenated_genes %>% 
       dplyr::bind_rows(aggregated_pvals)
   }
-
-  saveRDS(concatenated_genes, "results/concatenated_genes.RDS")
+  
+  saveRDS(concatenated_genes, paste0("results/concatenated", suffix,".RDS"))
   return(concatenated_genes)
 }
+# concatenated_genes <- concatenate_genes(experiments)
 
-concatenate_no_sva_genes <- function(experiments){
+concatenate_no_sva_genes <- function(experiments, suffix = "_no_sva_genes"){
   
   concatenated_no_sva_genes <- tibble::tibble()
   
@@ -265,7 +322,7 @@ concatenate_no_sva_genes <- function(experiments){
       dplyr::bind_rows(aggregated_pvals)
   }
   
-  saveRDS(concatenated_no_sva_genes, "results/concatenated_no_sva_genes.RDS")
+  saveRDS(concatenated_no_sva_genes, paste0("results/concatenated", suffix,".RDS"))
   return(concatenated_no_sva_genes)
 }
 # concatenated_no_sva_genes <- concatenate_no_sva_genes(experiments)
