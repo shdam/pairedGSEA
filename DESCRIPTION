@@ -1,6 +1,6 @@
 Package: pairedGSEA
 Title: Paired DGE and DGS analysis for gene set enrichment analysis
-Version: 0.99.6
+Version: 1.0.0
 Authors@R: c(
     person(given = "Søren Helweg",
         family = "Dam",

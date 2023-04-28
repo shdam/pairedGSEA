@@ -41,18 +41,18 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install(c("SummarizedExperiment", "S4Vectors", "DESeq2", "DEXSeq", "fgsea", "sva", "BiocParallel"))
 ```
 
-Install `pairedGSEA` from GitHub
-``` {r install_github, eval=FALSE}
-# Install pairedGSEA from github
-devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
-```
-
 Install `pairedGSEA` from Bioconductor
 ```{r install_bioc, eval=FALSE}
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install("pairedGSEA", version = 'devel')
+BiocManager::install("pairedGSEA")
+```
+
+Install development version from GitHub
+``` {r install_github, eval=FALSE}
+# Install pairedGSEA from github
+devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
 ```
 
 ## Documentation

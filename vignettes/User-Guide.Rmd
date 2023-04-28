@@ -74,7 +74,7 @@ please see `?pairedGSEA::example_se`.
 
 # Installation
 
-To install this package, start R (version "4.2") and enter:
+To install this package, start R (version "4.3") and enter:
 
 Bioconductor dependencies 
 ``` {r install_dep, eval=FALSE}
@@ -87,19 +87,20 @@ BiocManager::install(c(
     "fgsea", "sva", "BiocParallel"))
 ```
 
-Install `pairedGSEA` from [GitHub](https://github.com/shdam/pairedGSEA)
-``` {r install_github, eval=FALSE}
-# Install pairedGSEA from github
-devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
-```
-
 Install `pairedGSEA` from Bioconductor
 ```{r install_bioc, eval=FALSE}
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install("pairedGSEA", version = 'devel')
+BiocManager::install("pairedGSEA")
 ```
+
+Install development version from [GitHub](https://github.com/shdam/pairedGSEA)
+``` {r install_github, eval=FALSE}
+# Install pairedGSEA from github
+devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
+```
+
 
 # Paired differential expression and splicing
 

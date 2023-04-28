@@ -33,20 +33,20 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install(c("SummarizedExperiment", "S4Vectors", "DESeq2", "DEXSeq", "fgsea", "sva", "BiocParallel"))
 ```
 
-Install `pairedGSEA` from GitHub
-
-``` r
-# Install pairedGSEA from github
-devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
-```
-
 Install `pairedGSEA` from Bioconductor
 
 ``` r
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install("pairedGSEA", version = 'devel')
+BiocManager::install("pairedGSEA")
+```
+
+Install development version from GitHub
+
+``` r
+# Install pairedGSEA from github
+devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
 ```
 
 ## Documentation
@@ -134,6 +134,6 @@ plot_ora(ora) +
 
 ## Report issues
 
-If you have any issues or questions regarding the use of pairedGSEA,
+If you have any issues or questions regarding the use of `pairedGSEA`,
 please do not hesitate to raise an issue on GitHub. In this way, others
 may also benefit from the answers and discussions.
