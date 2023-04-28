@@ -1,8 +1,3 @@
-# pairedGSEA 1.0.0
-
-* Version bump for Bioconductor release
-* Minor edits to documentation
-
 # pairedGSEA 0.99.6
 
 * Improved test coverage and depth
