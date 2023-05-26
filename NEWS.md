@@ -1,6 +1,8 @@
 # pairedGSEA 1.1.0
 
-* Version bump
+* `paired_ora` now adjusts gene background for analysis to reduce bias
+* `paired_ora` now also does an ora combining the genes from the two analyses
+* Added plotting mode to `plot_ora` for the new `paired_ora` analysis type.
 
 # pairedGSEA 1.0.0
 

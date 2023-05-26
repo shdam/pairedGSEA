@@ -4,6 +4,7 @@
 #' @param plotly (Default: \code{FALSE})
 #' Logical on whether to return plot as an
 #' interactive \code{\link[plotly:ggplotly]{plotly}} plot or a simple ggplot.
+#' @param paired (Default: FALSE) New plotting mode for paired ora analysis
 #' @param pattern Highlight pathways containing a specific regex pattern
 #' @param cutoff (Default: \code{0.2}) Adjusted p-value cutoff for
 #' pathways to include
@@ -22,11 +23,12 @@
 #' @usage
 #' plot_ora(
 #'     ora,
-#'     plotly = FALSE,
 #'     pattern = NULL,
+#'     paired = FALSE,
+#'     plotly = FALSE,
 #'     cutoff = 0.05,
 #'     lines = TRUE,
-#'     colors = c("darkgray", "purple", "lightblue")
+#'     colors = c("darkgray", "purple", "lightblue", "maroon")
 #'     )
 #' @examples 
 #' data(example_ora_results)
@@ -34,11 +36,12 @@
 #' plot_ora(example_ora_results, pattern = "Telomer")
 plot_ora <- function(
         ora,
-        plotly = FALSE,
         pattern = NULL,
+        paired = FALSE,
+        plotly = FALSE,
         cutoff = 0.05,
         lines = TRUE,
-        colors = c("darkgray", "purple", "lightblue")){
+        colors = c("darkgray", "purple", "lightblue", "maroon")){
     
     if(is(pattern, "numeric")) pattern <- as.character(pattern)
     stopifnot(
@@ -52,9 +55,15 @@ plot_ora <- function(
     check_missing_package(package = "ggplot2")
     if(plotly) check_missing_package(package = "plotly")
     
+    if(paired){
+        ora <- ora[, !endsWith(colnames(ora), "splicing")]
+        colnames(ora) <- gsub("paired", "splicing", colnames(ora))
+    }
+    
     # Filter ora
     ora <- subset(
-        ora, ora$padj_expression < cutoff | ora$padj_splicing < cutoff)
+        ora, ora$padj_expression < cutoff
+        | ora$padj_splicing < cutoff)
     stopifnot("No over-represented gene sets found." = nrow(ora) > 0)
     # Compute spearman correlation
     correlation <- spearman(ora)
@@ -66,6 +75,7 @@ plot_ora <- function(
     }
     
     ora <- add_plot_color(ora, cutoff)
+    if(paired) ora$plot_color <- gsub("Only Splicing", "Paired", ora$plot_color)
     # Extract matches
     matches <- ora[ora$pattern_match == TRUE,]
     
@@ -102,7 +112,9 @@ plot_ora <- function(
 spearman <- function(ora) {
     correlation <- cor(
         ora$enrichment_score_splicing,
-        ora$enrichment_score_expression, method = "spearman")
+        ora$enrichment_score_expression,
+        method = "spearman",
+        use = "complete.obs")
     return(round(correlation, 2))
 }
 
@@ -110,15 +122,35 @@ spearman <- function(ora) {
 #' @noRd
 add_plot_color <- function(ora, cutoff) {
     
-    ora$plot_color <- ifelse(
-        ora$padj_splicing < cutoff & ora$padj_expression < cutoff, "Both",
-        ifelse(
-            ora$padj_splicing < cutoff, "Only Splicing",
-            ifelse(ora$padj_expression < cutoff, "Only Expression", "NA")))
-    ora$plot_color <- factor(
-        ora$plot_color, levels = c("Both", "Only Splicing", "Only Expression"))
+    # Create color column
+    ora$plot_color <- "NA"
+    # Add Boths
+    ora$plot_color[
+        ora$padj_splicing < cutoff & ora$padj_expression < cutoff] <- "Both"
+    # Add paired
+    # ora$plot_color[
+    #     (ora$plot_color != "Both") & (ora$padj_splicing < cutoff)
+    # ] <- "Paired"
+    # Add expression
+    ora$plot_color[
+        !(ora$plot_color %in% c("Both", "Paired"))
+        & ora$padj_expression < cutoff
+    ] <- "Only Expression"
+    # Add expression
+    ora$plot_color[
+        !(ora$plot_color %in% c("Both", "Paired"))
+        & (ora$padj_splicing < cutoff)
+    ] <- "Only Splicing"
+    
+
+    # Subset ora
+    ora <- ora[!is.na(ora$plot_color),]
     ora <- ora[ora$plot_color != "NA", ]
     stopifnot("No significant gene sets in input data" = nrow(ora) > 0)
+    # Factorize color column
+    ora$plot_color <- factor(
+        ora$plot_color, 
+        levels = c("Both", "Only Splicing", "Only Expression", "Paired"))
     
     return(ora)
 }
@@ -127,7 +159,8 @@ add_plot_color <- function(ora, cutoff) {
 #' @noRd
 subset_colors <- function(plt_data, colors) {
     return(colors[c(
-        "Both", "Only Splicing", "Only Expression") %in% plt_data$plot_color])
+        "Both", "Only Splicing", "Only Expression", "Paired")
+        %in% plt_data$plot_color])
 }
 
 #' Create aes of plt_data

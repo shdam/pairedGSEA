@@ -105,15 +105,21 @@ paired_ora <- function(
         type = "splicing", cutoff = cutoff, min_size = min_size
     )
     
+    # fora on paired
+    ora_paired <- run_ora(
+        paired_diff_result, gene_sets = gene_sets,
+        type = "paired", cutoff = cutoff, min_size = min_size
+    )
+    
     if(!quiet) message("Joining result")
-    ora_joined <- join_oras(ora_expression, ora_splicing)
+    ora_joined <- join_oras(ora_expression, ora_splicing, ora_paired)
     
     if(!is.null(experiment_title)){
         if(!quiet) message("Storing fora results")
         ora_joined$experiment <- experiment_title
         store_result(
             ora_joined, paste0(experiment_title, "_ora.RDS"),
-            "ORA on both DESeq2 and DEXSeq results", quiet = quiet)
+            "ORA on differential analysis results", quiet = quiet)
     }
     return(S4Vectors::DataFrame(ora_joined))
 }
@@ -171,6 +177,18 @@ prepare_msigdb <- function(
 run_ora <- function(
         paired_diff_result, gene_sets, type, cutoff, min_size){
     
+    if(type == "splicing") {
+        paired_diff_result <- paired_diff_result[
+            !is.na(paired_diff_result$padj_splicing),]
+    } else if(type == "expression"){
+        paired_diff_result <- paired_diff_result[
+            !is.na(paired_diff_result$padj_expression),]
+    } else if(type == "paired"){
+        paired_diff_result <- paired_diff_result[
+            !is.na(paired_diff_result$padj_expression)
+            & !is.na(paired_diff_result$padj_expression),]
+    }
+
     universe <- unique(paired_diff_result$gene)
     # Subset significant genes
     sig_genes <- subset_genes(
@@ -203,28 +221,57 @@ compute_enrichment <- function(ora, n_genes, n_universe){
 #' @noRd
 subset_genes <- function(paired_diff_result, type, cutoff){
     
-    padj_col <- ifelse(
-        type == "expression", "padj_expression", "padj_splicing")
-    
-    sig_genes <- paired_diff_result[S4Vectors::complete.cases(
-        paired_diff_result[,c(
-            paste0("pvalue_", type), "gene", padj_col)]),]
-    sig_genes <- sig_genes[
-        sig_genes[[padj_col]] < cutoff, ]
+    if(type == "paired"){
+        paired_diff_result$padj_splicing[
+            is.na(paired_diff_result$padj_splicing)] <- 1
+        sig_genes <- paired_diff_result[
+            (paired_diff_result[, "padj_expression"] < cutoff
+            | (paired_diff_result[, "padj_splicing"] < cutoff)), ]
+    } else{ # Expression or splicing only
+        padj_col <- ifelse(
+            type == "expression", "padj_expression", "padj_splicing")
+        
+        sig_genes <- paired_diff_result[S4Vectors::complete.cases(
+            paired_diff_result[,c(
+                paste0("pvalue_", type), "gene", padj_col)]),]
+        sig_genes <- sig_genes[
+            sig_genes[[padj_col]] < cutoff, ]
+    }
     
     return(sig_genes)
 }
 
 #' Join ORA results
 #' @noRd
-join_oras <- function(ora_expression, ora_splicing){
+join_oras <- function(ora_expression, ora_splicing, ora_paired){
     
     ora_joined <- merge(
         ora_expression,
         ora_splicing,
-        by = c("pathway", "size"),
+        by = c("pathway"),
         suffixes = c("_expression", "_splicing"),
         all = TRUE)
+    colnames(ora_paired) <- gsub("$", "_paired", colnames(ora_paired))
+    colnames(ora_paired)[1] <- "pathway"
+    ora_joined <- merge(
+        ora_joined,
+        ora_paired,
+        by = c("pathway"),
+        all = TRUE)
+    
+    # Fill NAs with zeros
+    ora_joined$relative_risk_expression[
+        is.na(ora_joined$relative_risk_expression)] <- 0
+    ora_joined$enrichment_score_expression[
+        is.na(ora_joined$enrichment_score_expression)] <- log2(0.06)
+    ora_joined$relative_risk_splicing[
+        is.na(ora_joined$relative_risk_splicing)] <- 0
+    ora_joined$enrichment_score_splicing[
+        is.na(ora_joined$enrichment_score_splicing)] <- log2(0.06)
+    ora_joined$relative_risk_splicing[
+        is.na(ora_joined$relative_risk_paired)] <- 0
+    ora_joined$enrichment_score_splicing[
+        is.na(ora_joined$enrichment_score_paired)] <- log2(0.06)
     # Compute shifts in relative risk and enrichment scores
     ora_joined$relative_risk_shift <- 
         ora_joined$relative_risk_splicing - ora_joined$relative_risk_expression

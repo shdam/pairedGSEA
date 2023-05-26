@@ -16,11 +16,13 @@ plot_ora(
 \arguments{
 \item{ora}{Output of \code{\link[pairedGSEA:paired_ora]{paired_ora}}}
 
+\item{pattern}{Highlight pathways containing a specific regex pattern}
+
+\item{paired}{(Default: FALSE) New plotting mode for paired ora analysis}
+
 \item{plotly}{(Default: \code{FALSE})
 Logical on whether to return plot as an
 interactive \code{\link[plotly:ggplotly]{plotly}} plot or a simple ggplot.}
-
-\item{pattern}{Highlight pathways containing a specific regex pattern}
 
 \item{cutoff}{(Default: \code{0.2}) Adjusted p-value cutoff for
 pathways to include}
