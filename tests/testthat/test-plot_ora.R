@@ -2,6 +2,8 @@ data("example_ora_results")
 test_that("plot_ora generates a ggplot object", {
     plt <- plot_ora(example_ora_results)
     expect_s3_class(plt, "ggplot")
+    plt <- plot_ora(example_ora_results, paired = FALSE)
+    expect_s3_class(plt, "ggplot")
 })
 
 test_that("plot_ora works with a DFrame", {

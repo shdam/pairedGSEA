@@ -6,11 +6,12 @@
 \usage{
 plot_ora(
     ora,
-    plotly = FALSE,
     pattern = NULL,
+    paired = TRUE,
+    plotly = FALSE,
     cutoff = 0.05,
     lines = TRUE,
-    colors = c("darkgray", "purple", "lightblue")
+    colors = c("darkgray", "purple", "lightblue", "maroon")
     )
 }
 \arguments{
@@ -18,7 +19,7 @@ plot_ora(
 
 \item{pattern}{Highlight pathways containing a specific regex pattern}
 
-\item{paired}{(Default: FALSE) New plotting mode for paired ora analysis}
+\item{paired}{(Default: TRUE) New plotting mode for paired ora analysis}
 
 \item{plotly}{(Default: \code{FALSE})
 Logical on whether to return plot as an

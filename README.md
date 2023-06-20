@@ -126,7 +126,7 @@ You can now plot the enrichment scores against each other and identify
 pathways of interest.
 
 ``` r
-plot_ora(ora) +
+plot_ora(ora, paired = TRUE) +
     ggplot2::theme_classic()
 ```
 

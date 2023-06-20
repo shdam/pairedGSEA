@@ -4,7 +4,7 @@
 #' @param plotly (Default: \code{FALSE})
 #' Logical on whether to return plot as an
 #' interactive \code{\link[plotly:ggplotly]{plotly}} plot or a simple ggplot.
-#' @param paired (Default: FALSE) New plotting mode for paired ora analysis
+#' @param paired (Default: TRUE) New plotting mode for paired ora analysis
 #' @param pattern Highlight pathways containing a specific regex pattern
 #' @param cutoff (Default: \code{0.2}) Adjusted p-value cutoff for
 #' pathways to include
@@ -24,7 +24,7 @@
 #' plot_ora(
 #'     ora,
 #'     pattern = NULL,
-#'     paired = FALSE,
+#'     paired = TRUE,
 #'     plotly = FALSE,
 #'     cutoff = 0.05,
 #'     lines = TRUE,
@@ -37,7 +37,7 @@
 plot_ora <- function(
         ora,
         pattern = NULL,
-        paired = FALSE,
+        paired = TRUE,
         plotly = FALSE,
         cutoff = 0.05,
         lines = TRUE,
@@ -88,7 +88,7 @@ plot_ora <- function(
     colors <- subset_colors(ora, colors)
 
     plt <- create_plot(ora)
-    plt <- add_layout(plt, correlation, cutoff, colors)
+    plt <- add_layout(plt, correlation, cutoff, colors, paired)
     plt <- add_matches(plt, matches, pattern)
     if(lines) plt <- add_lines(plt)
     # Make plot interactive if user desires
@@ -180,15 +180,15 @@ create_plot <- function(ora) {
 
 #' Add layout to plot
 #' @noRd
-add_layout <- function(plt, correlation, cutoff, colors){
-    
+add_layout <- function(plt, correlation, cutoff, colors, paired){
+    x_lab <- ifelse(paired, "Paired", "Differential Splicing")
     # Add correlation text to plot
     plt + 
         ggplot2::annotate(
             "text", label = paste("Spearman's \u03C1:", correlation),
             x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.3) +
         ggplot2::labs(
-            x = "Gene-Set Enrichment Score\nDifferential Splicing",
+            x = paste0("Gene-Set Enrichment Score\n", x_lab),
             y = "Gene-Set Enrichment Score\nDifferential Expression",
             fill = paste("padj <", cutoff),
             colour = paste("padj <", cutoff)) +

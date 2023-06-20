@@ -884,13 +884,15 @@ aggregate_pvalue <- function(
         res <- lapply(res, function(x) {
             lfc <- x$lfc[which.min(x$pvalue)]
             pvalue <- aggregation::lancaster(x$pvalue, weights = x$baseMean)
-            data.frame(lfc = lfc, pvalue = pvalue)
+            baseMean <- sum(x$baseMean)
+            data.frame(lfc = lfc, pvalue = pvalue, baseMean = baseMean)
         })
     } else if(type == "expression") {
         res <- lapply(res, function(x) {
             lfc <- weighted.mean(x$lfc, w = x$baseMean)
             pvalue <- aggregation::lancaster(x$pvalue, weights = x$baseMean)
-            data.frame(lfc = lfc, pvalue = pvalue)
+            baseMean <- sum(x$baseMean)
+            data.frame(lfc = lfc, pvalue = pvalue, baseMean = baseMean)
         })
     }
     

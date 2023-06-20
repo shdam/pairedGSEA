@@ -2,7 +2,8 @@
 
 * `paired_ora` now adjusts gene background for analysis to reduce bias
 * `paired_ora` now also does an ora combining the genes from the two analyses
-* Added plotting mode to `plot_ora` for the new `paired_ora` analysis type.
+* Added plotting mode `paired = TRUE` to `plot_ora` for the new `paired_ora` analysis type
+* Added `baseMean` to gene-level aggregation output
 
 # pairedGSEA 1.0.0
 
