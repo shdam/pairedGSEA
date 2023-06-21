@@ -1,24 +1,29 @@
 ## Collection of plots for paper
 
 initialize <- TRUE
-fig1 <- TRUE
-fig1_init <- TRUE
+fig1 <- FALSE
+fig1_init <- FALSE
 fig2 <- FALSE
 fig2_init <- FALSE
-fig3 <- FALSE
+fig3 <- TRUE
 fig_format <- "pdf"
-limma <- TRUE
+limma <- FALSE
 # pwr_calc <- tibble::tribble(~test, ~ES, ~d, ~sig.level, ~power, ~type, ~alternative)
 
 
 # Initialize  ----
 if(initialize){
   library("pairedGSEA")
-  library("tidyverse")
+  library("magrittr")
+  library("dplyr")
+  library("tidyr")
+  library("purrr")
+  library("ggplot2")
   library("patchwork")
+  library("Cairo")
   theme_set(theme_classic(base_size = 19))
 
-                    # Both  DGE          DGS        Neither
+  # Both  DGE          DGS        Neither
   color_scheme <- c("gray", "lightblue", "darkred", "black")
   fill_scale <- function(reorder = NULL) {
     if(!is.null(reorder)) color_scheme <- color_scheme[reorder]
@@ -324,17 +329,20 @@ if(fig2){
 # Compute gene similarity
 compute_gene_similarity <- function(concatenated_genes){
   gene_similarity <- concatenated_genes %>%
-    mutate(DGE = padj_expression < 0.05,
-           DGS = padj_splicing < 0.05) %>% 
+    # filter(experiment == unique(concatenated_genes$experiment[1])) %>%
+    mutate(DGE = !is.na(padj_expression) & padj_expression < 0.05,
+           DGS = !is.na(padj_splicing) & padj_splicing < 0.05) %>%
     group_by(experiment) %>% 
-    summarise(Similarity = proxy::simil(x = DGE, y = DGS, 
-                                        by_rows = FALSE, method = "Simpson")[1],
-              n_DGE = sum(DGE, na.rm = T),
-              n_DGS = sum(DGS, na.rm = T),
-              p_overlap = (min(n_DGS, n_DGE)*Similarity) / n_DGE,
-              p_signal = n_DGS / (n_DGE + n_DGS - min(n_DGS, n_DGE)*Similarity)
-    ) %>% 
-    filter(!is.na(Similarity))
+    summarise(
+      n_DGE = sum(DGE, na.rm = T),
+      n_DGS = sum(DGS, na.rm = T),
+      n_min = min(n_DGS, n_DGE),
+      intersect = sum(DGE & DGS, na.rm = T),
+      Similarity = intersect / n_min,
+      p_overlap = intersect / n_DGE,# (min(n_DGS, n_DGE)*Similarity) / n_DGE,
+      p_signal = n_DGS / (n_DGE + n_DGS - intersect)
+    ) #%>% 
+    #filter(!is.na(Similarity))
   
   return(gene_similarity)
 }
@@ -686,17 +694,64 @@ plot_pathway_count <- function(ora_all){
   
 }
 
+plot_pathway_count_paired <- function(ora_all){
+  
+  found_pathways <- ora_all %>% 
+    group_by(experiment) %>% 
+    summarise(DGE = sum(padj_expression < 0.05, na.rm = TRUE),
+              # DGS = sum(padj_splicing < 0.05, na.rm = TRUE),
+              Paired = sum(padj_paired < 0.05, na.rm = TRUE),
+              Overlap_paired = sum((padj_paired < 0.05) & (padj_expression < 0.05), na.rm = TRUE),
+              # Overlap = sum((padj_splicing < 0.05) & (padj_expression < 0.05), na.rm = TRUE),
+              # Only_DGS = sum(!(padj_expression < 0.05) & (padj_splicing < 0.05), na.rm = TRUE),
+              Only_Paired = sum(!(padj_expression < 0.05) & (padj_paired < 0.05), na.rm = TRUE)
+    )
+  
+  # Sina plot of found pathways
+  plt_pathway_counts <- found_pathways %>% 
+    pivot_longer(cols = -experiment, names_to = "Analysis", values_to = "Pathways") %>% 
+    mutate(Analysis = factor(Analysis, levels = c("DGE",
+                                                  "Paired",
+                                                  "Overlap_paired",
+                                                  "Only_Paired")
+    ),
+    Analysis =  recode(Analysis,
+                       DGE = paste0("Differential\nExpression\n", "(Median: ", median(found_pathways$DGE), ")"),
+                       Paired = paste0("Paired\n", "(Median: ", median(found_pathways$Paired), ")"),
+                       Overlap_paired = paste0("Overlap\n", "(Median: ", median(found_pathways$Overlap_paired), ")"),
+                       Only_Paired = paste0("Only\nPaired\n", "(Median: ", median(found_pathways$Only_Paired), ")"))
+    ) %>% 
+    ggplot() +
+    aes(y = Pathways, x = Analysis, color = Analysis) +
+    ggforce::geom_sina() +
+    scale_y_log10() +
+    geom_boxplot(width = 0.05) +
+    color_scale(reorder = c(2, 3, 1, 4)) + 
+    labs(x = "",
+         y = "Significant pathways\nper comparison") +
+    theme(legend.position = "none")
+  
+  return(plt_pathway_counts)
+  
+}
+
 if(fig3){
   
   ora_all <- readRDS(paste0("results/ora", limma_suffix, "_all.RDS"))
+  gene_sets <- readRDS("results/gene_sets.RDS")
   colnames(ora_all) <- colnames(ora_all) %>%
     stringr::str_replace("deseq", "expression") %>%
     stringr::str_replace("dexseq", "splicing")
   
   plt_pathway_count <- plot_pathway_count(ora_all)
+  plt_pathway_count_paired <- plot_pathway_count_paired(ora_all)
   # plt_pathway_count
   ggsave(plot = plt_pathway_count, filename = paste0("figs/pathway_count", limma_suffix, ".", fig_format))
+  ggsave(plot = plt_pathway_count_paired, filename = paste0("figs/pathway_count_paired", limma_suffix, ".", fig_format))
 }
+
+
+
 
 ## Figure 3B: Telomere pathways ----
 
@@ -706,9 +761,16 @@ if(fig3){
   ora <- ora_all %>% 
     filter(experiment == exp)
   
-  telomere_pathways <- plot_ora(ora, pattern = "Telomer", colors = c("darkgray", "purple", "lightblue")) +
+  telomere_pathways <- plot_ora(ora, pattern = "Telomer", paired = TRUE, colors = c("darkgray", "purple", "lightblue", "maroon")) +
     ggplot2::labs(title = "GSE61220: TGF\u03B2 Treatment")
-  ggsave(plot = telomere_pathways, filename = paste0("figs/telomere_pathways", limma_suffix, ".", fig_format))
+  if(fig_format == "pdf"){
+    cairo_pdf(paste0("figs/telomere_pathways", limma_suffix, ".", fig_format), width = 5.8, height = 4.46)
+    telomere_pathways
+    dev.off()
+  } else{
+    ggsave(plot = telomere_pathways, filename = paste0("figs/telomere_pathways", limma_suffix, ".", fig_format))
+  }
+  
 }
 
 ## Figure 3C: Repair pathways----
@@ -865,7 +927,7 @@ plot_rr_median <- function(rr_shifts){
   
   rr_shift_median <- rr_shifts %>%
     dplyr::group_by(experiment) %>% 
-    dplyr::summarise(Shift = median( abs(Shift) / min( relative_risk_splicing, relative_risk_expression) ) * 100) %>% 
+    dplyr::summarise(Shift = median( abs(Shift) / min( relative_risk_splicing[relative_risk_splicing != 0], relative_risk_expression[relative_risk_expression != 0])) * 100) %>% 
     dplyr::filter(!is.infinite(Shift), !is.na(Shift))
   
   median_of_median <- median(rr_shift_median$Shift)
@@ -922,87 +984,23 @@ if(fig3){
   BBBDD
   "
  
-  Figure3 <- plt_pathway_count + telomere_pathways + #repair_pathways + 
+  Figure3 <- plt_pathway_count_paired + telomere_pathways + #repair_pathways + 
     ora_correlation + rr_median +
     plot_layout(design = layout) +
     plot_annotation(tag_levels = 'A') &
     full_figure_theme()
   # Figure3
   
-  ggsave(paste0("figs/Figure3", limma_suffix, ".", fig_format), Figure3, width = 8, height = 7)
+  if(fig_format == "pdf"){
+    library("Cairo")
+    cairo_pdf(paste0("figs/Figure3", limma_suffix, ".", fig_format), width = 8, height = 7)
+    Figure3
+    dev.off()
+  } else{
+    ggsave(paste0("figs/Figure3", limma_suffix, ".", fig_format), Figure3, width = 8, height = 7)
+  }
   
   theme_set(theme_classic(base_size = 19))
 }
 
-
-## Power ----
-if(FALSE){
-  library(infer)
-  
-  gene_similarity <- concatenated_genes %>%
-    mutate(DGE = padj_expression < 0.05,
-           DGS = padj_splicing < 0.05) %>% 
-    group_by(experiment) %>% 
-    summarise(Similarity = proxy::simil(x = DGE, y = DGS, 
-                                        by_rows = FALSE, method = "Simpson")[1],
-              n_DGE = sum(DGE, na.rm = T),
-              n_DGS = sum(DGS, na.rm = T),
-              p_overlap = (min(n_DGS, n_DGE)*Similarity) / n_DGE,
-              p_signal = n_DGS / (n_DGE + n_DGS - min(n_DGS, n_DGE)*Similarity)
-    ) %>% 
-    filter(!is.na(Similarity))
-  
-  # biosignal <- gene_similarity
-  
-  null_dist <- concatenated_genes %>%
-    filter(padj_expression < 0.05 | padj_splicing < 0.05) %>% 
-    specify(pvalue_splicing ~ pvalue_expression) %>%
-    hypothesize(null = "independence") %>%
-    generate(reps = 1000, type = "bootstrap") %>%
-    calculate("correlation")
-  
-  
-  ora_p <- ora_all %>% 
-    dplyr::filter(padj_expression < 0.05 | padj_splicing < 0.05) %>%
-    tidyr::pivot_longer(cols = dplyr::starts_with("enrichment_score_"), names_to = "method", values_to = "measure") %>%
-    dplyr::mutate(method = method %>% stringr::str_remove("enrichment_score_")) %>%
-    dplyr::filter(method != "shift")
-  null_dist <- ora_p %>%
-    specify(measure ~ method) %>%
-    hypothesize(null = "independence") %>%
-    generate(reps = 1000, type = "bootstrap") %>%
-    calculate("correlation", order = c("expression", "splicing"))
-  
-  obs_mean <- ora_p %>% 
-    specify(measure ~ method) %>%
-    calculate("correlation", order = c("expression", "splicing"))
-  
-  
-  null_dist %>%
-    visualize() +
-    shade_p_value(obs_stat = obs_mean, direction = "two-sided")
-  
-  
-  null_dist <- ora %>%
-    specify(enrichment_score_expression ~ enrichment_score_splicing) %>%
-    hypothesize(null = "independence") %>%
-    generate(reps = 1000, type = "bootstrap") %>%
-    calculate("correlation")
-  
-  obs_mean <- ora %>% 
-    specify(enrichment_score_expression ~ enrichment_score_splicing) %>%
-    calculate("correlation")
-  
-  
-  null_dist %>%
-    visualize()
-  
-  
-  null_dist %>%
-    get_p_value(obs_stat = obs_mean, direction = "two-sided")
-  
-  infer::specify(ora, response = padj_splicing, explanatory = padj_expression) %>% hypothesize(null = "independence")
-  effsize::cohensD(ora$padj_expression, ora$padj_splicing, paired=TRUE)
-  
-}
 

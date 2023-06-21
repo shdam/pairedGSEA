@@ -390,8 +390,9 @@ concatenate_sva_correlation <- function(experiments){
 
 
 # Store results for paper ----
-store_experiment_results <- function(experiments){
-  check_make_dir("results/paper")
+store_experiment_results <- function(experiments, limma = FALSE){
+  dir <- ifelse(limma, "results/paper_limma/", "results/paper/")
+  pairedGSEA:::check_make_dir(dir)
   for(num in 1:nrow(experiments)){
     row <- experiments[num, ]
     ### Load metadata
@@ -408,10 +409,11 @@ store_experiment_results <- function(experiments){
     aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
     ora <- readRDS(paste0("results/", experiment_title, "_ora.RDS"))
     
-    store_result(list("metadata" = metadata,
+    pairedGSEA:::store_result(list("metadata" = metadata,
                       "genes" = aggregated_pvals,
-                      "gene_sets" = ora),
-                 file = paste0("paper/", experiment_title, ".RDS"),
+                      "gene_sets" = ora,
+                      "experiment" = experiment_title),
+                 file = paste0(dir, experiment_title, ".RDS"),
                  analysis = experiment_title)
   }
   message("Done!\n")

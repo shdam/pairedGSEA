@@ -2,8 +2,11 @@
 # pkgload::load_all(path = "/home/projects/shd/pairedGSEA")
 # pkgload::load_all()
 #devtools::install_github("shdam/pairedGSEA", ref = "R4.0")
-library("tidyverse")
+# library("tidyverse")
 library("pairedGSEA")
+library("magrittr")
+library("ggplot2")
+
 
 source("R/run_experiment.R")
 source("R/run_analysis.R")
@@ -42,16 +45,20 @@ gene_sets <- pairedGSEA::prepare_msigdb()
 # Run experiments
 apply(experiments[150, ], 1, run_experiment, archs4db, prefilter = 15)
 apply(experiments, 1, run_experiment, archs4db, run_sva = FALSE, expression_only = TRUE)
-apply(experiments[151:199, ], 1, run_analysis, gene_sets)
+
+apply(experiments[1:50, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments[51:100, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments[101:150, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments[151:199, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
 apply(experiments, 1, getDDS, archs4db)
 ## Run limma
 experiments_limma <- combine_experiments(limma = TRUE)
 row <- experiments_limma[1,]
+apply(experiments_limma[1:49, ], 1, run_experiment, archs4db, use_limma = TRUE)
+apply(experiments_limma[50:99, ], 1, run_experiment, archs4db, use_limma = TRUE)
 apply(experiments_limma[150, ], 1, run_experiment, archs4db, use_limma = TRUE, prefilter = 15)
-apply(experiments_limma[151:180, ], 1, run_experiment, archs4db, use_limma = TRUE)
-apply(experiments_limma[181:199, ], 1, run_experiment, archs4db, use_limma = TRUE)
-apply(experiments_limma[1:99, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
-apply(experiments_limma[100:199, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments_limma[100:149, ], 1, run_experiment, archs4db, use_limma = TRUE)
+apply(experiments_limma[151:199, ], 1, run_experiment, archs4db, use_limma = TRUE)
 
 apply(experiments_limma[1:49, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
 apply(experiments_limma[50:99, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
@@ -59,6 +66,11 @@ apply(experiments_limma[150, ], 1, run_experiment, archs4db, use_limma = TRUE, p
 apply(experiments_limma[100:149, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
 apply(experiments_limma[151:199, ], 1, run_experiment, archs4db, use_limma = TRUE, run_sva = FALSE)
 
+
+apply(experiments_limma[1:50, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments_limma[51:100, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments_limma[101:150, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
+apply(experiments_limma[151:199, ], 1, run_analysis, gene_sets, run_fgsea = FALSE)
 #4_GSE156101_TP53 and TNKS1-2T Knockout  
 
 ### Check missing
