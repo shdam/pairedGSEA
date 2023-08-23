@@ -656,11 +656,12 @@ run_dexseq <- function(
     group_feat <- do.call("rbind", strsplit(rownames(dds), ":", fixed = TRUE))
     
     # Extract the found surrogate variables and covariates
-    svs_covariates <- colnames(SummarizedExperiment::colData(dds))
-    svs_covariates <- svs_covariates[grep("^sv", svs_covariates)]
+    svs_covariates <- reduce_formula(
+        DESeq2::design(dds), formularise = FALSE)
     
     # Add surrogate variables and covariates to DEXSeq design formula
-    if(length(svs_covariates) == 0){
+    if(identical(svs_covariates, "1")){
+        svs_covariates <- NULL
         design_formula <- formularise_vector(
             c("sample", "exon", "condition:exon"))
         reduced_formula <- formularise_vector(c("sample", "exon"))
@@ -900,7 +901,6 @@ aggregate_pvalue <- function(
     res <- do.call("rbind", res)
     res <- S4Vectors::DataFrame(gene = rownames(res), res)
     res$padj <- stats::p.adjust(res$pvalue, "fdr")
-    #if(any(res$pvalue < 10e-320)) res$pvalue[res$pvalue < 10e-320] <- 10e-320
     
     return(res)
 }

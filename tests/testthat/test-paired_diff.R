@@ -1,7 +1,7 @@
 
 data("example_se")
 test_se <- example_se[1:20, ]
-test_dds <- DESeqDataSetFromMatrix(countData = assay(test_se), colData = colData(test_se), design = ~group_nr)
+test_dds <- DESeq2::DESeqDataSetFromMatrix(countData = SummarizedExperiment::assay(test_se), colData = SummarizedExperiment::colData(test_se), design = ~group_nr)
 
 test_that("paired_diff works", {
     diff_results <- suppressWarnings(

@@ -1,3 +1,7 @@
+# pairedGSEA 1.1.1
+
+* Improved how surrogate variables are transferred in the design formulas
+
 # pairedGSEA 1.1.0
 
 * `paired_ora` now adjusts gene background for analysis to reduce bias
