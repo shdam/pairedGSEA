@@ -400,6 +400,25 @@ test_that("run_dexseq raises an error if rownames are not in gene:transcript for
         "Please ensure the rownames have the format 'gene:transcript'")
 })
 
+test_that("run_dexseq runs with NAs in metadata", {
+    SummarizedExperiment::colData(test_dds)$na <- NA
+    result <- suppressWarnings(
+        run_dexseq(
+            test_dds,
+            group_col = "group_nr",
+            baseline = "1",
+            case = "2",
+            experiment_title = "test",
+            store_results = FALSE,
+            quiet = TRUE,
+            parallel = FALSE))
+    
+    expect_s4_class(result, "DFrame")
+    expected_colnames <-  c(
+        "gene", "transcript", "baseMean", "lfc", "padj", "pvalue")
+    expect_equal(colnames(result), expected_colnames)
+})
+
 
 ## run_deseq
 expression_results <- run_deseq(

@@ -185,15 +185,16 @@ create_sample_data <- function(
         sample_data[[group_col]] == baseline, "B", 
         ifelse(sample_data[[group_col]] == case, "C", NA))
     
+    # Select columns specified in svs_covariates
+    sample_data <- sample_data[, c(group_col, svs_covariates), drop = FALSE]
+    
     # Remove any rows with missing values and convert group_col
     #  to a factor with levels B and C
     sample_data <- na.omit(sample_data)
     sample_data[[group_col]] <- factor(
         sample_data[[group_col]], levels = c("B", "C"))
     
-    # Select columns specified in svs_covariates, and
-    # rename group_col to "condition"
-    sample_data <- sample_data[, c(group_col, svs_covariates), drop = FALSE]
+    # Rename group_col to "condition"
     colnames(sample_data)[which(
         colnames(sample_data) == group_col)] <- "condition"
     

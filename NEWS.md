@@ -1,3 +1,8 @@
+# pairedGSEA 1.1.2
+
+* Fix bug where DEXSeq fails if there are NAs in the metadata
+
+
 # pairedGSEA 1.1.1
 
 * Improved how surrogate variables are transferred in the design formulas
