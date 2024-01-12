@@ -18,8 +18,10 @@ implementation of the `fgsea::fora` function.
 
 ## Article
 
-A preprint on `pairedGSEA` is available
-[here](https://doi.org/10.1101/2022.08.29.505720).
+`pairedGSEA` is published in [BMC
+Biology](https://doi.org/10.1186/s12915-023-01724-w).
+
+Please cite with `citation("pairedGSEA")`
 
 ## Installation
 
@@ -62,7 +64,7 @@ browseVignettes("pairedGSEA")
 
 Please see the User Guide vignette for a detailed description of usage.
 
-Here is a quick runthrough of the functions:
+Here is a quick run-through of the functions:
 
 <br> Load example data.
 

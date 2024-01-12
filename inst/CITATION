@@ -7,12 +7,12 @@ bibentry(
         as.person("Kristoffer Vitting-Seerup")
         ),
     year = 2023,
-    journal = "BioRxiv",
-    doi = "10.1101/2022.08.29.505720",
+    journal = "BMC Biology",
+    doi = "10.1186/s12915-023-01724-w",
     textVersion = 
     paste(
         "Dam, S.H., Olsen, L.R., Vitting-Seerup, K.", 
         "Expression and Splicing Mediate Distinct Biological Signals",
-        "BioRxiv (2023)"
+        "BMC Biology (2023)"
         )
     )
