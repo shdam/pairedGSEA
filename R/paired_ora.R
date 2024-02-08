@@ -182,11 +182,12 @@ run_ora <- function(
             !is.na(paired_diff_result$padj_splicing),]
     } else if(type == "expression"){
         paired_diff_result <- paired_diff_result[
-            !is.na(paired_diff_result$padj_expression),]
+            !is.na(paired_diff_result$padj_expression)
+            & !is.na(paired_diff_result$padj_splicing),]
     } else if(type == "paired"){
         paired_diff_result <- paired_diff_result[
             !is.na(paired_diff_result$padj_expression)
-            & !is.na(paired_diff_result$padj_expression),]
+            & !is.na(paired_diff_result$padj_splicing),]
     }
 
     universe <- unique(paired_diff_result$gene)

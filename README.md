@@ -130,7 +130,7 @@ pathways of interest.
 ``` r
 plot_ora(
     ora, 
-    paired = TRUE # Available in version 1.1.0 and newer
+    paired = FALSE # Available in version 1.1.0 and newer
     ) +
     ggplot2::theme_classic()
 ```
