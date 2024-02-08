@@ -37,12 +37,12 @@
 plot_ora <- function(
         ora,
         pattern = NULL,
-        paired = TRUE,
+        type = c("default", "paired", "intersect"),
         plotly = FALSE,
         cutoff = 0.05,
         lines = TRUE,
         colors = c("darkgray", "purple", "lightblue", "maroon")){
-    
+    type <- match.arg(type)
     if(is(pattern, "numeric")) pattern <- as.character(pattern)
     stopifnot(
         "Pattern must be a string"
@@ -55,9 +55,12 @@ plot_ora <- function(
     check_missing_package(package = "ggplot2")
     if(plotly) check_missing_package(package = "plotly")
     
-    if(paired){
+    if(type == "paired"){
         ora <- ora[, !endsWith(colnames(ora), "splicing")]
         colnames(ora) <- gsub("paired", "splicing", colnames(ora))
+    } else if (type == "intersect"){
+        ora <- ora[, !endsWith(colnames(ora), "splicing")]
+        colnames(ora) <- gsub("intersect", "splicing", colnames(ora))
     }
     
     # Filter ora
@@ -75,7 +78,8 @@ plot_ora <- function(
     }
     
     ora <- add_plot_color(ora, cutoff)
-    if(paired) ora$plot_color <- gsub("Only Splicing", "Paired", ora$plot_color)
+    if(type == "paired") ora$plot_color <- gsub("Only Splicing", "Paired", ora$plot_color)
+    else if(type == "intersect") ora$plot_color <- gsub("Only Splicing", "Intersect", ora$plot_color)
     # Extract matches
     matches <- ora[ora$pattern_match == TRUE,]
     
@@ -88,7 +92,7 @@ plot_ora <- function(
     colors <- subset_colors(ora, colors)
 
     plt <- create_plot(ora)
-    plt <- add_layout(plt, correlation, cutoff, colors, paired)
+    plt <- add_layout(plt, correlation, cutoff, colors, type)
     plt <- add_matches(plt, matches, pattern)
     if(lines) plt <- add_lines(plt)
     # Make plot interactive if user desires
@@ -129,16 +133,16 @@ add_plot_color <- function(ora, cutoff) {
         ora$padj_splicing < cutoff & ora$padj_expression < cutoff] <- "Both"
     # Add paired
     # ora$plot_color[
-    #     (ora$plot_color != "Both") & (ora$padj_splicing < cutoff)
+    #     (ora$plot_color != "Both") & (ora$padj_paired < cutoff)
     # ] <- "Paired"
     # Add expression
     ora$plot_color[
-        !(ora$plot_color %in% c("Both", "Paired"))
+        !(ora$plot_color %in% c("Both", "Paired", "Intersect"))
         & ora$padj_expression < cutoff
     ] <- "Only Expression"
-    # Add expression
+    # Add splicing
     ora$plot_color[
-        !(ora$plot_color %in% c("Both", "Paired"))
+        !(ora$plot_color %in% c("Both", "Paired", "Intersect"))
         & (ora$padj_splicing < cutoff)
     ] <- "Only Splicing"
     
@@ -150,7 +154,7 @@ add_plot_color <- function(ora, cutoff) {
     # Factorize color column
     ora$plot_color <- factor(
         ora$plot_color, 
-        levels = c("Both", "Only Splicing", "Only Expression", "Paired"))
+        levels = c("Both", "Only Splicing", "Only Expression", "Paired", "Intersect"))
     
     return(ora)
 }
@@ -159,7 +163,7 @@ add_plot_color <- function(ora, cutoff) {
 #' @noRd
 subset_colors <- function(plt_data, colors) {
     return(colors[c(
-        "Both", "Only Splicing", "Only Expression", "Paired")
+        "Both", "Only Splicing", "Only Expression", "Paired", "Intersect")
         %in% plt_data$plot_color])
 }
 
@@ -180,8 +184,14 @@ create_plot <- function(ora) {
 
 #' Add layout to plot
 #' @noRd
-add_layout <- function(plt, correlation, cutoff, colors, paired){
-    x_lab <- ifelse(paired, "Paired", "Differential Splicing")
+add_layout <- function(plt, correlation, cutoff, colors, type){
+    
+    x_lab <- switch(type,
+                    "paired" = "Paired",
+                    "intersect" = "Intersect",
+                    "Differential Splicing" # Default case
+    )
+    # x_lab <- ifelse(paired, "Paired", "Differential Splicing")
     # Add correlation text to plot
     plt + 
         ggplot2::annotate(
