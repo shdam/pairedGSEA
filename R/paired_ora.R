@@ -55,6 +55,7 @@ paired_ora <- function(
         paired_diff_result,
         gene_sets,
         cutoff = 0.05,
+        lfc_cutoff =  log2(1.5),
         min_size = 25,
         experiment_title = NULL,
         expression_only = FALSE,
@@ -108,7 +109,7 @@ paired_ora <- function(
     # fora on paired
     ora_paired <- run_ora(
         paired_diff_result, gene_sets = gene_sets,
-        type = "paired", cutoff = cutoff, min_size = min_size
+        type = "paired", cutoff = cutoff, min_size = min_size, lfc_cutoff = lfc_cutoff
     )
     
     if(!quiet) message("Joining result")
@@ -175,7 +176,7 @@ prepare_msigdb <- function(
 #' Run ORA on expression or splicing results
 #' @noRd
 run_ora <- function(
-        paired_diff_result, gene_sets, type, cutoff, min_size){
+        paired_diff_result, gene_sets, type, cutoff, min_size, lfc_cutoff){
     
     if(type == "splicing") {
         paired_diff_result <- paired_diff_result[
@@ -192,7 +193,7 @@ run_ora <- function(
     universe <- unique(paired_diff_result$gene)
     # Subset significant genes
     sig_genes <- subset_genes(
-        paired_diff_result, type = type, cutoff = cutoff)
+        paired_diff_result, type = type, cutoff = cutoff, lfc_cutoff = lfc_cutoff)
     
     # ORA on results
     ora <- fgsea::fora(
@@ -219,7 +220,7 @@ compute_enrichment <- function(ora, n_genes, n_universe){
 
 #' Subset genes to cutoff
 #' @noRd
-subset_genes <- function(paired_diff_result, type, cutoff){
+subset_genes <- function(paired_diff_result, type, cutoff, lfc_cutoff){
     
     if(type == "paired"){
         paired_diff_result$padj_splicing[
@@ -227,15 +228,22 @@ subset_genes <- function(paired_diff_result, type, cutoff){
         sig_genes <- paired_diff_result[
             (paired_diff_result[, "padj_expression"] < cutoff
             | (paired_diff_result[, "padj_splicing"] < cutoff)), ]
+        sig_genes <- sig_genes[
+            (sig_genes[, "lfc_expression"] < lfc_cutoff
+             | (sig_genes[, "lfc_splicing"] < lfc_cutoff)), ]
     } else{ # Expression or splicing only
         padj_col <- ifelse(
             type == "expression", "padj_expression", "padj_splicing")
+        lfc_col <- ifelse(
+            type == "expression", "lfc_expression", "lfc_splicing")
         
         sig_genes <- paired_diff_result[S4Vectors::complete.cases(
             paired_diff_result[,c(
                 paste0("pvalue_", type), "gene", padj_col)]),]
         sig_genes <- sig_genes[
             sig_genes[[padj_col]] < cutoff, ]
+        sig_genes <- sig_genes[
+            sig_genes[[lfc_col]] < lfc_cutoff, ]
     }
     
     return(sig_genes)
