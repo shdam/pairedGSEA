@@ -112,7 +112,7 @@ paired_ora <- function(
     )
     
     if(!quiet) message("Joining result")
-    ora_joined <- join_oras(ora_expression, ora_splicing, ora_paired)
+    ora_joined <- join_results(ora_expression, ora_splicing, ora_paired)
     
     if(!is.null(experiment_title)){
         if(!quiet) message("Storing fora results")
@@ -124,7 +124,77 @@ paired_ora <- function(
     return(S4Vectors::DataFrame(ora_joined))
 }
 
-
+paired_fcs <- function(
+        paired_diff_result,
+        gene_sets,
+        min_size = 25,
+        experiment_title = NULL,
+        expression_only = FALSE,
+        quiet = FALSE){
+    ## Initial error checks
+    stopifnot(is(c(quiet, expression_only), "logical"))
+    stopifnot(is(min_size, "numeric"))
+    stopifnot(
+        is(paired_diff_result, "data.frame") | is(paired_diff_result, "DFrame")
+    )
+    
+    # Check column names are as expected
+    if(expression_only) {
+        colnames(paired_diff_result)[
+            which(colnames(paired_diff_result) == "pvalue")] <- 
+            "pvalue_expression"
+        colnames(paired_diff_result)[
+            which(colnames(paired_diff_result) == "padj")] <-
+            "padj_expression"
+    } else{
+        check_colname(
+            paired_diff_result, "pvalue_splicing", "paired_diff_result")
+    }
+    check_colname(
+        paired_diff_result, "pvalue_expression", "paired_diff_result")
+    check_colname(paired_diff_result, "gene", "paired_diff_result")
+    
+    if(!quiet) message("Running over-representation analyses")
+    # fora on expression
+    expression <- run_fcs(
+        paired_diff_result, gene_sets = gene_sets,
+        type = "expression", min_size = min_size
+    )
+    
+    if(expression_only){
+        if(!is.null(experiment_title)){
+            if(!quiet) message("Storing fora results")
+            store_result(
+                ora_expression,
+                paste0(experiment_title, "_ora.RDS"),
+                "ORA on only DESeq2 results", quiet = quiet)
+        }
+        return(expression)
+    }
+    # fcs on splicing
+    splicing <- run_fcs(
+        paired_diff_result, gene_sets = gene_sets,
+        type = "splicing", min_size = min_size
+    )
+    
+    # fcs on paired
+    paired <- run_fcs(
+        paired_diff_result, gene_sets = gene_sets,
+        type = "paired", min_size = min_size
+    )
+    
+    if(!quiet) message("Joining result")
+    joined <- join_results(expression, splicing, paired, type = "fcs")
+    
+    if(!is.null(experiment_title)){
+        if(!quiet) message("Storing fora results")
+        joined$experiment <- experiment_title
+        store_result(
+            joined, paste0(experiment_title, "_ora.RDS"),
+            "ORA on differential analysis results", quiet = quiet)
+    }
+    return(S4Vectors::DataFrame(joined))
+}
 
 #' Load MSigDB and convert to names list of gene sets
 #' 
@@ -205,6 +275,43 @@ run_ora <- function(
     return(ora)
 }
 
+#' Run ORA on expression or splicing results
+#' @noRd
+run_fcs <- function(
+        paired_diff_result, gene_sets, type, min_size){
+    
+    if(type == "splicing") {
+        paired_diff_result <- paired_diff_result[
+            !is.na(paired_diff_result$padj_splicing),]
+    } else if(type == "expression"){
+        paired_diff_result <- paired_diff_result[
+            !is.na(paired_diff_result$padj_expression),]
+    } else if(type == "paired"){
+        paired_diff_result <- paired_diff_result[
+            !is.na(paired_diff_result$padj_expression)
+            & !is.na(paired_diff_result$padj_splicing),]
+        paired_diff_result$pvalue_paired <- apply(paired_diff_result[c("pvalue_splicing", "pvalue_expression")], 1, min)
+    }
+    
+    paired_diff_result <- paired_diff_result[!is.na(paired_diff_result$gene),]
+    fcs_stats <- -log10(paired_diff_result[, paste0("pvalue_", type)]+0.06)
+    fcs_stats <- setNames(fcs_stats, paired_diff_result$gene)
+    
+    
+    # FCS on results
+    fcs <- fgsea::fgseaMultilevel(
+        pathways = gene_sets,
+        stats = fcs_stats,
+        nproc = 10,
+        scoreType = "pos",
+        eps = 10e-320,
+        minSize = min_size
+    )
+    
+    
+    return(fcs)
+}
+
 #' Calculate enrichment scores
 #' @noRd
 compute_enrichment <- function(ora, n_genes, n_universe){
@@ -243,42 +350,42 @@ subset_genes <- function(paired_diff_result, type, cutoff){
 
 #' Join ORA results
 #' @noRd
-join_oras <- function(ora_expression, ora_splicing, ora_paired){
+join_results <- function(expression, splicing, paired, type = "ora"){
     
-    ora_joined <- merge(
-        ora_expression,
-        ora_splicing,
+    joined <- merge(
+        expression,
+        splicing,
         by = c("pathway"),
         suffixes = c("_expression", "_splicing"),
         all = TRUE)
-    colnames(ora_paired) <- gsub("$", "_paired", colnames(ora_paired))
-    colnames(ora_paired)[1] <- "pathway"
-    ora_joined <- merge(
-        ora_joined,
-        ora_paired,
+    colnames(paired) <- gsub("$", "_paired", colnames(paired))
+    colnames(paired)[1] <- "pathway"
+    joined <- merge(
+        joined,
+        paired,
         by = c("pathway"),
         all = TRUE)
-    
+    if (type != "ora") return(joined)
     # Fill NAs with zeros
-    ora_joined$relative_risk_expression[
-        is.na(ora_joined$relative_risk_expression)] <- 0
-    ora_joined$enrichment_score_expression[
-        is.na(ora_joined$enrichment_score_expression)] <- log2(0.06)
-    ora_joined$relative_risk_splicing[
-        is.na(ora_joined$relative_risk_splicing)] <- 0
-    ora_joined$enrichment_score_splicing[
-        is.na(ora_joined$enrichment_score_splicing)] <- log2(0.06)
-    ora_joined$relative_risk_splicing[
-        is.na(ora_joined$relative_risk_paired)] <- 0
-    ora_joined$enrichment_score_splicing[
-        is.na(ora_joined$enrichment_score_paired)] <- log2(0.06)
+    joined$relative_risk_expression[
+        is.na(joined$relative_risk_expression)] <- 0
+    joined$enrichment_score_expression[
+        is.na(joined$enrichment_score_expression)] <- log2(0.06)
+    joined$relative_risk_splicing[
+        is.na(joined$relative_risk_splicing)] <- 0
+    joined$enrichment_score_splicing[
+        is.na(joined$enrichment_score_splicing)] <- log2(0.06)
+    joined$relative_risk_splicing[
+        is.na(joined$relative_risk_paired)] <- 0
+    joined$enrichment_score_splicing[
+        is.na(joined$enrichment_score_paired)] <- log2(0.06)
     # Compute shifts in relative risk and enrichment scores
-    ora_joined$relative_risk_shift <- 
-        ora_joined$relative_risk_splicing - ora_joined$relative_risk_expression
-    ora_joined$enrichment_score_shift <- log2(
-        abs(ora_joined$relative_risk_shift)) *
-        sign(ora_joined$relative_risk_shift)
-    ora_joined <- ora_joined[order(ora_joined$enrichment_score_shift), ]
+    joined$relative_risk_shift <- 
+        joined$relative_risk_splicing - joined$relative_risk_expression
+    joined$enrichment_score_shift <- log2(
+        abs(joined$relative_risk_shift)) *
+        sign(joined$relative_risk_shift)
+    joined <- joined[order(joined$enrichment_score_shift), ]
     
-    return(ora_joined)
+    return(joined)
 }
