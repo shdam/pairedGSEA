@@ -33,7 +33,9 @@
 #' @param baseline Group value of baseline samples
 #' @param case Group value of case samples
 #' @param covariates Name of column(s) in the \code{metadata} that indicate(s)
-#' covariates. E.g., c("gender", "tissue_type")
+#' categorial covariates. E.g., c("gender", "tissue_type")
+#' @param continous_covariates Name of column(s) in the \code{metadata} that indicate(s)
+#' continous covariates. E.g., c("cell_enrichment", "age")
 #' @param experiment_title Title of your experiment. Your results will be
 #' stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.
 #' @param run_sva (Default: \code{TRUE})
@@ -91,6 +93,7 @@
 #'     case,
 #'     metadata = NULL,
 #'     covariates = NULL,
+#'     continous_covariates = NULL,
 #'     experiment_title = NULL,
 #'     store_results = FALSE,
 #'     run_sva = TRUE,
@@ -129,6 +132,7 @@ paired_diff <- function(
         case,
         metadata = NULL,
         covariates = NULL,
+        continous_covariates = NULL,
         experiment_title = NULL,
         store_results = FALSE,
         run_sva = TRUE,
@@ -199,7 +203,7 @@ paired_diff <- function(
             }
         }
     } else{
-        design <- formularise_vector(c(group_col, covariates))
+        design <- formularise_vector(c(group_col, covariates, continous_covariates))
     }
 
     ## Convert se to dds

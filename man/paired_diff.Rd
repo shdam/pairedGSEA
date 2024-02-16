@@ -12,6 +12,7 @@ paired_diff(
     case,
     metadata = NULL,
     covariates = NULL,
+    continous_covariates = NULL,
     experiment_title = NULL,
     store_results = FALSE,
     run_sva = TRUE,
@@ -48,7 +49,10 @@ Set to \code{"rownames"} if the rownames should be used.}
 \code{data.frame} object}
 
 \item{covariates}{Name of column(s) in the \code{metadata} that indicate(s)
-covariates. E.g., c("gender", "tissue_type")}
+categorial covariates. E.g., c("gender", "tissue_type")}
+
+\item{continous_covariates}{Name of column(s) in the \code{metadata} that indicate(s)
+continous covariates. E.g., c("cell_enrichment", "age")}
 
 \item{experiment_title}{Title of your experiment. Your results will be
 stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.}
