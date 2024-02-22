@@ -667,11 +667,9 @@ run_dexseq <- function(
         reduced_formula <- formularise_vector(c("sample", "exon"))
     } else{
         design_formula <- formularise_vector(c(
-            "sample", "exon", "condition:exon",
-            paste0(svs_covariates, ":exon")))
+            "sample", "exon", "condition:exon", svs_covariates))
         reduced_formula <- formularise_vector(c(
-            "sample", "exon",
-            paste0(svs_covariates, ":exon")))
+            "sample", "exon", svs_covariates))
         
     }
     
