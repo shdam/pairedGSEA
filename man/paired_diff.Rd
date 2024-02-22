@@ -54,6 +54,8 @@ categorial covariates. E.g., c("gender", "tissue_type")}
 \item{continous_covariates}{Name of column(s) in the \code{metadata} that indicate(s)
 continous covariates. E.g., c("cell_enrichment", "age")}
 
+\item{interactant}{A variable in metadata that interactions with the condition}
+
 \item{experiment_title}{Title of your experiment. Your results will be
 stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.}
 

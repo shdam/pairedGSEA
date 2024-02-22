@@ -115,16 +115,16 @@ pre_filter <- function(dds, threshold = 10, quiet = FALSE){
 #' @param vector Character vector of variables to add to model
 #' @importFrom stats formula
 #' @noRd
-formularise_vector <- function(vector){
+formularise_vector <- function(vector, interactant = NULL){
     stopifnot(
         "Names must not contain spaces" = all(grepl("\\s", vector) == FALSE))
     if(is.null(vector)){
         formula <- NULL
     } else if(length(vector) == 1){
-        formula <- stats::formula(paste0("~", vector))
+        formula <- stats::formula(paste0("~", paste0(vector, ":", interactant)))
     } else{
         formula <- stats::formula(paste0(
-            "~", vector[1], 
+            "~", paste0(vector[1], ":", interactant), 
             paste("+", vector[2:length(vector)], collapse = " ")))
     }
     return(formula)

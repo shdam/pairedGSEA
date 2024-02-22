@@ -36,6 +36,7 @@
 #' categorial covariates. E.g., c("gender", "tissue_type")
 #' @param continous_covariates Name of column(s) in the \code{metadata} that indicate(s)
 #' continous covariates. E.g., c("cell_enrichment", "age")
+#' @param interactant A variable in metadata that interactions with the condition
 #' @param experiment_title Title of your experiment. Your results will be
 #' stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.
 #' @param run_sva (Default: \code{TRUE})
@@ -133,6 +134,7 @@ paired_diff <- function(
         metadata = NULL,
         covariates = NULL,
         continous_covariates = NULL,
+        interactant = NULL,
         experiment_title = NULL,
         store_results = FALSE,
         run_sva = TRUE,
@@ -203,7 +205,7 @@ paired_diff <- function(
             }
         }
     } else{
-        design <- formularise_vector(c(group_col, covariates, continous_covariates))
+        design <- formularise_vector(c(group_col, covariates, continous_covariates), interactant = interactant)
     }
 
     ## Convert se to dds
@@ -224,8 +226,8 @@ paired_diff <- function(
     metadata <- prepare_metadata(metadata, group_col, paste(c(baseline, case)))
     
     # ensure columns are factors
-    cols_to_factor <- c(group_col, covariates)
-    metadata[cols_to_factor] <- lapply(metadata[cols_to_factor], factor)
+    # cols_to_factor <- c(group_col, covariates)
+    # metadata[cols_to_factor] <- lapply(metadata[cols_to_factor], factor)
     
     ## Subsample metadata to only include samples present in the count matrix
     metadata <- metadata[metadata[[sample_col]] %in% colnames(object), ]
@@ -672,10 +674,10 @@ run_dexseq <- function(
     } else{
         design_formula <- formularise_vector(c(
             "sample", "exon", "condition:exon",
-            paste0(svs_covariates, ":exon")))
+            svs_covariates))
         reduced_formula <- formularise_vector(c(
             "sample", "exon",
-            paste0(svs_covariates, ":exon")))
+            svs_covariates))
         
     }
     
