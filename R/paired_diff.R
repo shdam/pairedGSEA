@@ -205,7 +205,9 @@ paired_diff <- function(
             }
         }
     } else{
-        design <- formularise_vector(c(group_col, covariates, continous_covariates), interactant = interactant)
+        design <- formularise_vector(
+            c(interactant, group_col, covariates, continous_covariates),
+            interactant = interactant)
     }
 
     ## Convert se to dds
@@ -226,8 +228,8 @@ paired_diff <- function(
     metadata <- prepare_metadata(metadata, group_col, paste(c(baseline, case)))
     
     # ensure columns are factors
-    # cols_to_factor <- c(group_col, covariates)
-    # metadata[cols_to_factor] <- lapply(metadata[cols_to_factor], factor)
+    cols_to_factor <- c(group_col, covariates)
+    metadata[cols_to_factor] <- lapply(metadata[cols_to_factor], factor)
     
     ## Subsample metadata to only include samples present in the count matrix
     metadata <- metadata[metadata[[sample_col]] %in% colnames(object), ]
@@ -275,7 +277,7 @@ paired_diff <- function(
 
     # Detect surrogate variables
     if(run_sva){
-        dds <- run_sva(dds, quiet = quiet)
+        dds <- run_sva(dds, group_col = group_col, quiet = quiet)
     }
     
     if(use_limma){
@@ -464,7 +466,7 @@ convert_matrix_to_dds <- function(tx_count, metadata, design){
 #' @keywords internal
 #' @noRd
 #' @return A DESeqDataSet
-run_sva <- function(dds, quiet = FALSE) {
+run_sva <- function(dds, group_col, quiet = FALSE) {
     if (!quiet) message("Running SVA")
     
     # Normalize counts with DESeq2 for SVA
@@ -477,7 +479,7 @@ run_sva <- function(dds, quiet = FALSE) {
     
     # Get dds design
     design <- DESeq2::design(dds)
-    reduced <- reduce_formula(design)
+    reduced <- reduce_formula(design, group_col = group_col)
     
     # Define model matrix
     mod1 <- stats::model.matrix(design, data = metadata)
@@ -564,7 +566,7 @@ run_deseq <- function(
     if(!quiet) message("Running DESeq2")
     
     # Reduce design formula to surrogate variables and covariates
-    reduced <- reduce_formula(DESeq2::design(dds))
+    reduced <- reduce_formula(DESeq2::design(dds), group_col = group_col)
     
     dds <- DESeq2::DESeq(
         dds,
@@ -663,7 +665,8 @@ run_dexseq <- function(
     
     # Extract the found surrogate variables and covariates
     svs_covariates <- reduce_formula(
-        DESeq2::design(dds), formularise = FALSE)
+        DESeq2::design(dds), formularise = FALSE, group_col = group_col)
+    svs_covariates <- svs_covariates[!grepl(":", svs_covariates)]
     
     # Add surrogate variables and covariates to DEXSeq design formula
     if(identical(svs_covariates, "1")){

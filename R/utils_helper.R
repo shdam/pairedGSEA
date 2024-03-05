@@ -115,16 +115,19 @@ pre_filter <- function(dds, threshold = 10, quiet = FALSE){
 #' @param vector Character vector of variables to add to model
 #' @importFrom stats formula
 #' @noRd
-formularise_vector <- function(vector, interactant = NULL){
+formularise_vector <- function(vector, interactant = NULL) {
     stopifnot(
         "Names must not contain spaces" = all(grepl("\\s", vector) == FALSE))
-    if(is.null(vector)){
-        formula <- NULL
-    } else if(length(vector) == 1){
-        formula <- stats::formula(paste0("~", paste0(vector, ":", interactant)))
-    } else{
+    
+    if (is.null(vector)) return(NULL)
+    if (!is.null(interactant)) vector <- 
+            c(vector, paste0(interactant, ":", vector[2]))
+        
+    if (length(vector) == 1) {
+        formula <- stats::formula(paste0("~", vector))
+    } else {
         formula <- stats::formula(paste0(
-            "~", paste0(vector[1], ":", interactant), 
+            "~", vector[1], 
             paste("+", vector[2:length(vector)], collapse = " ")))
     }
     return(formula)
@@ -139,7 +142,7 @@ formularise_vector <- function(vector, interactant = NULL){
 #' @param formularise (Default: TRUE) Logical determining if the design
 #' should be formularised
 #' @noRd
-reduce_formula <- function(formula, formularise = TRUE){
+reduce_formula <- function(formula, group_col, formularise = TRUE){
     # Convert design formula to character string
     formula_vector <- strsplit(
         as.character(formula)[2], split = " \\+ ", fixed = FALSE)
@@ -147,8 +150,8 @@ reduce_formula <- function(formula, formularise = TRUE){
     
     # If design only contains 1 variable, return ~1
     if(length(formula_vector) == 1) reduced_vector <- "1"
-    # Else, remove first variable
-    else reduced_vector <- formula_vector[2:length(formula_vector)]
+    # Else, remove group variable
+    else reduced_vector <-  formula_vector[!(formula_vector %in% group_col)]
     
     if(formularise) return(formularise_vector(reduced_vector))
     
