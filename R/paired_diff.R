@@ -666,20 +666,22 @@ run_dexseq <- function(
     # Extract the found surrogate variables and covariates
     svs_covariates <- reduce_formula(
         DESeq2::design(dds), formularise = FALSE, group_col = group_col)
+    interactant <- svs_covariates[grepl(":", svs_covariates)]
+    interactant <- gsub(group_col, "condition", interactant)
     svs_covariates <- svs_covariates[!grepl(":", svs_covariates)]
     
     # Add surrogate variables and covariates to DEXSeq design formula
     if(identical(svs_covariates, "1")){
         svs_covariates <- NULL
         design_formula <- formularise_vector(
-            c("sample", "exon", "condition:exon"))
-        reduced_formula <- formularise_vector(c("sample", "exon"))
+            c("sample", "exon", "condition:exon"), interactant)
+        reduced_formula <- formularise_vector(c("sample", "exon"), interactant)
     } else{
         design_formula <- formularise_vector(c(
-            "sample", "exon", "condition:exon",
+            "sample", "exon", "condition:exon", interactant,
             svs_covariates))
         reduced_formula <- formularise_vector(c(
-            "sample", "exon",
+            "sample", "exon", interactant,
             svs_covariates))
         
     }

@@ -88,7 +88,7 @@ Run paired differential analysis
 ```{r diff}
 set.seed(500) # For reproducible results
 example_se$days <- c(5.8, 2.1, 10.3, 8.9, 6.0, 1.0)
-# example_se$age <- c(5, 2, 10, 8, 6, 1)
+# example_se$age <- c(5, 2, 10, , 6, 1)
 diff_results <- paired_diff(
   example_se,
   group_col = "group_nr",
