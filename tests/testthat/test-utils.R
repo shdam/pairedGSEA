@@ -89,13 +89,13 @@ test_that("formularise_vector returns NULL for empty vector", {
 # Test reduce_formula ----
 test_that("reduce_formula removes first variable from formula", {
     formula <- as.formula("~ treatment + time + subject")
-    reduced_formula <- reduce_formula(formula)
+    reduced_formula <- reduce_formula(formula, group_col = "treatment")
     expect_equal(as.character(reduced_formula)[2], "time + subject")
 })
 
 test_that("reduce_formula returns NULL for formula with only one variable", {
     formula <- as.formula("~treatment")
-    reduced_formula <- reduce_formula(formula, formularise = FALSE)
+    reduced_formula <- reduce_formula(formula, formularise = FALSE, group_col = "treatment")
     expect_equal(reduced_formula, "1")
 })
 
