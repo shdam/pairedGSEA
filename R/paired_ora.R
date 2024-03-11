@@ -124,6 +124,36 @@ paired_ora <- function(
     return(S4Vectors::DataFrame(ora_joined))
 }
 
+#' Paired Functional Class Scoring
+#' 
+#' paired_fcs uses \code{\link[fgsea:fgseaMultilevel]{fgseaMultilevel}} to run the
+#' FCS analysis.
+#' First the aggregated pvalues are adjusted using the
+#' Benjamini & Hochberg method.
+#' The analysis is run on all significant genes found by
+#' \code{\link[DESeq2:DESeq]{DESeq2}} and 
+#' \code{\link[DEXSeq:DEXSeq]{DEXSeq}} individually.
+#' I.e., two runs of \code{\link[fgsea:fgseaMultilevel]{fgseaMultilevel}}
+#' are executed and subsequently
+#' joined into a single object.
+#' You can use \code{\link[pairedGSEA:prepare_msigdb]{prepare_msigdb}}
+#' to create a list of gene_sets.
+#' 
+#' @inheritParams paired_ora
+#' @importFrom S4Vectors DataFrame complete.cases
+#' @import fgsea
+#' @family paired
+#' @export 
+#' @return A data.table of merged FCS results
+#' @examples 
+#' data("example_diff_result")
+#' data("example_gene_sets")
+#' 
+#' ora <- paired_fcs(
+#'     example_diff_result,
+#'     example_gene_sets)
+#' 
+#' 
 paired_fcs <- function(
         paired_diff_result,
         gene_sets,

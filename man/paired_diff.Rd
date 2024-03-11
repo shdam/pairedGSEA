@@ -5,28 +5,29 @@
 \title{Run paired DESeq2 and DEXSeq analyses}
 \usage{
 paired_diff(
-    object,
-    group_col,
-    sample_col,
-    baseline,
-    case,
-    metadata = NULL,
-    covariates = NULL,
-    continous_covariates = NULL,
-    experiment_title = NULL,
-    store_results = FALSE,
-    run_sva = TRUE,
-    use_limma = FALSE,
-    prefilter = 10,
-    test = "LRT",
-    fit_type = "local",
-    quiet = FALSE,
-    parallel = FALSE,
-    BPPARAM = BiocParallel::bpparam(),
-    expression_only = FALSE,
-    custom_design = FALSE,
-    ...
-    )
+  object,
+  group_col,
+  sample_col,
+  baseline,
+  case,
+  metadata = NULL,
+  covariates = NULL,
+  continuous_covariates = NULL,
+  interactant = NULL,
+  experiment_title = NULL,
+  store_results = FALSE,
+  run_sva = TRUE,
+  use_limma = FALSE,
+  prefilter = 10,
+  test = "LRT",
+  fit_type = "local",
+  quiet = FALSE,
+  parallel = FALSE,
+  BPPARAM = BiocParallel::bpparam(),
+  expression_only = FALSE,
+  custom_design = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{A data object of the types matrix, 
@@ -51,7 +52,7 @@ Set to \code{"rownames"} if the rownames should be used.}
 \item{covariates}{Name of column(s) in the \code{metadata} that indicate(s)
 categorial covariates. E.g., c("gender", "tissue_type")}
 
-\item{continous_covariates}{Name of column(s) in the \code{metadata} that indicate(s)
+\item{continuous_covariates}{Name of column(s) in the \code{metadata} that indicate(s)
 continous covariates. E.g., c("cell_enrichment", "age")}
 
 \item{interactant}{A variable in metadata that interactions with the condition}
@@ -151,6 +152,7 @@ diff_results <- paired_diff(
 }
 \seealso{
 Other paired: 
+\code{\link{paired_fcs}()},
 \code{\link{paired_ora}()}
 }
 \concept{paired}
