@@ -34,7 +34,7 @@
 #' @param case Group value of case samples
 #' @param covariates Name of column(s) in the \code{metadata} that indicate(s)
 #' categorial covariates. E.g., c("gender", "tissue_type")
-#' @param continous_covariates Name of column(s) in the \code{metadata} that indicate(s)
+#' @param continuous_covariates Name of column(s) in the \code{metadata} that indicate(s)
 #' continous covariates. E.g., c("cell_enrichment", "age")
 #' @param interactant A variable in metadata that interactions with the condition
 #' @param experiment_title Title of your experiment. Your results will be
@@ -85,30 +85,6 @@
 #' @import DEXSeq
 #' @import BiocParallel
 #' @return A DFrame of aggregated pvalues
-#' @usage 
-#' paired_diff(
-#'     object,
-#'     group_col,
-#'     sample_col,
-#'     baseline,
-#'     case,
-#'     metadata = NULL,
-#'     covariates = NULL,
-#'     continous_covariates = NULL,
-#'     experiment_title = NULL,
-#'     store_results = FALSE,
-#'     run_sva = TRUE,
-#'     use_limma = FALSE,
-#'     prefilter = 10,
-#'     test = "LRT",
-#'     fit_type = "local",
-#'     quiet = FALSE,
-#'     parallel = FALSE,
-#'     BPPARAM = BiocParallel::bpparam(),
-#'     expression_only = FALSE,
-#'     custom_design = FALSE,
-#'     ...
-#'     )
 #' @examples 
 #' 
 #' # Run analysis on included example data
@@ -133,7 +109,7 @@ paired_diff <- function(
         case,
         metadata = NULL,
         covariates = NULL,
-        continous_covariates = NULL,
+        continuous_covariates = NULL,
         interactant = NULL,
         experiment_title = NULL,
         store_results = FALSE,
@@ -177,6 +153,12 @@ paired_diff <- function(
         "Covariate names must not contain spaces" =
             !grepl(" ", covariates))
     stopifnot(
+        "Continuous covariate names must not contain spaces" =
+            !grepl(" ", continuous_covariates))
+    stopifnot(
+        "Interactants covariate names must not contain spaces" =
+            !grepl(" ", interactants))
+    stopifnot(
         "group_col name must not contain spaces" =
             !grepl(" ", group_col))
     stopifnot(
@@ -206,7 +188,7 @@ paired_diff <- function(
         }
     } else{
         design <- formularise_vector(
-            c(interactant, group_col, covariates, continous_covariates),
+            c(interactant, group_col, covariates, continuous_covariates),
             interactant = interactant)
     }
 
@@ -727,7 +709,7 @@ run_dexseq <- function(
             "differential splicing results", quiet = quiet)
     }
     
-    # Rename LFC column for consistency and human-readability
+    # Rename LFC column for consistency and readability
     # splicing_results <- data.frame(splicing_results)
     splicing_results <- splicing_results[, c(
         "groupID", "featureID", "exonBaseMean",
