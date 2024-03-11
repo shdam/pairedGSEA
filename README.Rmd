@@ -114,7 +114,7 @@ gene_sets <- pairedGSEA::prepare_msigdb(
     gene_id_type = "ensembl_gene"
     )
 
-ora <- paired_ora(
+fcs <- paired_fcs(
   paired_diff_result = diff_results,
   gene_sets = gene_sets
   )
@@ -125,7 +125,7 @@ You can now plot the enrichment scores against each other and identify pathways 
 
 ```{r plot}
 plot_ora(
-    ora, 
+    fcs, 
     paired = TRUE # Available in version 1.1.0 and newer
     ) +
     ggplot2::theme_classic()
