@@ -11,10 +11,11 @@ metadata
 doc
 codecov
 dev
-figs
+figs*
 /doc/
 /Meta/
 projectdocument.txt
 gtfextract.rds
 image.Rdata
 results*
+Rplots.pdf

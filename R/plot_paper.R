@@ -7,7 +7,7 @@ fig2 <- FALSE
 fig2_init <- FALSE
 fig3 <- TRUE
 fig_format <- "pdf"
-limma <- FALSE
+limma <- TRUE
 # pwr_calc <- tibble::tribble(~test, ~ES, ~d, ~sig.level, ~power, ~type, ~alternative)
 
 
@@ -681,9 +681,9 @@ plot_pathway_count <- function(ora_all){
                        Only_DGS = paste0("Only\nDifferential\nSplicing\n", "(Median: ", median(found_pathways$Only_DGS), ")"))
     ) %>% 
     ggplot() +
-    aes(y = Pathways, x = Analysis, color = Analysis) +
+    aes(y = Pathways+1, x = Analysis, color = Analysis) +
     ggforce::geom_sina() +
-    scale_y_log10() +
+    scale_y_log10(breaks=c(1,11,101,1001, 10001), labels =c(0,10,100,1000, 10000)) +
     geom_boxplot(width = 0.05) +
     color_scale(reorder = c(2, 3, 1, 4)) + 
     labs(x = "",
@@ -744,9 +744,8 @@ if(fig3){
     stringr::str_replace("dexseq", "splicing")
   
   plt_pathway_count <- plot_pathway_count(ora_all)
-  plt_pathway_count_paired <- plot_pathway_count_paired(ora_all)
-  # plt_pathway_count
   ggsave(plot = plt_pathway_count, filename = paste0("figs/pathway_count", limma_suffix, ".", fig_format))
+  plt_pathway_count_paired <- plot_pathway_count_paired(ora_all)
   ggsave(plot = plt_pathway_count_paired, filename = paste0("figs/pathway_count_paired", limma_suffix, ".", fig_format))
 }
 
@@ -761,7 +760,7 @@ if(fig3){
   ora <- ora_all %>% 
     filter(experiment == exp)
   
-  telomere_pathways <- plot_ora(ora, pattern = "Telomer", paired = TRUE, colors = c("darkgray", "purple", "lightblue", "maroon")) +
+  telomere_pathways <- plot_ora(ora, pattern = "Telomer", paired = FALSE, colors = c("darkgray", "purple", "lightblue", "maroon")) +
     ggplot2::labs(title = "GSE61220: TGF\u03B2 Treatment")
   if(fig_format == "pdf"){
     cairo_pdf(paste0("figs/telomere_pathways", limma_suffix, ".", fig_format), width = 5.8, height = 4.46)
@@ -870,7 +869,17 @@ if(fig3){
   ggsave(plot = ora_correlation, filename = paste0("figs/ora_correlation", limma_suffix, ".", fig_format))
   ora_correlation_facet <- plot_ora_correlation_facet(ora_all, threshold = 0)
   # ora_correlation_facet
-  ggsave(plot = ora_correlation_facet, filename = paste0("figs/ora_correlation_facet", limma_suffix, ".", fig_format), width = 6, height = 4)
+  
+  
+  if(fig_format == "pdf"){
+    library("Cairo")
+    cairo_pdf(paste0("figs/ora_correlation_facet", limma_suffix, ".", fig_format), width = 6, height = 4)
+    ora_correlation_facet
+    dev.off()
+  } else{
+    ggsave(plot = ora_correlation_facet, filename = paste0("figs/ora_correlation_facet", limma_suffix, ".", fig_format), width = 6, height = 4)
+  }
+  
 }
 
 
@@ -965,8 +974,7 @@ if(fig3){
 
 if(fig3){
   
-  # Overview
-  theme_set(theme_classic(base_size = 8))
+  
   
   
   # layout <- "
@@ -983,8 +991,10 @@ if(fig3){
   AAACC
   BBBDD
   "
- 
-  Figure3 <- plt_pathway_count_paired + telomere_pathways + #repair_pathways + 
+  # Overview
+  theme_set(theme_classic(base_size = 8))
+  
+  Figure3 <- plt_pathway_count + telomere_pathways + #repair_pathways + 
     ora_correlation + rr_median +
     plot_layout(design = layout) +
     plot_annotation(tag_levels = 'A') &

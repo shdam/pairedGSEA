@@ -2,12 +2,14 @@
 
 #' Analyse experiments
 #' @noRd
-run_analysis <- function(row, gene_sets, run_fgsea = TRUE){
+run_analysis <- function(row, experiments, gene_sets, run_fgsea = TRUE, quiet = FALSE){
   
   
   if(typeof(row) == "character"){ # Convert apply-made row to tibble
     row <- tibble::as_tibble(row, rownames = "names") %>% 
       tidyr::pivot_wider(values_from = value, names_from = names)
+  } else {
+    row <- experiments[row,]
   }
   
   
@@ -26,7 +28,7 @@ run_analysis <- function(row, gene_sets, run_fgsea = TRUE){
   # if(!file.exists(deseq2file)) stop(paste0("File:", experimentTitle, " does not exists.\\n","Please run experiment before analysing. See ?runExperiment"))
   
   
-  message("Analysing ", experiment_title)
+  if (!quiet) message("Analysing ", experiment_title)
   
   aggregated_pvals <- readRDS(paste0("results/", experiment_title, "_aggregated_pvals.RDS"))
   
@@ -35,7 +37,7 @@ run_analysis <- function(row, gene_sets, run_fgsea = TRUE){
     stringr::str_replace_all("deseq", "expression") %>%
     stringr::str_replace_all("dexseq", "splicing")
   
-  if(run_fgsea){#fgsea
+  if(FALSE && run_fgsea){#fgsea
     message("Gene set enrichment analysis")
     
     if(stringr::str_detect(colnames(aggregated_pvals),"dexseq")) colnames(aggregated_pvals) <- stringr::str_replace_all(colnames(aggregated_pvals), "dexseq", "splicing")
@@ -77,11 +79,13 @@ run_analysis <- function(row, gene_sets, run_fgsea = TRUE){
     
     message("fgsea results are stored in the results folder. Look for '*_fgsea_expression.RDS' and '*_fgsea_splicing*.RDS'")
   } # fgsea
-  
+  if (run_fgsea) {
+    fcs <- paired_fcs(aggregated_pvals, gene_sets, experiment_title = experiment_title, quiet = quiet)
+  }
   if(TRUE){ # fora
-    message("Over-representation analysis")
+    if (!quiet) message("Over-representation analysis")
     
-    results <- paired_ora(aggregated_pvals, gene_sets, experiment_title = experiment_title)
+    ora <- paired_ora(aggregated_pvals, gene_sets, experiment_title = experiment_title, quiet = quiet)
     
     }
   

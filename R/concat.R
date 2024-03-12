@@ -5,6 +5,7 @@ if(FALSE){
   experiments <- combine_experiments()
   
   concatenate_ora(experiments)
+  concatenate_fcs(experiments)
   concatenate_results(experiments)
   concatenate_genes(experiments)
   concatenate_no_sva_genes(experiments)
@@ -15,6 +16,7 @@ if(FALSE){
   experiments_limma <- combine_experiments(limma = TRUE)
   
   concatenate_ora(experiments_limma, suffix = "_limma_all")
+  concatenate_fcs(experiments_limma, suffix = "_limma_all")
   concatenate_results(experiments_limma, suffix = "_limma_results", limma = TRUE)
   concatenate_genes(experiments_limma, suffix = "_limma_genes", limma = TRUE)
   concatenate_no_sva_genes(experiments_limma, suffix = "_limma_no_sva_genes")
@@ -70,7 +72,47 @@ concatFgseaResults <- function(experiments){
   saveRDS(concatFgsea, "results/concatFgsea.RDS")
   return(concatFgsea)
 }
-
+concatenate_fcs <- function(experiments, suffix = "_all"){
+  
+  fcs_all <- tibble::tibble()
+  
+  for(num in 1:nrow(experiments)){
+    row <- experiments[num, ]
+    ### Load metadata
+    md_file <- row$filename
+    data_name <- basename(md_file) %>% 
+      stringr::str_remove(".xlsx") %>% 
+      stringr::str_remove(".csv") 
+    ### Define experiment details
+    experiment_title <- paste0(data_name, "_", row$`comparison_title (empty_if_not_okay)`)
+    
+    message("Adding ", experiment_title)
+    
+    ### Load results
+    # fora_deseq <- readRDS(paste0("results/", experiment_title, "_fora_deseq.RDS"))
+    # fora_dexseq <- readRDS(paste0("results/", experiment_title, "_fora_dexseq.RDS"))
+    fcs_joined <- readRDS(paste0("results/", experiment_title, "_fcs.RDS"))
+    
+    ### Join results
+    # fora_joined <- fora_deseq %>% 
+    #   dplyr::full_join(fora_dexseq, by = c("pathway", "size_geneset", "size_universe"), suffix = c("_deseq", "_dexseq")) %>% 
+    #   dplyr::full_join(fora_paired, by = c("pathway", "size_geneset", "size_universe")) %>% 
+    #   dplyr::rename(padj_paired = padj,
+    #                 pval_paired = pval,
+    #                 overlap_paired = overlap,
+    #                 size_genes_paired = size_genes,
+    #                 odds_ratio_paired = odds_ratio,
+    #                 enrichment_score_paired = enrichment_score) %>% 
+    #   dplyr::select(-dplyr::starts_with("overlapGenes")) %>% 
+    #   dplyr::mutate(experiment = experiment_title)
+    
+    fcs_all <- fcs_all %>% 
+      dplyr::bind_rows(fcs_joined)
+  }
+  saveRDS(fcs_all, paste0("results/fcs", suffix,".RDS"))
+  return(fcs_all)
+}
+# concatenated_fcs <- concatenate_fcs(experiments)
 # fora ----
 concatForaResults <- function(experiments){
   
@@ -419,3 +461,4 @@ store_experiment_results <- function(experiments, limma = FALSE){
   message("Done!\n")
 }
 # store_experiment_results(experiments)
+# store_experiment_results(experiments_limma, limma = TRUE)

@@ -3,9 +3,11 @@
 #' @noRd
 #' @param row A row from the data.frame of experiments generated with \code{combine_experiments}
 run_experiment <- function(row,
+                           experiments,
                            archs4db = NULL,
                            tx_count = NULL,
                            group_col = "group_nr",
+                           sample_col = "id",
                            tpm = TRUE,
                            prefilter = 10,
                            parallel = TRUE,
@@ -13,15 +15,21 @@ run_experiment <- function(row,
                            expression_only = FALSE,
                            store_results = TRUE,
                            run_sva = TRUE,
+                           quiet = FALSE,
                            use_limma = FALSE){
+
+  # Adjust prefilter for experiment 150
+  if (row == 150 && prefilter == 10) prefilter <- 15
   
-  if(typeof(row) == "character"){ # Convert apply-made row to tibble
+  # Convert apply-made row to tibble
+  if (typeof(row) == "character") { 
     row <- tibble::as_tibble(row, rownames = "names") %>% 
       tidyr::pivot_wider(values_from = value, names_from = names)
+  } else {
+    row <- experiments[row,]
   }
-  
-  
-  message("Running on ", row$study)
+
+  if (!quiet) message("Running on ", row$study)
   
   ### Load metadata
   md_file <- row$filename
@@ -30,7 +38,7 @@ run_experiment <- function(row,
     stringr::str_remove(".csv") 
   
   ### Define tpm file
-  if(tpm) tpm <- stringr::str_replace(archs4db, "counts", "tpm")
+  if(tpm) tpm <- stringr::str_replace(archs4db, "transcript", "tpm")
   ### Define experiment details
   comparison_title <- row$`comparison_title (empty_if_not_okay)`
   comparison_title <- ifelse(run_sva,
@@ -56,7 +64,7 @@ run_experiment <- function(row,
     object = tx_count,
     metadata = md_file,
     group_col = group_col,
-    sample_col = "id",
+    sample_col = sample_col,
     baseline = baseline_case[1],
     case = baseline_case[2],
     experiment_title = experiment_title,
@@ -65,7 +73,7 @@ run_experiment <- function(row,
     prefilter = prefilter,
     fit_type = "local",
     store_results = store_results,
-    quiet = FALSE,
+    quiet = quiet,
     expression_only = expression_only,
     parallel = parallel,
     BPPARAM = BiocParallel::bpparam()
@@ -104,19 +112,23 @@ load_archs4 <- function(samples, archs4db, gtf = NULL){
   
   ### Extract count data of interest
   # Retrieve information from compressed data
-  
+  if (grepl("2.2", archs4db)) {
+    loc_txgene <- c("ensembl_id", "ensembl_gene")
+  } else {
+    loc_txgene <- c("ensembl_transcript_id", "ensembl_gene_id")
+  }
   my_ids <- rhdf5::h5read(archs4db, "/meta/samples/geo_accession")
-  tx     <- rhdf5::h5read(archs4db, "/meta/transcripts/ensembl_transcript_id")
-  if(is.null(gtf)) gene <- rhdf5::h5read(archs4db, "/meta/transcripts/ensembl_gene_id")
+  tx     <- rhdf5::h5read(archs4db, paste0("/meta/transcripts/", loc_txgene[1]))
+  if(is.null(gtf)) gene <- rhdf5::h5read(archs4db, paste0("/meta/transcripts/", loc_txgene[2]))
   
   # Identify columns to be extracted
-  if(!all( samples %in% my_ids )) stop("Some of the chosen samples", samples, "are not in the database.")
+  if(!all( samples %in% my_ids )) stop("Some of the chosen samples ", paste(samples, collapse = " "), " are not in the database.")
   sample_locations <- which(my_ids %in% samples)
   
   # Extract gene expression from compressed data
-  tx_count <- archs4db %>% 
+  tx_count <- archs4db |> 
     rhdf5::h5read("data/expression",
-                  index = list(sample_locations, 1:length(tx))) %>% 
+                  index = list(sample_locations, 1:length(tx))) |> 
     t()
   # Close file
   rhdf5::H5close()
@@ -124,11 +136,8 @@ load_archs4 <- function(samples, archs4db, gtf = NULL){
   if(is.null(gtf)){
     gene_tx <- stringr::str_c(gene, tx, sep = ":")
   } else{
-    gene_tx <- gtf %>% 
-      dplyr::distinct() %>% 
-      dplyr::right_join(dplyr::tibble(transcript = tx), by = "transcript") %>% 
-      .[match(tx, .$transcript), ] %>% 
-      tidyr::unite(gene, transcript, col = "gene_tx", sep = ":") %>% 
+    gene_tx <- gtf |>  
+      dplyr::right_join(dplyr::tibble(transcript_id = tx), by = "transcript_id") |> 
       dplyr::pull("gene_tx")
   }
   
