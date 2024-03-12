@@ -184,7 +184,7 @@ paired_fcs <- function(
         paired_diff_result, "pvalue_expression", "paired_diff_result")
     check_colname(paired_diff_result, "gene", "paired_diff_result")
     
-    if(!quiet) message("Running over-representation analyses")
+    if(!quiet) message("Running functional class scoring analyses")
     # fora on expression
     expression <- run_fcs(
         paired_diff_result, gene_sets = gene_sets,
@@ -196,8 +196,8 @@ paired_fcs <- function(
             if(!quiet) message("Storing fora results")
             store_result(
                 ora_expression,
-                paste0(experiment_title, "_ora.RDS"),
-                "ORA on only DESeq2 results", quiet = quiet)
+                paste0(experiment_title, "_fcs.RDS"),
+                "FCS on only DESeq2 results", quiet = quiet)
         }
         return(expression)
     }
@@ -217,11 +217,11 @@ paired_fcs <- function(
     joined <- join_results(expression, splicing, paired, type = "fcs")
     
     if(!is.null(experiment_title)){
-        if(!quiet) message("Storing fora results")
+        if(!quiet) message("Storing fcs results")
         joined$experiment <- experiment_title
         store_result(
-            joined, paste0(experiment_title, "_ora.RDS"),
-            "ORA on differential analysis results", quiet = quiet)
+            joined, paste0(experiment_title, "_fcs.RDS"),
+            "FCS on differential analysis results", quiet = quiet)
     }
     return(S4Vectors::DataFrame(joined))
 }
@@ -338,6 +338,7 @@ run_fcs <- function(
         minSize = min_size
     )
     
+    colnames(fcs) <- gsub("ES", "enrichment_score", colnames(fcs))
     
     return(fcs)
 }

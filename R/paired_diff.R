@@ -157,7 +157,7 @@ paired_diff <- function(
             !grepl(" ", continuous_covariates))
     stopifnot(
         "Interactants covariate names must not contain spaces" =
-            !grepl(" ", interactants))
+            !grepl(" ", interactant))
     stopifnot(
         "group_col name must not contain spaces" =
             !grepl(" ", group_col))
