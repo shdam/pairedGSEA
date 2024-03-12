@@ -102,7 +102,7 @@ pre_filter <- function(dds, threshold = 10, quiet = FALSE){
     
     dds <- dds[!remove_singles,]
     
-    if(sum(remove_low) > 0 | sum(remove_singles) > 0 & !quiet) message(
+    if((sum(remove_low) > 0 || sum(remove_singles) > 0) && !quiet) message(
         "\nRemoving ", sum(remove_low), 
         " rows with a summed count lower than ", threshold,
         "\nRemoving ", sum(remove_singles),

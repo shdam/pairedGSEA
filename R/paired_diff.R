@@ -869,6 +869,9 @@ aggregate_pvalue <- function(
     # Check input parameters
     type <- match.arg(type)
     
+    # Convert to DataFrame
+    df <- S4Vectors::DataFrame(df)
+    
     # Rename columns and convert values to the correct type
     df <- df[!is.na(df$pvalue) & !is.na(df$baseMean),]
     # Prevent warning from Lancaster

@@ -160,6 +160,7 @@ paired_fcs <- function(
         min_size = 25,
         experiment_title = NULL,
         expression_only = FALSE,
+        BPPARAM = BiocParallel::bpparam(),
         quiet = FALSE){
     ## Initial error checks
     stopifnot(is(c(quiet, expression_only), "logical"))
@@ -188,7 +189,8 @@ paired_fcs <- function(
     # fora on expression
     expression <- run_fcs(
         paired_diff_result, gene_sets = gene_sets,
-        type = "expression", min_size = min_size
+        type = "expression", min_size = min_size,
+        BPPARAM = BPPARAM
     )
     
     if(expression_only){
@@ -204,13 +206,15 @@ paired_fcs <- function(
     # fcs on splicing
     splicing <- run_fcs(
         paired_diff_result, gene_sets = gene_sets,
-        type = "splicing", min_size = min_size
+        type = "splicing", min_size = min_size,
+        BPPARAM = BPPARAM
     )
     
     # fcs on paired
     paired <- run_fcs(
         paired_diff_result, gene_sets = gene_sets,
-        type = "paired", min_size = min_size
+        type = "paired", min_size = min_size,
+        BPPARAM = BPPARAM
     )
     
     if(!quiet) message("Joining result")
@@ -335,7 +339,8 @@ run_fcs <- function(
         nproc = 10,
         scoreType = "pos",
         eps = 10e-320,
-        minSize = min_size
+        minSize = min_size,
+        BPPARAM = BPPARAM
     )
     
     colnames(fcs) <- gsub("ES", "enrichment_score", colnames(fcs))
