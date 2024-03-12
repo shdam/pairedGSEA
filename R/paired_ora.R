@@ -312,7 +312,7 @@ run_ora <- function(
 #' Run ORA on expression or splicing results
 #' @noRd
 run_fcs <- function(
-        paired_diff_result, gene_sets, type, min_size){
+        paired_diff_result, gene_sets, type, min_size, BPPARAM = BiocParallel::bpparam()){
     
     if(type == "splicing") {
         paired_diff_result <- paired_diff_result[
