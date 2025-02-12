@@ -41,7 +41,10 @@
 #' stored in \code{paste0("results/", experiment_title, "_pairedGSEA.RDS")}.
 #' @param run_sva (Default: \code{TRUE})
 #' A logical stating whether SVA should be run.
-#' @param use_limma (Default: \code{FALSE})
+#' @param method (Default: "DEXSeq") Choose differential analysis method. 
+#' "DEXSeq" will run DESeq2 + DEXSeq.
+#' "limma" will run limma eBayes + diffSplice
+#' @param use_limma DEPRECATED. (Default: \code{FALSE})
 #' A logical determining if \code{limma+voom} or
 #' \code{DESeq2} + \code{DEXSeq} should be used for the analysis
 #' @param prefilter (Default: \code{10}) The prefilter threshold,
@@ -107,6 +110,7 @@ paired_diff <- function(
         sample_col,
         baseline,
         case,
+        method = c("DEXSeq", "limma"),
         metadata = NULL,
         covariates = NULL,
         continuous_covariates = NULL,
@@ -147,6 +151,13 @@ paired_diff <- function(
     stopifnot(
         "Please provide metadata with your count matrix" =
             (is(object, "matrix") & !is.null(metadata)) | !is(object, "matrix"))
+    
+    ## Check method argument
+    method <- match.arg(method)
+    if (use_limma) {
+        warning("`use_limma` argument is DEPRECATED. Please use `method = 'limma'` instead")
+        method <- "limma"
+    }
     
     ## Checking column names
     stopifnot(
@@ -262,7 +273,7 @@ paired_diff <- function(
         dds <- run_sva(dds, group_col = group_col, quiet = quiet)
     }
     
-    if(use_limma){
+    if (method == "limma"){
         # Run limma
         results <- run_limma(
             dds = dds, 
@@ -277,7 +288,7 @@ paired_diff <- function(
         expression_results <- results$expression
         splicing_results <- results$splicing
         rm(results)
-    } else{ # DESeq2 + DEXSeq
+    } else if (method == "DEXSeq"){ # DESeq2 + DEXSeq
         # Run DESeq2
         expression_results <- run_deseq(
             dds,
