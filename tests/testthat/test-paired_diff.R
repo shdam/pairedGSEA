@@ -304,15 +304,17 @@ test_that("prepare_metadata errors", {
 })
 
 test_data <- data.frame(
-    gene = c("A", "A", "B", "B", "C", "C"),
-    pvalue = c(0.05, 0.03, 0.01, 0.02, 0.04, 0.06),
-    baseMean = c(10, 12, 8, 9, 15, 17),
-    lfc = c(1.5, -1.2, 0.8, -0.9, 2.3, -2.1)
+    gene = c("A", "A", "B", "B", "C", "C", "C"),
+    pvalue = c(0.05, 0.03, 0.01, 0.02, 0.04, 0.06, 0),
+    baseMean = c(10, 12, 8, 9, 15, 17, 20),
+    lfc = c(1.5, -1.2, 0.8, -0.9, 2.3, -2.1, -2)
 )
 
 test_that("aggregate_pvalue handles correct input and produces correct output", {
     # Test default settings
     res <- aggregate_pvalue(test_data)
+    expect_s4_class(res, "DFrame")
+    res <- aggregate_pvalue(S4Vectors::DataFrame(test_data))
     expect_s4_class(res, "DFrame")
     expect_equal(nrow(res), 3)
     expect_true(all(c("gene", "lfc", "pvalue") %in% colnames(res)))
