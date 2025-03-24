@@ -326,6 +326,7 @@ based on a regular expression for gene sets of interest.
 # Scatter plot function with default settings
 plot_ora(
     ora,
+    paired = FALSE,
     plotly = FALSE,
     pattern = "Telomer", # Identify all gene sets about telomeres
     cutoff = 0.05, # Only include significant gene sets
