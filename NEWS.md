@@ -1,3 +1,8 @@
+# pairedGSEA 1.8.0
+
+* Ensure compatibility with updated msigdbr and new R version
+* Fixed rare bug in `aggregate_pvalue`
+
 # pairedGSEA 1.1.2
 
 * Fix bug where DEXSeq fails if there are NAs in the metadata

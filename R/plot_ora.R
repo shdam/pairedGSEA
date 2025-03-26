@@ -16,28 +16,18 @@
 #' @importFrom ggplot2 ggplot aes annotate labs guides guide_legend
 #' scale_fill_manual scale_colour_manual geom_point scale_shape_manual
 #' geom_abline geom_hline geom_vline
-#' @note Suggested: importFrom plotly ggplotly
+#' @importFrom plotly ggplotly
 #' @family plotting
 #' @export
 #' @return A ggplot
-#' @usage
-#' plot_ora(
-#'     ora,
-#'     pattern = NULL,
-#'     paired = TRUE,
-#'     plotly = FALSE,
-#'     cutoff = 0.05,
-#'     lines = TRUE,
-#'     colors = c("darkgray", "purple", "lightblue", "maroon")
-#'     )
 #' @examples 
 #' data(example_ora_results)
 #' 
-#' plot_ora(example_ora_results, pattern = "Telomer")
+#' plot_ora(example_ora_results)
 plot_ora <- function(
         ora,
         pattern = NULL,
-        paired = TRUE,
+        paired = FALSE,
         plotly = FALSE,
         cutoff = 0.05,
         lines = TRUE,
@@ -179,10 +169,13 @@ create_plot <- function(ora) {
 }
 
 #' Add layout to plot
+#' @importFrom showtext showtext_auto
 #' @noRd
 add_layout <- function(plt, correlation, cutoff, colors, paired){
     x_lab <- ifelse(paired, "Paired", "Differential Splicing")
     # Add correlation text to plot
+    # Sys.setlocale("LC_CTYPE", "en_US.UTF-8")
+    showtext::showtext_auto()
     plt + 
         ggplot2::annotate(
             "text", label = paste("Spearman's \u03C1:", correlation),

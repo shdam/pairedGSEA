@@ -139,30 +139,35 @@ paired_ora <- function(
 #' @param gene_id_type (Default: "ensemble_gene") The gene ID type to extract.
 #' The IDs should match the gene IDs from your DE analysis.
 #' @inheritParams msigdbr::msigdbr
-#' @note Suggested: importFrom msigdbr msigdbr
+#' @importFrom msigdbr msigdbr
 #' @return A list of gene sets
 #' @examples 
 #' gene_sets <- prepare_msigdb(species = "Homo sapiens")
 #' @export
-#' @usage 
-#' prepare_msigdb(
-#'     gene_id_type = "ensembl_gene",
-#'     species = "Homo sapiens",
-#'     category = "C5",
-#'     subcategory = NULL
-#'     )
 prepare_msigdb <- function(
         gene_id_type = "ensembl_gene",
         species = "Homo sapiens", 
-        category = "C5",
+        db_species = c("HS", "MM"),
+        collection = "C5",
+        subcollection = NULL,
+        category = NULL,
         subcategory = NULL
         ){
-    check_missing_package("msigdbr")
+    if (!is.null(category)) {
+        warning("The 'category' parameter is deprecated. Use 'collection' instead.")
+        collection <- category
+    }
+    if (!is.null(subcategory)) {
+        warning("The 'category' parameter is deprecated. Use 'collection' instead.")
+        subcollection <- subcategory
+    }
+    db_species <- match.arg(db_species)
 
     gene_sets <- msigdbr::msigdbr(
         species = species,
-        category = category,
-        subcategory = subcategory
+        db_species = db_species,
+        collection = collection,
+        subcollection = subcollection
         )
     # Split dataframe based on gene set names
     gene_sets <- base::split(

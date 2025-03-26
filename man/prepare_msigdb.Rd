@@ -5,21 +5,30 @@
 \title{Load MSigDB and convert to names list of gene sets}
 \usage{
 prepare_msigdb(
-    gene_id_type = "ensembl_gene",
-    species = "Homo sapiens",
-    category = "C5",
-    subcategory = NULL
-    )
+  gene_id_type = "ensembl_gene",
+  species = "Homo sapiens",
+  db_species = c("HS", "MM"),
+  collection = "C5",
+  subcollection = NULL,
+  category = NULL,
+  subcategory = NULL
+)
 }
 \arguments{
 \item{gene_id_type}{(Default: "ensemble_gene") The gene ID type to extract.
 The IDs should match the gene IDs from your DE analysis.}
 
-\item{species}{Species name, such as Homo sapiens or Mus musculus.}
+\item{species}{Species name for output genes, such as \code{"Homo sapiens"} or \code{"Mus musculus"}. Use \code{msigdbr_species()} for available options.}
 
-\item{category}{MSigDB collection abbreviation, such as H or C1.}
+\item{db_species}{Species abbreviation for the human or mouse databases (\code{"HS"} or \code{"MM"}).}
 
-\item{subcategory}{MSigDB sub-collection abbreviation, such as CGP or BP.}
+\item{collection}{Collection abbreviation, such as \code{"H"} or \code{"C1"}. Use \code{msigdbr_collections()} for the available options.}
+
+\item{subcollection}{Sub-collection abbreviation, such as \code{"CGP"} or \code{"BP"}. Use \code{msigdbr_collections()} for the available options.}
+
+\item{category}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} use the \code{collection} argument}
+
+\item{subcategory}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} use the \code{subcollection} argument}
 }
 \value{
 A list of gene sets
@@ -32,9 +41,6 @@ The function extracts the gene set name and a user-defined gene id type
 Please make sure the gene IDs match those from your DE analysis.
 This function will format the gene sets such that they can be directly
 used with \code{\link[pairedGSEA:paired_ora]{paired_ora()}}.
-}
-\note{
-Suggested: importFrom msigdbr msigdbr
 }
 \examples{
 gene_sets <- prepare_msigdb(species = "Homo sapiens")

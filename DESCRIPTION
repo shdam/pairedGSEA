@@ -1,6 +1,6 @@
 Package: pairedGSEA
 Title: Paired DGE and DGS analysis for gene set enrichment analysis
-Version: 1.7.0
+Version: 1.8.0
 Authors@R: c(
     person(given = "Søren Helweg",
         family = "Dam",
@@ -30,6 +30,7 @@ Imports:
     DESeq2, DEXSeq,
     limma,
     fgsea,
+    msigdbr, 
     sva,
     SummarizedExperiment,
     S4Vectors,
@@ -38,21 +39,22 @@ Imports:
     aggregation,
     stats,
     utils,
-    methods
+    methods,
+    showtext
 Suggests: 
     writexl, readxl, readr,
     rhdf5,
-    msigdbr,
     plotly,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,
-    covr,
-    BiocStyle
+    BiocStyle,
+    msigdbdf,
+    covr
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 biocViews:
     DifferentialExpression,
@@ -68,4 +70,4 @@ biocViews:
 URL: https://github.com/shdam/pairedGSEA
 BugReports: https://github.com/shdam/pairedGSEA/issues
 Depends:
-    R (>= 4.3.0)
+    R (>= 4.4.0)

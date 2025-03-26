@@ -878,7 +878,7 @@ aggregate_pvalue <- function(
     df <- df[!is.na(df$pvalue) & !is.na(df$baseMean),]
     # Prevent warning from Lancaster
     if(any(df$pvalue < 10e-320)) {
-        if (class(df) == "data.frame") df$pvalue[df$pvalue < 10e-320] <- 10e-320
+        if (is(df, "data.frame")) df$pvalue[df$pvalue < 10e-320] <- 10e-320
         else df@listData$pvalue[df@listData$pvalue < 10e-320] <- 10e-320
         }
 

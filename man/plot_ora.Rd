@@ -5,14 +5,14 @@
 \title{Scatter plot of Over-Representation Analysis results}
 \usage{
 plot_ora(
-    ora,
-    pattern = NULL,
-    paired = TRUE,
-    plotly = FALSE,
-    cutoff = 0.05,
-    lines = TRUE,
-    colors = c("darkgray", "purple", "lightblue", "maroon")
-    )
+  ora,
+  pattern = NULL,
+  paired = FALSE,
+  plotly = FALSE,
+  cutoff = 0.05,
+  lines = TRUE,
+  colors = c("darkgray", "purple", "lightblue", "maroon")
+)
 }
 \arguments{
 \item{ora}{Output of \code{\link[pairedGSEA:paired_ora]{paired_ora}}}
@@ -39,12 +39,9 @@ A ggplot
 \description{
 Scatter plot of Over-Representation Analysis results
 }
-\note{
-Suggested: importFrom plotly ggplotly
-}
 \examples{
 data(example_ora_results)
 
-plot_ora(example_ora_results, pattern = "Telomer")
+plot_ora(example_ora_results)
 }
 \concept{plotting}

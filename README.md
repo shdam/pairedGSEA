@@ -60,6 +60,17 @@ system, start R and enter:
 browseVignettes("pairedGSEA")
 ```
 
+## Interoperability with IsoformSwitchAnalyzeR
+
+[IsoformSwitchAnalyzeR](https://github.com/kvittingseerup/IsoformSwitchAnalyzeR)
+identifies, annotates, and visualizes Isoform Switches with Functional
+Consequences (from RNA-seq data).
+
+Import and export between the packages with:
+
+- **`IsoformSwitchAnalyzeR::importPairedGSEA()`**
+- **`IsoformSwitchAnalyzeR::exportToPairedGSEA()`**
+
 ## Usage
 
 Please see the User Guide vignette for a detailed description of usage.
@@ -112,7 +123,8 @@ Over-representation analysis of results
 # Define gene sets in your preferred way
 gene_sets <- pairedGSEA::prepare_msigdb(
     species = "Homo sapiens",
-    category = "C5",
+    db_species = "HS",
+    collection = "C5",
     gene_id_type = "ensembl_gene"
     )
 
@@ -130,7 +142,7 @@ pathways of interest.
 ``` r
 plot_ora(
     ora, 
-    paired = TRUE # Available in version 1.1.0 and newer
+    paired = FALSE # Available in version 1.1.0 and newer
     ) +
     ggplot2::theme_classic()
 ```

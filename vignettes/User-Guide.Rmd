@@ -101,6 +101,14 @@ Install development version from [GitHub](https://github.com/shdam/pairedGSEA)
 devtools::install_github("shdam/pairedGSEA", build_vignettes = TRUE)
 ```
 
+# Interoperability with IsoformSwitchAnalyzeR
+
+[IsoformSwitchAnalyzeR](https://github.com/kvittingseerup/IsoformSwitchAnalyzeR) identifies, annotates, and visualizes Isoform Switches with Functional Consequences (from RNA-seq data).
+
+Import and export between the packages with:
+
+-   **`IsoformSwitchAnalyzeR::importPairedGSEA()`**
+-   **`IsoformSwitchAnalyzeR::exportToPairedGSEA()`**
 
 # Paired differential expression and splicing
 
@@ -281,7 +289,7 @@ The inbuilt ORA function is called `paired_ora` and is run as follows
 # Define gene sets in your preferred way
 gene_sets <- pairedGSEA::prepare_msigdb(
     species = "Homo sapiens", 
-    category = "C5", 
+    collection = "C5", 
     gene_id_type = "ensembl_gene"
     )
 

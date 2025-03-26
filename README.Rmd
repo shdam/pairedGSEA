@@ -64,7 +64,14 @@ To view documentation for the version of this package installed in your system, 
 browseVignettes("pairedGSEA")
 ```
 
+## Interoperability with IsoformSwitchAnalyzeR
 
+[IsoformSwitchAnalyzeR](https://github.com/kvittingseerup/IsoformSwitchAnalyzeR) identifies, annotates, and visualizes Isoform Switches with Functional Consequences (from RNA-seq data).
+
+Import and export between the packages with:
+
+-   **`IsoformSwitchAnalyzeR::importPairedGSEA()`**
+-   **`IsoformSwitchAnalyzeR::exportToPairedGSEA()`**
 
 ## Usage
 
@@ -105,7 +112,8 @@ Over-representation analysis of results
 # Define gene sets in your preferred way
 gene_sets <- pairedGSEA::prepare_msigdb(
     species = "Homo sapiens",
-    category = "C5",
+    db_species = "HS",
+    collection = "C5",
     gene_id_type = "ensembl_gene"
     )
 
@@ -121,7 +129,7 @@ You can now plot the enrichment scores against each other and identify pathways 
 ```{r plot}
 plot_ora(
     ora, 
-    paired = TRUE # Available in version 1.1.0 and newer
+    paired = FALSE # Available in version 1.1.0 and newer
     ) +
     ggplot2::theme_classic()
 ```
