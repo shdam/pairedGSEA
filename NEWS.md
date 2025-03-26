@@ -1,4 +1,4 @@
-# pairedGSEA 1.8.0
+# pairedGSEA 1.7.0
 
 * Ensure compatibility with updated msigdbr and new R version
 * Fixed rare bug in `aggregate_pvalue`
