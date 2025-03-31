@@ -39,6 +39,9 @@ A ggplot
 \description{
 Scatter plot of Over-Representation Analysis results
 }
+\note{
+suggestion: importFrom plotly ggplotly
+}
 \examples{
 data(example_ora_results)
 

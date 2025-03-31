@@ -16,7 +16,7 @@
 #' @importFrom ggplot2 ggplot aes annotate labs guides guide_legend
 #' scale_fill_manual scale_colour_manual geom_point scale_shape_manual
 #' geom_abline geom_hline geom_vline
-#' @importFrom plotly ggplotly
+#' @note suggestion: importFrom plotly ggplotly
 #' @family plotting
 #' @export
 #' @return A ggplot
