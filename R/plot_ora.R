@@ -12,7 +12,7 @@
 #' @param colors (Default: \code{c("darkgray", "purple", "navy")})
 #' Colors to use in plot. The colors are ordered as "Both", "DGS", and "DGE"
 #' @importFrom stats cor
-#' @importFrom S4Vectors as.data.frame
+#' @importFrom S4Vectors as.data.frame subset
 #' @importFrom ggplot2 ggplot aes annotate labs guides guide_legend
 #' scale_fill_manual scale_colour_manual geom_point scale_shape_manual
 #' geom_abline geom_hline geom_vline
@@ -51,9 +51,10 @@ plot_ora <- function(
     }
     
     # Filter ora
-    ora <- subset(
+    ora <- S4Vectors::subset(
         ora, ora$padj_expression < cutoff
         | ora$padj_splicing < cutoff)
+    
     stopifnot("No over-represented gene sets found." = nrow(ora) > 0)
     # Compute spearman correlation
     correlation <- spearman(ora)
